@@ -59,5 +59,5 @@ Entrezid Entrezid posterior prob.
 # Models
 
 <p align="center">
-  <img src="/model.png" width="900"/>
+  <img src="/model.png" width="600"/>
 </p>
