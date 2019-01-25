@@ -13,7 +13,7 @@ import pickle
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
 fh = logging.FileHandler(setting.run_specific_log, mode='a')
 fh.setFormatter(fmt=formatter)
-logger = logging.getLogger("Recurrent neural network")
+logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
@@ -64,7 +64,7 @@ def split_data(crispr):
 if __name__ == "__main__":
 
     # Reading synergy score
-    # header: Unnamed: 0,drug_a_name, smile_a, drug_b_name, smile_b, cell_line,synergy
+    # header: Name, drug_a_name, inchikey_a, inchikey_b_name, inchikey_b, cell_line,synergy
     synergy_score_df = pd.read_csv(setting.synergy_score)
 
     # Read in cell lines gene level dependencies
