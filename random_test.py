@@ -45,9 +45,9 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
     ### Make sure drugs are all in drug_target dataframe
     unfound_drugs = exp_drugs - set(drug_target.columns)
     if len(unfound_drugs) == 0:
-        logger.info("Found all cell lines")
+        logger.info("Found all Drugs")
     else:
-        logger.info("Unfound cell lines: %s" % str(unfound_drugs))
+        logger.info("Unfound Drugs: %s" % str(unfound_drugs))
 
     ### Make sure genes are all in network
     unfound_genes = set(genes['entrez']) - (set(network['entrez_a']).union(set(network['entrez_b'])))
@@ -115,7 +115,7 @@ def create_drugs_profiles(raw_chemicals, genes):
                 drug_profile.loc[chem_name, target] = 1
 
     drug_profile.columns = genes['symbol']
-    return drug_profile
+    return drug_profile.T
 
 if __name__ == "__main__":
 
