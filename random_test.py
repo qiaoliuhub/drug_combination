@@ -198,16 +198,19 @@ if __name__ == "__main__":
     drug_a_features = sel_drug_target.loc[list(synergy_score['drug_a_name']), :].values
     drug_b_features = sel_drug_target.loc[list(synergy_score['drug_b_name']), :].values
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
-    X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
+    X_for = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
+    X_rev = np.concatenate((drug_b_features, drug_a_features, cl_features), axis = 1)
+    X = np.concatenate((X_for, X_rev), axis=0)
     scaler = MinMaxScaler()
     #Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
-    Y = synergy_score.loc[:, 'synergy'].values.reshape((-1,1))
+    Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,1))
+    Y = np.concatenate((Y_half, Y_half), axis=0)
 
     train_index, test_index = regular_split(X)
 
     if setting.ml_train:
 
-        x_cols = list(sel_drug_target.columns) + list(sel_drug_target.columns) + list(sel_dp.index)
+        x_cols = [x + "_a" for x in list(sel_drug_target.columns)] + [x + "_b" for x in list(sel_drug_target.columns)] + list(sel_dp.index)
         X = pd.DataFrame(X, columns=x_cols)
         Y = pd.DataFrame(Y, columns=['synergy'])
         drug_drug.__ml_train(X, Y, train_index, test_index)
