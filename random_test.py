@@ -169,8 +169,7 @@ if __name__ == "__main__":
     check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs)
 
     ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
-    gene_filter = drug_target.var(axis=1) > 0
-    sel_drug_target = drug_target[gene_filter]
+
     print(drug_target, drug_target.shape)
 
     ### Ignore genes that is in genes dependencies and not in genes
@@ -179,7 +178,9 @@ if __name__ == "__main__":
 
     ### Get simulated drug_target
     simulated_drug_target = network_propagation(network, drug_target, genes)
-    print(simulated_drug_target)
+    gene_filter = (simulated_drug_target.var(axis=1) > 0)
+    sel_drug_target = simulated_drug_target[gene_filter]
+    print(sel_drug_target)
 
     # Generate final dataset
     drug_a_features = sel_drug_target.loc[:, list(synergy_score['drug_a_name'])].T.values
