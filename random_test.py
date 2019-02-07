@@ -124,6 +124,14 @@ if __name__ == "__main__":
     genes = pd.read_csv("../drug_drug/Genes/combin_genes.csv")
     drugs = pd.read_csv("../drug_drug/chemicals/smiles_merck.csv")
 
+    ### Reading network data
+    ### entrez_a entrez_b association
+    ### 1001 10001 0.3
+    ### 10001 100001 0.2
+    raw_network = pd.read_csv("../drug_drug/network/all_tissues_top", header=None, sep = '\t')
+    raw_network.columns = ['entrez_a', 'entrez_b', 'association']
+    network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
+
     ### Creating test drug target matrix ###
     ###         5-FU  ABT-888  AZD1775  BEZ-235  BORTEZOMIB  CARBOPLATIN
     ### ADH1B      1        0        0        0           0            0
@@ -140,9 +148,11 @@ if __name__ == "__main__":
     # drug_target = pd.DataFrame(data=drug_target_dict)
     # drug_target.index = genes['symbol']
     raw_chemicals = pd.read_csv("../drug_drug/chemicals/raw_chemicals.csv")
-    sel_drug_target_profile = raw_chemicals[~raw_chemicals.isnull().any(axis = 1)]
-    sel_drugs = set(sel_drug_target_profile['Name'])
-    drug_target = create_drugs_profiles(sel_drug_target_profile, genes)
+    drug_target = create_drugs_profiles(raw_chemicals, genes)
+    ### Get simulated drug_target
+    raw_simulated_drug_target = network_propagation(network, drug_target, genes)
+    simulated_drug_target = raw_simulated_drug_target[~raw_simulated_drug_target.isnull().any(axis = 0)]
+    sel_drugs = set(simulated_drug_target.index)
     print(drug_target, drug_target.shape)
 
     ### Reading synergy score data ###
@@ -166,14 +176,6 @@ if __name__ == "__main__":
     cl_gene_dp.columns = list(map(lambda x: x.split("_")[0], cl_gene_dp.columns))
     sel_dp = cl_gene_dp[list(cell_lines)].reset_index().drop_duplicates(subset='entrez').set_index('entrez')
 
-    ### Reading network data
-    ### entrez_a entrez_b association
-    ### 1001 10001 0.3
-    ### 10001 100001 0.2
-    raw_network = pd.read_csv(setting.network, header=None, sep = '\t')    
-    raw_network.columns = ['entrez_a', 'entrez_b', 'association']
-    network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
-
     ### Check all data frames schema and contents
     check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs)
 
@@ -181,11 +183,8 @@ if __name__ == "__main__":
     merged_sel_dp = sel_dp.merge(genes, left_index=True, right_on='entrez')
     sel_dp = merged_sel_dp.set_index('symbol').drop(['entrez'], axis = 1)
 
-    ### Get simulated drug_target
-    simulated_drug_target = network_propagation(network, drug_target, genes)
-
     ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
-    gene_filter = (simulated_drug_target.var(axis=1) > 0)
+    gene_filter = (simulated_drug_target.var(axis=0) > 0)
     sel_drug_target = simulated_drug_target[gene_filter]
     print(sel_drug_target)
 
