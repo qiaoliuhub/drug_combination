@@ -27,7 +27,9 @@ class DrugsCombModel():
             model.add(BatchNormalization())
             model.add(Activation(setting.activation_method[i%len(setting.activation_method)]))
             model.add(Dropout(rate=setting.dropout))
-        #utils.output_model_info(model)
+
+        model.add(Dense(1))
+
         return model
 
     @classmethod

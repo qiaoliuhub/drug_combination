@@ -11,7 +11,7 @@ import pickle
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-fh = logging.FileHandler(setting.run_specific_log, mode='a')
+fh = logging.FileHandler(setting.logfile, mode='a')
 fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
@@ -43,14 +43,14 @@ def build_network(network):
     network.apply(add_two_edges)
     return G
 
-def split_data(crispr):
+def split_data(df):
 
     logger.debug("Splitting dataset to training dataset and testing dataset based on genes")
     if os.path.exists(setting.train_index) and os.path.exists(setting.test_index):
         train_index = pickle.load(open(setting.train_index, "rb"))
         test_index = pickle.load(open(setting.test_index, "rb"))
     else:
-        train_index, test_index = train_test_split(crispr, n_split = max(len(crispr)/1200, 2), rd_state=0)
+        train_index, test_index = train_test_split(df, test_size=0.2, random_state=0)
 
         with open(setting.train_index, 'wb') as train_file:
                 pickle.dump(train_index, train_file)
@@ -98,8 +98,10 @@ if __name__ == "__main__":
     training_history = drug_model.fit(x=X.values[train_index], y=Y.values[train_index], validation_split=0.1, epochs=setting.n_epochs,
                                                 batch_size=setting.batch_size, verbose=2)
 
+    logger.info("model information: \n %s" %drug_model.summary())
+
     prediction = drug_model.predict(x=X.values[test_index])
     mse = mean_squared_error(Y.values[test_index], prediction)
     pearson = pearsonr(Y.values[test_index], prediction)
 
-    logging.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
+    logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))

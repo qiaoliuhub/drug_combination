@@ -1,1 +1,7 @@
 .idea/*
+cl_gene_dp/*
+chemicals/*.ipynb
+chemicals/*/*.ipynb
+*.pyc
+network/all_tissues_top
+*_index

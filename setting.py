@@ -5,16 +5,18 @@ start_lr = 0.001
 lr_decay = 0.001
 model_type = 'mlp'
 FC_layout = [64] * 2 + [32] * 2
-n_epochs = 100
+n_epochs = 2
 batch_size = 128
 
+logfile = "../drug_drug/logfile"
 
-synergy_score = "/Users/QiaoLiu1/drug_combin/synergy_score/combin_data_2.csv"
-cl_genes_dp = "/Users/QiaoLiu1/drug_combin/cl_gene_dp/complete_cl_gene_dp.csv"
-genes_network = "/Users/QiaoLiu1/drug_combin/genes_network/genes_network.csv"
-drugs_profile = "/Users/QiaoLiu1/drug_combin/drugs_profile/drugs_profile.csv"
+synergy_score = "../synergy_score/combin_data_2.csv"
+cl_genes_dp = "../cl_gene_dp/complete_cl_gene_dp.csv"
+genes_network = "../genes_network/genes_network.csv"
+drugs_profile = "../drugs_profile/drugs_profile.csv"
 
-run_specific_log = "/Users/QiaoLiu1/drug_combin/work_dir/logfile"
+train_index = "../drug_drug/train_index"
+test_index = "../drug_drug/test_index"
 
-train_index = "/Users/QiaoLiu1/drug_combin/work_dir/train_index"
-test_index = "/Users/QiaoLiu1/drug_combin/work_dir/test_index"
+renew = False
+simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix.csv"
