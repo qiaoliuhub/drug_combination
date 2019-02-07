@@ -155,7 +155,7 @@ if __name__ == "__main__":
     ### Get simulated drug_target
     ### columns=genes['symbol'], index=drugs
     raw_simulated_drug_target = network_propagation(network, drug_target, genes)
-    simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 0), :]
+    simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 1), :]
     sel_drugs = set(simulated_drug_target.index)
     print(drug_target, drug_target.shape)
 
