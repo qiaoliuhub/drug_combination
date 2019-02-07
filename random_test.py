@@ -161,7 +161,7 @@ if __name__ == "__main__":
     sel_dp = cl_gene_dp[list(cell_lines)].reset_index().drop_duplicates(subset='entrez').set_index('entrez')
 
     ### Reading network data
-    raw_network = pd.read_csv("../drug_drug/network/all_tissues_top", header=None, sep = '\t')
+    raw_network = pd.read_csv(setting.network, header=None, sep = '\t')
     raw_network.columns = ['entrez_a', 'entrez_b', 'association']
     network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
 
