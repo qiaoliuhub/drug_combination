@@ -20,3 +20,5 @@ test_index = "../drug_drug/test_index"
 
 renew = True
 simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix_string.csv"
+
+ml_train = True

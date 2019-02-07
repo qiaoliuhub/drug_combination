@@ -9,6 +9,7 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import MinMaxScaler
 import setting
 import os
+import drug_drug
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -200,20 +201,25 @@ if __name__ == "__main__":
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     scaler = MinMaxScaler()
-    Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
+    #Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
+    Y = synergy_score.loc[:, 'synergy'].values
 
     train_index, test_index = regular_split(X)
 
-    drug_model = model.DrugsCombModel(drug_a_features = drug_a_features,
+    if setting.ml_train:
+
+        drug_drug.__ml_train(X, Y, train_index, test_index)
+
+    else:
+        drug_model = model.DrugsCombModel(drug_a_features = drug_a_features,
                                       drug_b_features = drug_b_features, cl_genes_dp_features=cl_features).get_model()
+        logger.info("model information: \n %s" % drug_model.summary())
+        logger.debug("Start training")
+        training_history = drug_model.fit(x=X[train_index], y=Y[train_index], validation_split=0.1, epochs=setting.n_epochs,
+                                                    verbose=2)
+        logger.debug("Training is done")
+        prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
+        mse = mean_squared_error(Y[test_index], prediction)
+        pearson = pearsonr(Y[test_index], prediction)
 
-    logger.info("model information: \n %s" % drug_model.summary())
-    logger.debug("Start training")
-    training_history = drug_model.fit(x=X[train_index], y=Y[train_index], validation_split=0.1, epochs=setting.n_epochs,
-                                                verbose=2)
-    logger.debug("Training is done")
-    prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
-    mse = mean_squared_error(Y[test_index], prediction)
-    pearson = pearsonr(Y[test_index], prediction)
-
-    logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
+        logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
