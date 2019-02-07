@@ -19,5 +19,5 @@ network = "../drug_drug/network/all_tissues_top" # string_network
 train_index = "../drug_drug/train_index"
 test_index = "../drug_drug/test_index"
 
-renew = True
+renew = False
 simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix.csv"
