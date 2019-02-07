@@ -153,8 +153,9 @@ if __name__ == "__main__":
     raw_chemicals = pd.read_csv("../drug_drug/chemicals/raw_chemicals.csv")
     drug_target = create_drugs_profiles(raw_chemicals, genes)
     ### Get simulated drug_target
+    ### columns=genes['symbol'], index=drugs
     raw_simulated_drug_target = network_propagation(network, drug_target, genes)
-    simulated_drug_target = raw_simulated_drug_target[~raw_simulated_drug_target.isnull().any(axis = 0)]
+    simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 0), :]
     sel_drugs = set(simulated_drug_target.index)
     print(drug_target, drug_target.shape)
 
@@ -164,6 +165,7 @@ if __name__ == "__main__":
     ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
     synergy_score = pd.read_csv("../drug_drug/synergy_score/combin_data_2.csv")
     synergy_score = synergy_score[(synergy_score['drug_a_name'].isin(sel_drugs)) & (synergy_score['drug_b_name'].isin(sel_drugs))]
+    print("synergy_score filtered data amount %s" %str(len(synergy_score)))
     cell_lines = set(synergy_score['cell_line'])
     exp_drugs = set(synergy_score['drug_a_name']).union(set(synergy_score['drug_b_name']))
 
