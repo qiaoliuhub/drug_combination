@@ -6,7 +6,7 @@ import model
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import ShuffleSplit
-import drug_drug
+from sklearn.preprocessing import MinMaxScaler
 import setting
 import os
 
@@ -194,8 +194,9 @@ if __name__ == "__main__":
     drug_b_features = sel_drug_target.loc[list(synergy_score['drug_b_name']), :].values
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
-    Y = synergy_score['synergy']
-
+    scaler = MinMaxScaler()
+    Y = scaler.fit_transform(synergy_score['synergy'])
+    
     train_index, test_index = regular_split(X)
 
     drug_model = model.DrugsCombModel(drug_a_features = drug_a_features,
