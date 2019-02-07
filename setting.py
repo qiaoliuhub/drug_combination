@@ -18,5 +18,5 @@ drugs_profile = "../drugs_profile/drugs_profile.csv"
 train_index = "../drug_drug/train_index"
 test_index = "../drug_drug/test_index"
 
-renew = False
-simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix.csv"
+renew = True
+simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix_string.csv"
