@@ -82,7 +82,7 @@ def __ml_train(X, y, train_index, test_index):
         score_each_iteration=True,
         seed=10)
 
-    pre_h2o_df = pd.DataFrame(np.concatenate((X, y), axis=1))
+    pre_h2o_df = pd.DataFrame(np.concatenate((X, y), axis=1), )
     h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index, :])
     h2o_drugs_test = h2o.H2OFrame(pre_h2o_df.loc[test_index, :])
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     if setting.ml_train:
 
-        __ml_train(X, y, train_index, test_index)
+        __ml_train(X, Y, train_index, test_index)
 
     drug_model = model.DrugsCombModel(drug_a_features = drug_a_features,
                                       drug_b_features = drug_b_features, cl_genes_dp_features=cl_features).get_model()
