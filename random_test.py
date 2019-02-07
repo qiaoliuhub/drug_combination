@@ -78,17 +78,19 @@ def network_propagation(network, drug_target, genes):
         network_matrix = pd.DataFrame(data=network_matrix)
         network_matrix.columns, network_matrix.index = genes['entrez'], genes['entrez']
         entrez_set = set(genes['entrez'])
+        for gene_entrez in entrez_set:
+
+            network_matrix.loc[int(gene_entrez), int(gene_entrez)] = 1
 
         for row in network.iterrows():
 
             a, b = int(row[1]['entrez_a']), int(row[1]['entrez_b'])
             if a in entrez_set and b in entrez_set:
-                network_matrix.loc[a: b] = row[1]['association']
-                network_matrix.loc[b: a] = row[1]['association']
+                network_matrix.loc[a, b] = row[1]['association']
+                network_matrix.loc[b, a] = row[1]['association']
 
         network_sparse_matrix = csr_matrix(network_matrix.values)
         drug_target_sparse_matrix = drug_target.loc[genes['symbol'], :].values.T
-        network_sparse_matrix = network_sparse_matrix
         result_matrix = (csr_matrix(drug_target_sparse_matrix).dot(network_sparse_matrix)).todense()
         result_matrix = pd.DataFrame(result_matrix, columns=genes['symbol'], index=drug_target.columns)
         result_matrix.to_csv(setting.simulated_result_matrix)
@@ -141,6 +143,7 @@ if __name__ == "__main__":
     sel_drug_target_profile = raw_chemicals[~raw_chemicals.isnull().any(axis = 1)]
     sel_drugs = set(sel_drug_target_profile['Name'])
     drug_target = create_drugs_profiles(sel_drug_target_profile, genes)
+    print(drug_target, drug_target.shape)
 
     ### Reading synergy score data ###
     ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
@@ -152,8 +155,11 @@ if __name__ == "__main__":
     exp_drugs = set(synergy_score['drug_a_name']).union(set(synergy_score['drug_b_name']))
 
     ### Processing gene dependencies map
-    ### "X127399_SOFT_TISSUE","X1321N1_CENTRAL_NERVOUS_SYSTEM","X143B_BONE",
-    ###
+    ###     "X127399","X1321N1","X143B",
+    ### entrez
+    ### 1001
+    ### 10001
+
     cl_gene_dp_indexes = pd.read_csv("../drug_drug/cl_gene_dp/all_dependencies_gens.csv", usecols = ['symbol', 'entrez'])
     cl_gene_dp = pd.read_csv("../drug_drug/cl_gene_dp/complete_cl_gene_dp_1.csv")
     cl_gene_dp.index = cl_gene_dp_indexes['entrez']
@@ -161,16 +167,15 @@ if __name__ == "__main__":
     sel_dp = cl_gene_dp[list(cell_lines)].reset_index().drop_duplicates(subset='entrez').set_index('entrez')
 
     ### Reading network data
-    raw_network = pd.read_csv(setting.network, header=None, sep = '\t')
+    ### entrez_a entrez_b association
+    ### 1001 10001 0.3
+    ### 10001 100001 0.2
+    raw_network = pd.read_csv(setting.network, header=None, sep = '\t')    
     raw_network.columns = ['entrez_a', 'entrez_b', 'association']
     network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
 
     ### Check all data frames schema and contents
     check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs)
-
-    ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
-
-    print(drug_target, drug_target.shape)
 
     ### Ignore genes that is in genes dependencies and not in genes
     merged_sel_dp = sel_dp.merge(genes, left_index=True, right_on='entrez')
@@ -178,13 +183,15 @@ if __name__ == "__main__":
 
     ### Get simulated drug_target
     simulated_drug_target = network_propagation(network, drug_target, genes)
+
+    ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
     gene_filter = (simulated_drug_target.var(axis=1) > 0)
     sel_drug_target = simulated_drug_target[gene_filter]
     print(sel_drug_target)
 
     # Generate final dataset
-    drug_a_features = sel_drug_target.loc[:, list(synergy_score['drug_a_name'])].T.values
-    drug_b_features = sel_drug_target.loc[:, list(synergy_score['drug_b_name'])].T.values
+    drug_a_features = sel_drug_target.loc[list(synergy_score['drug_a_name']), :].values
+    drug_b_features = sel_drug_target.loc[list(synergy_score['drug_b_name']), :].values
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     Y = synergy_score['synergy']
