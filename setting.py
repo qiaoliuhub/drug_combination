@@ -10,8 +10,8 @@ batch_size = 128
 
 logfile = "../drug_drug/logfile"
 
-synergy_score = "../synergy_score/combin_data_2.csv"
-cl_genes_dp = "../cl_gene_dp/complete_cl_gene_dp.csv"
+synergy_score = "../drug_drug/synergy_score/combin_data_2.csv"
+cl_genes_dp = "../drug_drug/cl_gene_dp/complete_cl_gene_dp.csv"
 genes_network = "../genes_network/genes_network.csv"
 drugs_profile = "../drugs_profile/drugs_profile.csv"
 
