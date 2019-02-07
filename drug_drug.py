@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error
 import logging
 import os
 import pickle
+import numpy as np
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -81,7 +82,7 @@ def __ml_train(X, y, train_index, test_index):
         score_each_iteration=True,
         seed=10)
 
-    pre_h2o_df = pd.concat([X, y], axis=1)
+    pre_h2o_df = np.concatenate((X, y), axis=1)
     h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index, :])
     h2o_drugs_test = h2o.H2OFrame(pre_h2o_df.loc[test_index, :])
 
