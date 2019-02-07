@@ -114,6 +114,7 @@ def create_drugs_profiles(raw_chemicals, genes):
 
                 drug_profile.loc[chem_name, target] = 1
 
+    drug_profile.columns = genes['symbol']
     return drug_profile
 
 if __name__ == "__main__":
