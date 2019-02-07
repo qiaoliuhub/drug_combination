@@ -195,7 +195,7 @@ if __name__ == "__main__":
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     scaler = MinMaxScaler()
-    Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].reshape(-1,1))
+    Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
 
     train_index, test_index = regular_split(X)
 
@@ -204,11 +204,11 @@ if __name__ == "__main__":
 
     logger.info("model information: \n %s" % drug_model.summary())
     logger.debug("Start training")
-    training_history = drug_model.fit(x=X[train_index], y=Y.values[train_index], validation_split=0.1, epochs=setting.n_epochs,
+    training_history = drug_model.fit(x=X[train_index], y=Y[train_index], validation_split=0.1, epochs=setting.n_epochs,
                                                 verbose=2)
     logger.debug("Training is done")
     prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
-    mse = mean_squared_error(Y.values[test_index], prediction)
-    pearson = pearsonr(Y.values[test_index], prediction)
+    mse = mean_squared_error(Y[test_index], prediction)
+    pearson = pearsonr(Y[test_index], prediction)
 
     logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
