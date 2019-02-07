@@ -109,6 +109,9 @@ def create_drugs_profiles(raw_chemicals, genes):
     entrez_set = set(genes['entrez'])
     for row in raw_chemicals.iterrows():
 
+        if not isinstance(row[1]['combin_entrez'], str):
+            continue
+
         chem_name, target_list = row[1]['Name'], row[1]['combin_entrez'].split(",")
         for target in target_list:
             target = int(target)
