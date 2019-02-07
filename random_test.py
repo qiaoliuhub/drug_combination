@@ -131,7 +131,7 @@ if __name__ == "__main__":
     ### entrez_a entrez_b association
     ### 1001 10001 0.3
     ### 10001 100001 0.2
-    raw_network = pd.read_csv("../drug_drug/network/all_tissues_top", header=None, sep = '\t')
+    raw_network = pd.read_csv("../drug_drug/network/string_network", header=None, sep = '\t')
     raw_network.columns = ['entrez_a', 'entrez_b', 'association']
     network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
 
