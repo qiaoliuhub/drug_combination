@@ -207,6 +207,9 @@ if __name__ == "__main__":
 
     if setting.ml_train:
 
+        x_cols = list(sel_drug_target.columns) + list(sel_drug_target.columns) + list(sel_dp.index)
+        X = pd.DataFrame(X, columns=x_cols)
+        Y = pd.DataFrame(Y, columns=['synergy'])
         drug_drug.__ml_train(X, Y, train_index, test_index)
 
     else:
