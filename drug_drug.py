@@ -82,7 +82,7 @@ def __ml_train(X, y, train_index, test_index):
         score_each_iteration=True,
         seed=10)
 
-    pre_h2o_df = np.concatenate((X, y), axis=1)
+    pre_h2o_df = pd.DataFrame(np.concatenate((X, y), axis=1))
     h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index, :])
     h2o_drugs_test = h2o.H2OFrame(pre_h2o_df.loc[test_index, :])
 
