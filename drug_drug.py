@@ -69,7 +69,7 @@ def __ml_train(X, y, train_index, test_index):
     logger.debug("Creating h2o working environment")
     # ### Start H2O
     # Start up a 1-node H2O cloud on your local machine, and allow it to use all CPU cores and up to 2GB of memory:
-    h2o.init(max_mem_size="2G")
+    h2o.init(max_mem_size="10G")
     h2o.remove_all()
     logger.debug("Created h2o working environment successfully")
 

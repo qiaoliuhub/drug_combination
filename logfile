@@ -1,4 +1,4 @@
-02/07/2019 11:02:24 INFO Drug Combination merged_drug_targets:    5-FU  ABT-888  AZD1775  BEZ-235   ...    VINORELBINE  ZOLINZA  symbol  entrez
+02/07/2019 03:18:44 INFO Drug Combination merged_drug_targets:    5-FU  ABT-888  AZD1775  BEZ-235   ...    VINORELBINE  ZOLINZA  symbol  entrez
 0   0.0      0.0      0.0      0.0   ...            0.0      0.0   ADH1B     125
 1   0.0      0.0      0.0      0.0   ...            0.0      0.0  ADRA1A     148
 2   0.0      0.0      0.0      0.0   ...            0.0      0.0    JAG1     182
@@ -6,8 +6,8 @@
 4   0.0      0.0      0.0      0.0   ...            0.0      0.0     ALB     213
 
 [5 rows x 40 columns]
-02/07/2019 11:02:24 INFO Drug Combination Found all genes in drug target
-02/07/2019 11:02:24 INFO Drug Combination merged_sel_dp:           A375     A2780    NCIH23     CAOV3   ...      SKMES1      HT29  symbol  entrez
+02/07/2019 03:18:44 INFO Drug Combination Found all genes in drug target
+02/07/2019 03:18:44 INFO Drug Combination merged_sel_dp:           A375     A2780    NCIH23     CAOV3   ...      SKMES1      HT29  symbol  entrez
 428  -0.171287  0.165102  0.033554  0.191644   ...    0.184662 -0.083032    CDH2    1000
 1720 -0.005744  0.218023  0.078250  0.084019   ...    0.063843  0.137726    AKT3   10000
 1582 -0.045260  0.097111  0.107058 -0.262663   ...    0.139752 -0.337066    ABI1   10006
@@ -15,12 +15,10 @@
 2249 -0.000220  0.230515  0.027212 -0.134569   ...   -0.043728 -0.003875   HDAC5   10014
 
 [5 rows x 33 columns]
-02/07/2019 11:02:24 INFO Drug Combination Found all genes in genes dependencies
-02/07/2019 11:02:24 INFO Drug Combination Found all Drugs
-02/07/2019 11:02:24 INFO Drug Combination Found all genes in networks
-02/07/2019 11:02:24 INFO Drug Combination Found all cell lines
-02/07/2019 11:02:25 INFO Drug Combination model information: 
- None
-02/07/2019 11:02:25 DEBUG Drug Combination Start training
-02/07/2019 11:35:46 DEBUG Drug Combination Training is done
-02/07/2019 11:35:47 INFO Drug Combination mse: 0.0008638187871238308, pearson: (0.6974121860604309, 3.285280139400064e-267)
+02/07/2019 03:18:44 INFO Drug Combination Found all genes in genes dependencies
+02/07/2019 03:18:44 INFO Drug Combination Found all Drugs
+02/07/2019 03:18:44 INFO Drug Combination Unfound genes in networks: set([286464, 728833, 283651, 5591, 3206, 284759, 8972, 91661, 4622, 168975, 7097, 391189, 81558, 144535, 162968, 83481, 1050, 388335, 27164, 83741, 116511, 10016, 146850, 8355, 2342, 337960, 85289, 152687, 403244, 729262, 92335, 503835, 387638, 57143, 9401, 378938, 187, 6716, 127294, 4671, 317754, 56130, 84125, 10436, 253639, 442444, 60494, 22925, 374864, 26065, 259283, 728276, 148823, 140831, 116441, 643677, 56128, 127074, 4067, 7652, 2854, 341350, 23185, 100271849, 439915, 139628, 7278, 10991, 374897, 1523, 115701, 55672, 79097, 1018, 136895, 145788])
+02/07/2019 03:18:44 INFO Drug Combination Found all cell lines
+02/07/2019 03:18:47 DEBUG Drug Combination Creating h2o working environment
+02/07/2019 03:18:53 DEBUG Drug Combination Created h2o working environment successfully
+02/07/2019 03:23:56 DEBUG Drug Combination Training machine learning model
