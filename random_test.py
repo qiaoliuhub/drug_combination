@@ -157,7 +157,7 @@ if __name__ == "__main__":
     raw_simulated_drug_target = network_propagation(network, drug_target, genes)
     simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 1), :]
     sel_drugs = set(simulated_drug_target.index)
-    print(drug_target, drug_target.shape)
+    print(simulated_drug_target, simulated_drug_target.shape)
 
     ### Reading synergy score data ###
     ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
     ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
     gene_filter = (simulated_drug_target.var(axis=0) > 0)
-    sel_drug_target = simulated_drug_target[gene_filter]
+    sel_drug_target = simulated_drug_target.loc[:, gene_filter]
     print(sel_drug_target)
 
     # Generate final dataset
