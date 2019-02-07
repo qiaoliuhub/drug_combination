@@ -202,7 +202,7 @@ if __name__ == "__main__":
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     scaler = MinMaxScaler()
     #Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
-    Y = synergy_score.loc[:, 'synergy'].values
+    Y = synergy_score.loc[:, 'synergy'].values.reshape((-1,1))
 
     train_index, test_index = regular_split(X)
 
