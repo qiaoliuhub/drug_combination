@@ -195,7 +195,7 @@ if __name__ == "__main__":
     cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
     X = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     scaler = MinMaxScaler()
-    Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'])
+    Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].reshape(-1,1))
 
     train_index, test_index = regular_split(X)
 
