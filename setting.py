@@ -1,12 +1,12 @@
 
-activation_method =["relu", "sigmoid"]
+activation_method =["relu"]
 dropout = 0.3
-start_lr = 0.001
+start_lr = 0.05
 lr_decay = 0.001
 model_type = 'mlp'
-FC_layout = [256] * 2 + [64] * 2
+FC_layout = [1024] * 1 + [128] * 1
 n_epochs = 200
-batch_size = 128
+batch_size = 256
 
 logfile = "../drug_drug/logfile"
 
@@ -19,7 +19,7 @@ network = "../drug_drug/network/all_tissues_top" # string_network
 train_index = "../drug_drug/train_index"
 test_index = "../drug_drug/test_index"
 
-renew = True
+renew = False
 simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix_string.csv"
 
-ml_train = True
+ml_train = False

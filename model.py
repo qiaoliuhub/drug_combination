@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Activation, Dropout
 import setting
-from keras.optimizers import Adam
+from keras.optimizers import RMSprop
 
 
 class DrugsCombModel():
@@ -35,7 +35,7 @@ class DrugsCombModel():
     @classmethod
     def compile_transfer_learning_model(cls, model):
 
-        custimized_rmsprop = Adam(lr=setting.start_lr, decay=setting.lr_decay)
+        custimized_rmsprop = RMSprop(lr=setting.start_lr, decay=setting.lr_decay)
         model.compile(optimizer=custimized_rmsprop, loss='mse', metrics=['mse'])
         return model
 

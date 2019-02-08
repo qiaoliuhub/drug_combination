@@ -16,10 +16,11 @@ import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 
 # setting up nvidia GPU environment
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-set_session(tf.Session(config=config))
+if not setting.ml_train:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -213,7 +214,7 @@ if __name__ == "__main__":
     X = np.concatenate((X_for, X_rev), axis=0)
     scaler = MinMaxScaler()
     #Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
-    Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,1))
+    Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
 
     train_index, test_index = regular_split(X)
