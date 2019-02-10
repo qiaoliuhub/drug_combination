@@ -23,3 +23,4 @@ renew = False
 simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix_string.csv"
 
 ml_train = False
+test_ml_train = True
