@@ -83,7 +83,8 @@ def __ml_train(X, y, train_index, test_index):
         seed=10)
 
     pre_h2o_df = pd.concat([X, y], axis=1)
-    h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index, :])
+    train_sample_size = 300 if setting.test_ml_train else len(train_index)
+    h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index[:train_sample_size], :])
     h2o_drugs_test = h2o.H2OFrame(pre_h2o_df.loc[test_index, :])
 
     logger.debug("Training machine learning model")
@@ -93,12 +94,12 @@ def __ml_train(X, y, train_index, test_index):
 
     logger.debug("Predicting training data")
     test_prediction_train = rf_drugs.predict(h2o_drugs_train[:-1])
-    performance = pearsonr(test_prediction_train.as_data_frame()['predict'], h2o_drugs_train.as_data_frame()['log2fc'])[0]
+    performance = pearsonr(test_prediction_train.as_data_frame()['predict'], h2o_drugs_train.as_data_frame()['synergy'])[0]
     logger.debug("spearman correlation coefficient for training dataset is: %f" % performance)
 
     logger.debug("Predicting test data")
     test_prediction = rf_drugs.predict(h2o_drugs_test[:-1])
-    performance = pearsonr(test_prediction.as_data_frame()['predict'], h2o_drugs_test.as_data_frame()['log2fc'])[0]
+    performance = pearsonr(test_prediction.as_data_frame()['predict'], h2o_drugs_test.as_data_frame()['synergy'])[0]
     logger.debug("spearman correlation coefficient for test dataset is: %f" % performance)
 
 if __name__ == "__main__":
