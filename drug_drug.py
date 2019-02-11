@@ -8,7 +8,6 @@ from sklearn.metrics import mean_squared_error
 import logging
 import os
 import pickle
-import numpy as np
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -107,7 +106,7 @@ def __ml_train(X, y, train_index, test_index):
         raise
 
     finally:
-        h2o.shutdown()
+        h2o.h2o.cluster().shutdown()
 
 if __name__ == "__main__":
 

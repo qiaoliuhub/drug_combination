@@ -78,7 +78,7 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
     ### select only the drugs with features
     ### select only the drug targets in genes
 
-def network_propagation(network, drug_target, genes):
+def RWlike_network_propagation(network, drug_target, genes):
 
     if not setting.renew and os._exists(setting.simulated_result_matrix):
 
@@ -90,10 +90,9 @@ def network_propagation(network, drug_target, genes):
         network_matrix = pd.DataFrame(data=network_matrix)
         network_matrix.columns, network_matrix.index = genes['entrez'], genes['entrez']
         entrez_set = set(genes['entrez'])
-        for gene_entrez in entrez_set:
 
-            network_matrix.loc[int(gene_entrez), int(gene_entrez)] = 1
-
+        # build the matrix from gene gene interaction network, so far
+        # gene-gene self interaction weight is 0
         for row in network.iterrows():
 
             a, b = int(row[1]['entrez_a']), int(row[1]['entrez_b'])
@@ -101,9 +100,24 @@ def network_propagation(network, drug_target, genes):
                 network_matrix.loc[a, b] = row[1]['association']
                 network_matrix.loc[b, a] = row[1]['association']
 
+        # Normalize gene gene association probability so that the total gene gene
+        # association probability weights for one gene is 1
+        network_matrix = normalize_matrix(network_matrix, 0)
+
+        for gene_entrez in entrez_set:
+
+            network_matrix.loc[int(gene_entrez), int(gene_entrez)] = 1
         network_sparse_matrix = csr_matrix(network_matrix.values)
-        drug_target_sparse_matrix = drug_target.loc[genes['symbol'], :].values.T
-        result_matrix = (csr_matrix(drug_target_sparse_matrix).dot(network_sparse_matrix)).todense()
+
+        # drug_target_matrix: columns = genes, index = Drugs
+        drug_target_matrix = drug_target.loc[genes['symbol'], :].values.T
+
+        # result_matrix: columns = genes, index = Drugs
+        result_matrix = (csr_matrix(drug_target_matrix).dot(network_sparse_matrix)).todense()
+
+        # Set target genes effect to be 1, because it is 1 in drug_target_matrix and all non-target genes
+        # effect is less than 1 since the sum of all weights for a gene is 1
+        result_matrix = np.array([result_matrix, drug_target_matrix]).max(axis = 0)
         result_matrix = pd.DataFrame(result_matrix, columns=genes['symbol'], index=drug_target.columns)
         result_matrix.to_csv(setting.simulated_result_matrix)
 
@@ -132,7 +146,35 @@ def create_drugs_profiles(raw_chemicals, genes):
                 drug_profile.loc[chem_name, target] = 1
 
     drug_profile.columns = genes['symbol']
+
+    # columns: drugs, index: genes
     return drug_profile.T
+
+def normalize_matrix(raw_matrix, axis):
+
+    def __normalize(vector):
+
+        denominator = sum(vector)
+        if not denominator:
+            return vector
+
+        return vector/denominator
+
+    # normalize each row
+    if axis == 0 or axis == 'index':
+
+        for i in raw_matrix.index:
+            raw_matrix.loc[i, :] = __normalize(raw_matrix.loc[i, :])
+
+    elif axis == 1 or axis == 'column':
+
+        for i in raw_matrix.columns:
+            raw_matrix.loc[:, i] = __normalize(raw_matrix.loc[:, i])
+
+    else:
+        logger.warn("axis is out of range")
+
+    return raw_matrix
 
 if __name__ == "__main__":
 
@@ -166,7 +208,7 @@ if __name__ == "__main__":
     drug_target = create_drugs_profiles(raw_chemicals, genes)
     ### Get simulated drug_target
     ### columns=genes['symbol'], index=drugs
-    raw_simulated_drug_target = network_propagation(network, drug_target, genes)
+    raw_simulated_drug_target = RWlike_network_propagation(network, drug_target, genes)
     simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 1), :]
     sel_drugs = set(simulated_drug_target.index)
     print(simulated_drug_target, simulated_drug_target.shape)

@@ -19,8 +19,8 @@ network = "../drug_drug/network/all_tissues_top" # string_network
 train_index = "../drug_drug/train_index"
 test_index = "../drug_drug/test_index"
 
-renew = False
-simulated_result_matrix = "../drug_drug/chemicals/simulated_result_matrix_string.csv"
+renew = True
+simulated_result_matrix = "../drug_drug/chemicals/normalized_simulated_result_matrix_string.csv"
 
-ml_train = False
+ml_train = True
 test_ml_train = True
