@@ -4,7 +4,7 @@ dropout = 0.3
 start_lr = 0.05
 lr_decay = 0.001
 model_type = 'mlp'
-FC_layout = [1024] * 1 + [128] * 1
+FC_layout = [256] * 1 + [64] * 1
 n_epochs = 200
 batch_size = 256
 
@@ -22,5 +22,5 @@ test_index = "../drug_drug/test_index"
 renew = True
 simulated_result_matrix = "../drug_drug/chemicals/normalized_simulated_result_matrix_string.csv"
 
-ml_train = True
+ml_train = False
 test_ml_train = True

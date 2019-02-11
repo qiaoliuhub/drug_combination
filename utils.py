@@ -33,3 +33,4 @@ def parse_page(page, row_sep, delimiter):
             df.loc[i-1] = row.split(delimiter)
 
     return df
+
