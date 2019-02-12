@@ -7,7 +7,6 @@ import network_propagation
 import model
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import MinMaxScaler
 import setting
 import os
@@ -77,11 +76,6 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
 
     ### select only the drugs with features
     ### select only the drug targets in genes
-
-def regular_split(df, group_col=None, n_split = 10, rd_state = 3):
-
-    shuffle_split = ShuffleSplit(test_size=1.0/n_split, random_state = rd_state)
-    return shuffle_split.split(df).next()
 
 def create_drugs_profiles(raw_chemicals, genes):
 
@@ -199,7 +193,7 @@ if __name__ == "__main__":
     Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
 
-    train_index, test_index = regular_split(X)
+    train_index, test_index = drug_drug.split_data(X)
 
     if setting.ml_train:
 

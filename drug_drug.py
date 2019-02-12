@@ -1,6 +1,6 @@
 import pandas as pd
 import setting
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import ShuffleSplit
 from scipy.stats import pearsonr
 import logging
 import os
@@ -14,6 +14,11 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
+def regular_split(df, group_col=None, n_split = 10, rd_state = setting.split_random_seed):
+
+    shuffle_split = ShuffleSplit(test_size=1.0/n_split, random_state = rd_state)
+    return shuffle_split.split(df).next()
+
 def split_data(df):
 
     logger.debug("Splitting dataset to training dataset and testing dataset based on genes")
@@ -21,7 +26,7 @@ def split_data(df):
         train_index = pickle.load(open(setting.train_index, "rb"))
         test_index = pickle.load(open(setting.test_index, "rb"))
     else:
-        train_index, test_index = train_test_split(df, test_size=0.2, random_state=0)
+        train_index, test_index = regular_split(df)
 
         with open(setting.train_index, 'wb') as train_file:
                 pickle.dump(train_index, train_file)

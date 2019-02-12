@@ -1,4 +1,4 @@
-
+# propagation_methods: target_as_1, RWlike
 propagation_method = 'target_as_1'
 
 activation_method =["relu"]
@@ -17,9 +17,11 @@ cl_genes_dp = "../drug_drug/cl_gene_dp/complete_cl_gene_dp.csv"
 genes_network = "../genes_network/genes_network.csv"
 drugs_profile = "../drugs_profile/drugs_profile.csv"
 
-network = "../drug_drug/network/all_tissues_top" # string_network
-train_index = "../drug_drug/train_index"
-test_index = "../drug_drug/test_index"
+# networks: string_network, all_tissues_top
+network = "../drug_drug/network/all_tissues_top"
+split_random_seed = 3
+train_index = "../drug_drug/train_index_" + str(split_random_seed)
+test_index = "../drug_drug/test_index_" + str(split_random_seed)
 
 renew = True
 simulated_result_matrix = "../drug_drug/chemicals/target_simulated_result_matrix_string.csv"
@@ -27,3 +29,4 @@ simulated_result_matrix = "../drug_drug/chemicals/target_simulated_result_matrix
 ml_train = False
 test_ml_train = True
 estimator = "RandomForest"
+

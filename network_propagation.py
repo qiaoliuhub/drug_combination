@@ -20,7 +20,7 @@ def target_as_1_network_propagation(network, drug_target, genes):
     # Set target gene feature for a drug to be 1 and non-target gene to be max(probabilites of all edges)
 
     # if matrix renewal is needed, it will recompute the simulated result matrix
-    if not setting.renew and os.exists(setting.simulated_result_matrix):
+    if not setting.renew and os.path.exists(setting.simulated_result_matrix):
 
         result_matrix = pd.read_csv(setting.simulated_result_matrix, index_col = 0)
 
@@ -104,7 +104,7 @@ def get_matrix_from_network(network, genes):
 def RWlike_network_propagation(network, drug_target, genes):
 
     # input drug_target matrix: index = genes, columns = drugs
-    if not setting.renew and os.exists(setting.simulated_result_matrix):
+    if not setting.renew and os.path.exists(setting.simulated_result_matrix):
 
         result_matrix = pd.read_csv(setting.simulated_result_matrix, index_col = 0)
 
