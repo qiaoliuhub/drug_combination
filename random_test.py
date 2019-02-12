@@ -105,6 +105,16 @@ def create_drugs_profiles(raw_chemicals, genes):
     # columns: drugs, index: genes
     return drug_profile.T
 
+def simulated_drug_target_matrix(network, drug_target, genes):
+
+    if setting.propagation_method == 'target_as_1':
+        simulated_drug_target_matrix = network_propagation.target_as_1_network_propagation(network, drug_target, genes)
+
+    else:
+        simulated_drug_target_matrix = network_propagation.RWlike_network_propagation(network, drug_target, genes)
+
+    return simulated_drug_target_matrix
+
 if __name__ == "__main__":
 
     genes = pd.read_csv("../drug_drug/Genes/combin_genes.csv")
@@ -114,7 +124,7 @@ if __name__ == "__main__":
     ### entrez_a entrez_b association
     ### 1001 10001 0.3
     ### 10001 100001 0.2
-    raw_network = pd.read_csv("../drug_drug/network/string_network", header=None, sep = '\t')
+    raw_network = pd.read_csv(setting.network, header=None, sep = '\t')
     raw_network.columns = ['entrez_a', 'entrez_b', 'association']
     network = raw_network[(raw_network['entrez_a'].isin(genes['entrez'])) & (raw_network['entrez_b'].isin(genes['entrez']))]
 
@@ -135,9 +145,10 @@ if __name__ == "__main__":
     # drug_target.index = genes['symbol']
     raw_chemicals = pd.read_csv("../drug_drug/chemicals/raw_chemicals.csv")
     drug_target = create_drugs_profiles(raw_chemicals, genes)
+
     ### Get simulated drug_target
     ### columns=genes['symbol'], index=drugs
-    raw_simulated_drug_target = network_propagation.RWlike_network_propagation(network, drug_target, genes)
+    raw_simulated_drug_target = simulated_drug_target_matrix(network, drug_target, genes)
     simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 1), :]
     sel_drugs = set(simulated_drug_target.index)
     print(simulated_drug_target, simulated_drug_target.shape)

@@ -1,4 +1,6 @@
 
+propagation_method = 'target_as_1'
+
 activation_method =["relu"]
 dropout = 0.3
 start_lr = 0.05
@@ -20,7 +22,8 @@ train_index = "../drug_drug/train_index"
 test_index = "../drug_drug/test_index"
 
 renew = True
-simulated_result_matrix = "../drug_drug/chemicals/normalized_simulated_result_matrix_string.csv"
+simulated_result_matrix = "../drug_drug/chemicals/target_simulated_result_matrix_string.csv"
 
 ml_train = False
 test_ml_train = True
+estimator = "RandomForest"

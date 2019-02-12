@@ -1,10 +1,7 @@
 import pandas as pd
 import setting
-import networkx as nx
-import model
 from sklearn.model_selection import train_test_split
 from scipy.stats import pearsonr
-from sklearn.metrics import mean_squared_error
 import logging
 import os
 import pickle
@@ -16,32 +13,6 @@ fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
-
-def network_propagation(drugs_profile, network):
-
-    # header: ... smiles ...
-    # index: genes_name/ENTREZID
-    simulated_drug_profile = drugs_profile.copy()
-    for entrezid in simulated_drug_profile.index:
-        for smile in simulated_drug_profile.columes:
-            for neighbor in network.neighbors(entrezid):
-                simulated_drug_profile.loc[entrezid, smile] += network[entrezid][neighbor]['relation']
-
-    return simulated_drug_profile
-
-def build_network(network):
-
-    # build a directed network, with node as the entrez id and edge weight as the relationship between two nodes
-    G = nx.DiGraph()
-    node_1 = network.columns[0]
-    node_2 = network.columns[1]
-    relation = network.columns[2]
-    def add_two_edges(row):
-        G.add_edge(row[node_1], row[node_2], relation = row[relation])
-        G.add_edge(row[node_2], row[node_1], relation=row[relation])
-
-    network.apply(add_two_edges)
-    return G
 
 def split_data(df):
 
@@ -61,6 +32,32 @@ def split_data(df):
 
     return train_index, test_index
 
+def __ml_train_model():
+
+    if setting.estimator == 'GradientBoosting':
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+
+        rf_drugs = H2OGradientBoostingEstimator(
+            model_id="rf_drugs",
+            stopping_rounds=3,
+            score_each_iteration=True,
+            seed=10
+        )
+
+    # setting.estimator == 'RandomForest'
+    else:
+
+        from h2o.estimators import H2ORandomForestEstimator
+
+        rf_drugs = H2ORandomForestEstimator(
+            model_id="rf_drugs",
+            stopping_rounds=3,
+            score_each_iteration=True,
+            seed=10)
+
+    return rf_drugs
+
 def __ml_train(X, y, train_index, test_index):
 
     import h2o
@@ -73,21 +70,13 @@ def __ml_train(X, y, train_index, test_index):
         h2o.remove_all()
         logger.debug("Created h2o working environment successfully")
 
-        from h2o.estimators import H2ORandomForestEstimator
-
-        rf_drugs = H2ORandomForestEstimator(
-            model_id="rf_drugs",
-            categorical_encoding="enum",
-            stopping_rounds=3,
-            score_each_iteration=True,
-            seed=10)
-
         pre_h2o_df = pd.concat([X, y], axis=1)
         train_sample_size = 300 if setting.test_ml_train else len(train_index)
         h2o_drugs_train = h2o.H2OFrame(pre_h2o_df.loc[train_index[:train_sample_size], :])
         h2o_drugs_test = h2o.H2OFrame(pre_h2o_df.loc[test_index, :])
 
         logger.debug("Training machine learning model")
+        rf_drugs = __ml_train_model()
         rf_drugs.train(x=h2o_drugs_train.col_names[:-1], y=h2o_drugs_train.col_names[-1],
                         training_frame=h2o_drugs_train)
         logger.debug("Trained successfully")
@@ -107,52 +96,3 @@ def __ml_train(X, y, train_index, test_index):
 
     finally:
         h2o.h2o.cluster().shutdown()
-
-if __name__ == "__main__":
-
-    # Reading synergy score
-    # header: Name, drug_a_name, inchikey_a, inchikey_b_name, inchikey_b, cell_line,synergy
-    synergy_score_df = pd.read_csv(setting.synergy_score)
-
-    # Read in cell lines gene level dependencies
-    # header : index,genes ... cell_lines ... ENTREZID
-    # index: genes_name
-    cl_genes_dp = pd.read_csv(setting.cl_genes_dp)
-
-    # Read in network data
-    # header: ENTREZID(index_level_0) ENTREZID(index_level_1) relation_score
-    genes_network = pd.read_csv(setting.genes_network)
-    genes_network = build_network(genes_network)
-
-    # Read in drugs REMAP profiles
-    # header: ... smiles ...
-    # index: genes_name/ENTREZID
-    drugs_profile = pd.read_csv(setting.drugs_profile)
-    simulated_drugs_profile = network_propagation(drugs_profile, genes_network)
-
-    # Generate final dataset
-    drug_a_features = drugs_profile.loc[list(synergy_score_df['smile_a']),:]
-    drug_b_features = drugs_profile.loc[list(synergy_score_df['smile_b']),:]
-    cl_features = cl_genes_dp[list(synergy_score_df['cell_line'])]
-    X = pd.concat([drug_a_features, drug_b_features, cl_features], axis=1)
-    Y = synergy_score_df['synergy']
-
-    train_index, test_index = split_data(X.values)
-
-    if setting.ml_train:
-
-        __ml_train(X, Y, train_index, test_index)
-
-    drug_model = model.DrugsCombModel(drug_a_features = drug_a_features,
-                                      drug_b_features = drug_b_features, cl_genes_dp_features=cl_features).get_model()
-
-    training_history = drug_model.fit(x=X.values[train_index], y=Y.values[train_index], validation_split=0.1, epochs=setting.n_epochs,
-                                                batch_size=setting.batch_size, verbose=2)
-
-    logger.info("model information: \n %s" %drug_model.summary())
-
-    prediction = drug_model.predict(x=X.values[test_index])
-    mse = mean_squared_error(Y.values[test_index], prediction)
-    pearson = pearsonr(Y.values[test_index], prediction)
-
-    logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
