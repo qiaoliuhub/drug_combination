@@ -13,10 +13,15 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
+def target_as_0_network_propagation(network, drug_target, genes):
+
+    # input drug_target matrix: index = genes, columns = drugs
+    # Set target gene feature for a drug to be 0 and non-target gene to be 1-max(probabilites of all edges)
+    return 1-target_as_1_network_propagation(network, drug_target, genes)
+
 def target_as_1_network_propagation(network, drug_target, genes):
 
     # input drug_target matrix: index = genes, columns = drugs
-
     # Set target gene feature for a drug to be 1 and non-target gene to be max(probabilites of all edges)
 
     # if matrix renewal is needed, it will recompute the simulated result matrix

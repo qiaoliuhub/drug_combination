@@ -104,6 +104,9 @@ def simulated_drug_target_matrix(network, drug_target, genes):
     if setting.propagation_method == 'target_as_1':
         simulated_drug_target_matrix = network_propagation.target_as_1_network_propagation(network, drug_target, genes)
 
+    elif setting.propagation_method == 'target_as_0':
+        simulated_drug_target_matrix = network_propagation.target_as_0_network_propagation(network, drug_target, genes)
+
     else:
         simulated_drug_target_matrix = network_propagation.RWlike_network_propagation(network, drug_target, genes)
 
@@ -209,9 +212,16 @@ if __name__ == "__main__":
         logger.debug("Start training")
         training_history = drug_model.fit(x=X[train_index], y=Y[train_index], validation_split=0.1, epochs=setting.n_epochs,
                                                     verbose=2)
-        logger.debug("Training is done")
-        prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
-        mse = mean_squared_error(Y[test_index], prediction)
-        pearson = pearsonr(Y[test_index], prediction)
 
-        logger.info("mse: %s, pearson: %s" % (str(mse), str(pearson)))
+        logger.debug("Training is done")
+        train_prediction = drug_model.predict(x=X[train_index]).reshape((-1,))
+        train_mse = mean_squared_error(Y[train_index], train_prediction)
+        train_pearson = pearsonr(Y[train_index], train_prediction)
+
+        logger.info("training dataset: mse: %s, pearson: %s" % (str(train_mse), str(train_pearson)))
+
+        test_prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
+        test_mse = mean_squared_error(Y[test_index], test_prediction)
+        test_pearson = pearsonr(Y[test_index], test_prediction)
+
+        logger.info("Evaluation dataset: mse: %s, pearson: %s" % (str(test_mse), str(test_pearson)))

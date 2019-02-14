@@ -8,7 +8,7 @@ import pickle
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-fh = logging.FileHandler(setting.logfile, mode='a')
+fh = logging.FileHandler(setting.logfile, mode='w+')
 fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)

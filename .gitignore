@@ -4,5 +4,5 @@ chemicals/*.ipynb
 chemicals/*/*.ipynb
 *.pyc
 network/all_tissues_top
-*_index
+*_index_*
 logfile
