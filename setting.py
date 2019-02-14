@@ -20,6 +20,7 @@ drugs_profile = "../drugs_profile/drugs_profile.csv"
 # networks: string_network, all_tissues_top
 network = "../drug_drug/network/all_tissues_top"
 split_random_seed = 3
+index_renewal = True
 train_index = "../drug_drug/train_index_" + str(split_random_seed)
 test_index = "../drug_drug/test_index_" + str(split_random_seed)
 

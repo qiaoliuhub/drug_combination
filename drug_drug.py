@@ -22,7 +22,7 @@ def regular_split(df, group_col=None, n_split = 10, rd_state = setting.split_ran
 def split_data(df):
 
     logger.debug("Splitting dataset to training dataset and testing dataset based on genes")
-    if os.path.exists(setting.train_index) and os.path.exists(setting.test_index):
+    if not setting.index_renewal and (os.path.exists(setting.train_index) and os.path.exists(setting.test_index)):
         train_index = pickle.load(open(setting.train_index, "rb"))
         test_index = pickle.load(open(setting.test_index, "rb"))
     else:
