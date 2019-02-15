@@ -2,7 +2,7 @@
 propagation_method = 'RWlike'
 
 activation_method =["relu"]
-dropout = 0.3
+dropout = [0.2, 0.5, 0.5]
 start_lr = 0.03
 lr_decay = 0.002
 model_type = 'mlp'
@@ -24,7 +24,7 @@ index_renewal = True
 train_index = "../drug_drug/train_index_" + str(split_random_seed)
 test_index = "../drug_drug/test_index_" + str(split_random_seed)
 
-renew = True
+renew = False
 simulated_result_matrix = "../drug_drug/chemicals/target_0_simulated_result_matrix_string.csv"
 
 ml_train = False

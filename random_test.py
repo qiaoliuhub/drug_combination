@@ -196,9 +196,8 @@ if __name__ == "__main__":
     Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
 
-    train_index, test_index = drug_drug.split_data(X_for)
+    train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['drug_a_name', 'drug_b_name'])
     train_index = np.concatenate([train_index + X_for.shape[0], train_index])
-    test_index = np.concatenate([test_index + X_for.shape[0], test_index])
 
     if setting.ml_train:
 

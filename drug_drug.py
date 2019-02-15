@@ -1,10 +1,11 @@
 import pandas as pd
 import setting
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ShuffleSplit, GroupKFold
 from scipy.stats import pearsonr
 import logging
 import os
 import pickle
+from pandas.io.common import EmptyDataError
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -14,19 +15,19 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def regular_split(df, group_col=None, n_split = 10, rd_state = setting.split_random_seed):
+def regular_split(df, group_df = None, group_col=None, n_split = 10, rd_state = setting.split_random_seed):
 
     shuffle_split = ShuffleSplit(test_size=1.0/n_split, random_state = rd_state)
-    return shuffle_split.split(df).next()
+    return next(shuffle_split.split(df))
 
-def split_data(df):
+def split_data(df, group_df = None, group_col = None):
 
     logger.debug("Splitting dataset to training dataset and testing dataset based on genes")
     if not setting.index_renewal and (os.path.exists(setting.train_index) and os.path.exists(setting.test_index)):
         train_index = pickle.load(open(setting.train_index, "rb"))
         test_index = pickle.load(open(setting.test_index, "rb"))
     else:
-        train_index, test_index = regular_split(df)
+        train_index, test_index = drugs_combo_split(df, group_df, group_col)
 
         with open(setting.train_index, 'wb') as train_file:
                 pickle.dump(train_index, train_file)
@@ -36,6 +37,23 @@ def split_data(df):
     logger.debug("Splitted data successfully")
 
     return train_index, test_index
+
+def drugs_combo_split(df, group_df, group_col, n_split = 10, rd_state = setting.split_random_seed):
+
+    if group_df is None:
+        logging.debug("group df should not be empty")
+        raise EmptyDataError
+
+    logging.debug("groupkfold split based on %s" % str(group_col))
+    groupkfold = GroupKFold(n_splits=n_split)
+
+    groups = group_df.apply(lambda x: "_".join(list(x[group_col])), axis = 1)
+    groupkfold_instance = groupkfold.split(group_df, groups=groups)
+    for _ in range(rd_state%n_split):
+        next(groupkfold_instance)
+
+    return next(groupkfold_instance)
+
 
 def __ml_train_model():
 
