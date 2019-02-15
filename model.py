@@ -20,8 +20,8 @@ class DrugsCombModel():
         for i in range(len(nodes_nums)):
 
             if i == 0:
-                model.add(Dropout(rate=setting.dropout[i%len(setting.dropout)]))
-                model.add(Dense(nodes_nums[i], input_shape=(input_len,)))
+                model.add(Dropout(rate=setting.dropout[i%len(setting.dropout)], input_shape=(input_len,)))
+                model.add(Dense(nodes_nums[i]))
             else:
                 model.add(Dense(nodes_nums[i]))
 
