@@ -10,7 +10,7 @@ start_lr = 0.03
 lr_decay = 0.002
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 500
+n_epochs = 5
 batch_size = 256
 loss = 'pearson_correlation'
 logfile = "../drug_drug/logfile"
@@ -28,7 +28,7 @@ train_index = "../drug_drug/train_index_" + str(split_random_seed)
 test_index = "../drug_drug/test_index_" + str(split_random_seed)
 
 renew = False
-simulated_result_matrix = "../drug_drug/chemicals/target_0_simulated_result_matrix_string.csv"
+simulated_result_matrix = "../drug_drug/chemicals/normalized_simulated_result_matrix_string.csv"
 
 ml_train = False
 test_ml_train = True
