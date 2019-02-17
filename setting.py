@@ -1,3 +1,6 @@
+import os
+from time import time
+
 # propagation_methods: target_as_1, RWlike
 propagation_method = 'RWlike'
 
@@ -7,9 +10,9 @@ start_lr = 0.03
 lr_decay = 0.002
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 2
+n_epochs = 500
 batch_size = 256
-
+loss = 'pearson_correlation'
 logfile = "../drug_drug/logfile"
 
 synergy_score = "../drug_drug/synergy_score/combin_data_2.csv"
@@ -33,3 +36,6 @@ test_ml_train = True
 # estimators: RandomForest, GradientBoosting
 estimator = "RandomForest"
 
+if not os.path.exists("../drug_drug/tensorboard_logs"):
+    os.mkdir("../drug_drug/tensorboard_logs")
+tensorboard_log = "../drug_drug/tensorboard_logs/{}".format(time())

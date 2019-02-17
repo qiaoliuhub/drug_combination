@@ -13,6 +13,7 @@ import os
 import drug_drug
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
+from keras.callbacks import TensorBoard
 
 # setting up nvidia GPU environment
 if not setting.ml_train:
@@ -211,8 +212,13 @@ if __name__ == "__main__":
                                       drug_b_features = drug_b_features, cl_genes_dp_features=cl_features).get_model()
         logger.info("model information: \n %s" % drug_model.summary())
         logger.debug("Start training")
-        training_history = drug_model.fit(x=X[train_index], y=Y[train_index], validation_split=0.1, epochs=setting.n_epochs,
+        tensorboard = TensorBoard(log_dir=setting.tensorboard_log)
+        training_history = drug_model.fit(x=X[train_index], y=Y[train_index],
+                                                    validation_split=0.1,
+                                                    epochs=setting.n_epochs,
+                                                    callbacks = [tensorboard],
                                                     verbose=2)
+
 
         logger.debug("Training is done")
         train_prediction = drug_model.predict(x=X[train_index]).reshape((-1,))

@@ -20,7 +20,8 @@ def uniprot2gene(uniprotIDs):
     response = urllib2.urlopen(request)
     page = response.read(200000)
     result_df = parse_page(page, '\n', '\t')
-    return str(",".join(list(result_df['To'])))
+#    return str(",".join(list(result_df['To'])))
+    return result_df[['From', 'To']]
 
 def parse_page(page, row_sep, delimiter):
 
