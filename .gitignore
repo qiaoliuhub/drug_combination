@@ -6,3 +6,4 @@ chemicals/*/*.ipynb
 network/all_tissues_top
 *_index_*
 logfile
+tensorboard_logs/*
