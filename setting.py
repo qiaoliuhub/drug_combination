@@ -10,9 +10,9 @@ start_lr = 0.03
 lr_decay = 0.002
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 5
+n_epochs = 100
 batch_size = 256
-loss = 'pearson_correlation'
+loss = 'mse'
 logfile = "../drug_drug/logfile"
 
 synergy_score = "../drug_drug/synergy_score/combin_data_2.csv"

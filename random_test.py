@@ -181,9 +181,10 @@ if __name__ == "__main__":
     sel_dp = merged_sel_dp.set_index('symbol').drop(['entrez'], axis = 1)
 
     ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
-    gene_filter = (simulated_drug_target.var(axis=0) > 0.01)
+    print(simulated_drug_target.shape, sel_dp.shape)
+    gene_filter = (simulated_drug_target.var(axis=0) > 0)
     sel_drug_target = simulated_drug_target.loc[:, gene_filter]
-    sel_dp_filter = (sel_dp.var(axis=1) > 0.01)
+    sel_dp_filter = (sel_dp.var(axis=1) > 0)
     sel_dp = sel_dp.loc[sel_dp_filter, :]
     print(sel_drug_target)
     print(sel_drug_target.shape, sel_dp.shape)
