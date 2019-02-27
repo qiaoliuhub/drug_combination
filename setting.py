@@ -2,7 +2,7 @@ import os
 from time import time
 
 working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
-# propagation_methods: target_as_1, RWlike
+# propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'RWlike'
 
 activation_method =["relu"]
@@ -65,5 +65,5 @@ drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
-add_dp_feautre = True
+add_dp_feature = True
 add_ge_feature = True
