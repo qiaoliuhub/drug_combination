@@ -49,6 +49,7 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
     os.mkdir(os.path.join(working_dir, 'tensorboard_logs'))
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
+gene_expression_renew = True
 expression_data_renew = True
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"

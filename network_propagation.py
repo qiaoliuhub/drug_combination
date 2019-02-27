@@ -49,14 +49,25 @@ def gene_expression_network_propagation(network, gene_expression_df, genes, drug
     ### drug_pairs: data frame: drugA, drugB
     ### drug_target: drug_target dataframe, index = genes, columns = drugs
     ### return data frame: processed drugs: columns: genes, index: drugs
+
+    # if not setting.gene_expression_renew and os.path.exists(result_matrix_file):
+    #     result_df = pd.read_csv(result_matrix_file, index_col = 0)
+    #     return result_df
+
     drug_pairs = synergy_df[['drug_a_name', 'drug_b_name']]
     combine_drug_target_matrix = combin_drug_target_probabilities_matrix(drug_pairs, drug_target)
     logger.debug('Computing for target as 0 propagated data frame')
-    processed_drug_target = target_as_0_network_propagation(network, combine_drug_target_matrix.T, genes, result_matrix_file)
+    if os.path.exists(result_matrix_file):
+        processed_drug_target = pd.read_csv(result_matrix_file,index_col=0)
+        processed_drug_target = 1-processed_drug_target
+    else:
+        processed_drug_target = target_as_0_network_propagation(network, combine_drug_target_matrix.T, genes, result_matrix_file)
     logger.debug('Computed for target as 0 propagated data frame successfully')
+    processed_drug_target = processed_drug_target.loc[:, gene_expression_df.index]
     assert len(processed_drug_target.columns) == len(gene_expression_df.index), "Processed drug target has different genes number from gene expression dataset"
     result_df = synergy_df.apply(lambda row: processed_drug_target.loc[row['drug_a_name']+'_'+row['drug_b_name'], :] *
                                              gene_expression_df[:, row['cell_line']], axis = 1)
+    result_df.to_csv(result_matrix_file)
     return result_df
 
 def target_as_0_network_propagation(network, drug_target, genes, result_matrix_file):
