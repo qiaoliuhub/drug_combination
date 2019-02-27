@@ -64,3 +64,6 @@ drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
 
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
+
+add_dp_feautre = True
+add_ge_feature = True

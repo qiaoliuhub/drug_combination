@@ -209,7 +209,10 @@ if __name__ == "__main__":
                                                                                        genes, drug_target,
                                                                                        synergy_score,
                                                                                        setting.gene_expression_simulated_result_matrix).values
-    cl_features = np.concatenate((dp_features, gene_expression_features), axis=1)
+    cl_features_list = []
+    cl_features_list.append(dp_features) if setting.add_dp_feautre
+    cl_features_list.append(gene_expression_features) if setting.add_ge_feature
+    cl_features = np.concatenate(tuple(cl_features_list), axis=1)
     X_for = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     X_rev = np.concatenate((drug_b_features, drug_a_features, cl_features), axis = 1)
     X = np.concatenate((X_for, X_rev), axis=0)
