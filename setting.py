@@ -26,7 +26,7 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 network = os.path.join(working_dir, 'network', 'string_network')
 network_matrix = os.path.join(working_dir, 'network', 'string_network_matrix.csv')
 split_random_seed = 3
-index_renewal = False
+index_renewal = True
 train_index = os.path.join(working_dir, 'train_index_' + str(split_random_seed))
 test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
@@ -49,7 +49,7 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
     os.mkdir(os.path.join(working_dir, 'tensorboard_logs'))
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
-gene_expression_renew = True
+combine_gene_expression_renew = False
 expression_data_renew = True
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"

@@ -50,7 +50,7 @@ def gene_expression_network_propagation(network, gene_expression_df, genes, drug
     ### drug_target: drug_target dataframe, index = genes, columns = drugs
     ### return data frame: processed drugs: columns: genes, index: drugs
 
-    if not setting.gene_expression_renew and os.path.exists(result_matrix_file):
+    if not setting.combine_gene_expression_renew and os.path.exists(result_matrix_file):
         result_df = pd.read_csv(result_matrix_file, index_col = 0)
         result_df.columns = result_df.columns.astype(int)
         return result_df
