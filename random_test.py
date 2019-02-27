@@ -14,6 +14,7 @@ import drug_drug
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import TensorBoard
+import data
 
 # setting up nvidia GPU environment
 if not setting.ml_train:
@@ -34,10 +35,10 @@ logger.setLevel(logging.DEBUG)
 def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs):
 
     ### Make sure that drug target genes and gene dependencies genes are in selected ~2300 genes
-    merged_drug_target = drug_target.merge(genes, left_index=True, right_on='symbol')
+    merged_drug_target = drug_target.merge(genes, left_index=True, right_on='entrez')
     logger.info("merged_drug_targets: %s" %str(merged_drug_target.head()))
     print(merged_drug_target.shape)
-    unfound_genes = set(merged_drug_target.symbol) - set(genes['symbol'])
+    unfound_genes = set(merged_drug_target.entrez) - set(genes['entrez'])
     if len(unfound_genes) == 0:
         logger.info("Found all genes in drug target")
     else:
@@ -47,7 +48,7 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
     print(merged_sel_dp.shape)
     logger.info("merged_sel_dp: %s" % str(merged_sel_dp.head()))
 
-    unfound_genes = set(merged_sel_dp.symbol) - set(genes['symbol'])
+    unfound_genes = set(merged_sel_dp.entrez) - set(genes['entrez'])
     if len(unfound_genes) == 0:
         logger.info("Found all genes in genes dependencies")
     else:
@@ -69,7 +70,7 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
         logger.info("Unfound genes in networks: %s" % str(unfound_genes))
 
     ### Make sure cell lines in synergy score dataframe are in that in dependencies scores
-    unfound_cl = set(merged_sel_dp.columns) - cell_lines - set(['symbol', 'entrez'])
+    unfound_cl = set(merged_sel_dp.columns) - cell_lines - {'symbol', 'entrez'}
     if len(unfound_cl) == 0:
         logger.info("Found all cell lines")
     else:
@@ -79,6 +80,12 @@ def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs
     ### select only the drug targets in genes
 
 def create_drugs_profiles(raw_chemicals, genes):
+
+    #drug_profile.columns = genes['symbol']
+    # columns: drugs, index: genes
+    if not setting.drug_profiles_renew and os.path.exists(setting.drug_profiles):
+        drug_profile = pd.read_csv(setting.drug_profiles, index_col=0)
+        return drug_profile
 
     drug_profile = np.zeros(shape=(len(raw_chemicals), len(genes)))
     drug_profile = pd.DataFrame(drug_profile, columns=genes['entrez'], index=raw_chemicals['Name'])
@@ -94,22 +101,23 @@ def create_drugs_profiles(raw_chemicals, genes):
             if target in entrez_set:
 
                 drug_profile.loc[chem_name, target] = 1
-
-    drug_profile.columns = genes['symbol']
-
-    # columns: drugs, index: genes
+    print(setting.drug_profiles)
+    drug_profile.T.to_csv(setting.drug_profiles)
     return drug_profile.T
 
 def simulated_drug_target_matrix(network, drug_target, genes):
 
     if setting.propagation_method == 'target_as_1':
-        simulated_drug_target_matrix = network_propagation.target_as_1_network_propagation(network, drug_target, genes)
+        simulated_drug_target_matrix = network_propagation.target_as_1_network_propagation(network, drug_target, genes, setting.target_as_1_simulated_result_matrix)
 
     elif setting.propagation_method == 'target_as_0':
-        simulated_drug_target_matrix = network_propagation.target_as_0_network_propagation(network, drug_target, genes)
+        simulated_drug_target_matrix = network_propagation.target_as_0_network_propagation(network, drug_target, genes, setting.target_as_0_simulated_result_matrix)
+
+    elif setting.propagation_method == 'random_walk':
+        simulated_drug_target_matrix = network_propagation.random_walk_network_propagation(setting.random_walk_simulated_result_matrix)
 
     else:
-        simulated_drug_target_matrix = network_propagation.RWlike_network_propagation(network, drug_target, genes)
+        simulated_drug_target_matrix = network_propagation.RWlike_network_propagation(network, drug_target, genes, setting.RWlike_simulated_result_matrix)
 
     return simulated_drug_target_matrix
 
@@ -147,7 +155,7 @@ if __name__ == "__main__":
     ### Get simulated drug_target
     ### columns=genes['symbol'], index=drugs
     raw_simulated_drug_target = simulated_drug_target_matrix(network, drug_target, genes)
-    simulated_drug_target = raw_simulated_drug_target.loc[~raw_simulated_drug_target.isnull().all(axis = 1), :]
+    simulated_drug_target = raw_simulated_drug_target.loc[~(raw_simulated_drug_target == 0).all(axis = 1), :]
     sel_drugs = set(simulated_drug_target.index)
     print(simulated_drug_target, simulated_drug_target.shape)
 
@@ -189,10 +197,19 @@ if __name__ == "__main__":
     print(sel_drug_target)
     print(sel_drug_target.shape, sel_dp.shape)
 
+    ### Prepare gene expression data information
+    expression_data_loader = data.ExpressionDataLoader()
+    expression_df = expression_data_loader.prepare_expresstion_df(entrezIDs=list(merged_sel_dp.entrez), celllines=list(sel_dp.columns))
+
     # Generate final dataset
     drug_a_features = sel_drug_target.loc[list(synergy_score['drug_a_name']), :].values
     drug_b_features = sel_drug_target.loc[list(synergy_score['drug_b_name']), :].values
-    cl_features = sel_dp[list(synergy_score['cell_line'])].T.values
+    dp_features = sel_dp[list(synergy_score['cell_line'])].T.values
+    gene_expression_features = network_propagation.gene_expression_network_propagation(network, expression_df,
+                                                                                       genes, drug_target,
+                                                                                       synergy_score,
+                                                                                       setting.gene_expression_simulated_result_matrix).values
+    cl_features = np.concatenate((dp_features, gene_expression_features), axis=1)
     X_for = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     X_rev = np.concatenate((drug_b_features, drug_a_features, cl_features), axis = 1)
     X = np.concatenate((X_for, X_rev), axis=0)

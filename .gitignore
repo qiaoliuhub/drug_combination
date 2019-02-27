@@ -7,3 +7,7 @@ network/all_tissues_top
 *_index_*
 logfile
 tensorboard_logs/*
+Genes/*
+__pycache__/*
+NBS_logfile
+tensorboard_logs/*

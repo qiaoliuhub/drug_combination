@@ -2,7 +2,7 @@ import pandas as pd
 
 def uniprot2gene(uniprotIDs):
 
-    import urllib, urllib2
+    from urllib import parse, request
 
     url = 'https://www.uniprot.org/uploadlists/'
 
@@ -13,25 +13,25 @@ def uniprot2gene(uniprotIDs):
         'query': '\t'.join(uniprotIDs)
     }
 
-    data = urllib.urlencode(params)
-    request = urllib2.Request(url, data)
+    data = parse.urlencode(params)
+    my_request = request.Request(url, data)
     contact = ""
-    request.add_header('User-Agent', 'Python %s' % contact)
-    response = urllib2.urlopen(request)
+    my_request.add_header('User-Agent', 'Python %s' % contact)
+    response = request.urlopen(my_request)
     page = response.read(200000)
     result_df = parse_page(page, '\n', '\t')
-#    return str(",".join(list(result_df['To'])))
     return result_df[['From', 'To']]
 
 def parse_page(page, row_sep, delimiter):
 
-    for i, row in enumerate(page.split(row_sep)):
-        if i == 0:
-            df = pd.DataFrame(columns=row.split(delimiter))
-        elif not len(row):
+    rows = page.split(row_sep)
+    if not len(rows):
+        return pd.DataFrame(columns = ['From', 'To'])
+    df = pd.DataFrame(columns=rows[0].split(delimiter))
+    for i, row in enumerate():
+        if i == 0 or not len(row):
             continue
         else:
             df.loc[i-1] = row.split(delimiter)
-
     return df
 
