@@ -37,7 +37,7 @@ target_as_0_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'ta
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
 random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix')
 propagated_drug_target = os.path.join(working_dir, 'chemicals', 'propagated_drug_target')
-
+intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
 test_ml_train = True

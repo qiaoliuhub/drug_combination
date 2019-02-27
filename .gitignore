@@ -11,3 +11,4 @@ Genes/*
 __pycache__/*
 NBS_logfile
 tensorboard_logs/*
+chemicals/gene_expression_simulated_result_matrix_string.csv
