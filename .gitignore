@@ -1,3 +1,4 @@
+test.py
 .idea/*
 cl_gene_dp/*
 chemicals/*.ipynb
@@ -13,3 +14,5 @@ NBS_logfile
 tensorboard_logs/*
 chemicals/gene_expression_simulated_result_matrix_string.csv
 processed_expression.csv
+datas/*
+last_output_*
