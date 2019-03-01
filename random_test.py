@@ -14,7 +14,8 @@ import drug_drug
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import TensorBoard
-import data
+import my_data
+from time import time
 
 # setting up nvidia GPU environment
 if not setting.ml_train:
@@ -30,7 +31,6 @@ fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
-
 
 def check_data_frames(drug_target, sel_dp, network, genes, cell_lines, exp_drugs):
 
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     print(sel_drug_target.shape, sel_dp.shape)
 
     ### Prepare gene expression data information
-    expression_data_loader = data.ExpressionDataLoader()
+    expression_data_loader = my_data.ExpressionDataLoader()
     expression_df = expression_data_loader.prepare_expresstion_df(entrezIDs=list(merged_sel_dp.entrez), celllines=list(sel_dp.columns))
 
     # Generate final dataset
@@ -210,8 +210,10 @@ if __name__ == "__main__":
                                                                                        synergy_score,
                                                                                        setting.gene_expression_simulated_result_matrix).values
     cl_features_list = []
-    cl_features_list = cl_features_list.append(dp_features) if setting.add_dp_feature else cl_features_list
-    cl_features_list = cl_features_list.append(gene_expression_features) if setting.add_ge_feature else cl_features_list
+    if setting.add_dp_feature:
+        cl_features_list.append(dp_features)
+    if setting.add_ge_feature:
+        cl_features_list.append(gene_expression_features)
     cl_features = np.concatenate(tuple(cl_features_list), axis=1)
     X_for = np.concatenate((drug_a_features, drug_b_features, cl_features), axis = 1)
     X_rev = np.concatenate((drug_b_features, drug_a_features, cl_features), axis = 1)
@@ -223,6 +225,7 @@ if __name__ == "__main__":
 
     train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['drug_a_name', 'drug_b_name'])
     train_index = np.concatenate([train_index + X_for.shape[0], train_index])
+    test_index_2 = test_index + X_for.shape[0]
 
     if setting.ml_train:
 
@@ -252,7 +255,11 @@ if __name__ == "__main__":
         logger.info("training dataset: mse: %s, pearson: %s" % (str(train_mse), str(train_pearson)))
 
         test_prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
-        test_mse = mean_squared_error(Y[test_index], test_prediction)
-        test_pearson = pearsonr(Y[test_index], test_prediction)
+        test_prediction_2 = drug_model.predict(x=X[test_index_2]).reshape((-1,))
+        final_prediction = np.mean([test_prediction, test_prediction_2], axis=0)
+        comparison = pd.DataFrame({'ground_truth':Y[test_index],'prediction':final_prediction})
+        comparison.to_csv("last_output_{!r}".format(int(time())) + ".csv")
+        test_mse = mean_squared_error(Y[test_index], final_prediction)
+        test_pearson = pearsonr(Y[test_index], final_prediction)
 
-        logger.info("Evaluation dataset: mse: %s, pearson: %s" % (str(test_mse), str(test_pearson)))
+        logger.info("Testing dataset: mse: %s, pearson: %s" % (str(test_mse), str(test_pearson)))

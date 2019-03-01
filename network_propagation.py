@@ -223,6 +223,7 @@ def random_walk_network_propagation(result_matrix_file):
             logger.debug("Execution failed: {!r}".format(e))
 
     result_matrix = pd.read_csv(result_matrix_file, index_col=0)
+    result_matrix.columns = result_matrix.columns.astype(int)
     return result_matrix
 
 
@@ -252,7 +253,7 @@ def pyNBS_random_walk():
                                                          binary_matrix=drug_target.T)
     logger.debug("Propagation finished")
     print("Propagation finished")
-    propagated_drug_target.to_csv(setting.propagated_drug_target)
+    propagated_drug_target.to_csv(setting.random_walk_simulated_result_matrix)
 
 if __name__ == '__main__':
 

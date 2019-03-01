@@ -3,12 +3,12 @@ from time import time
 
 working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
-propagation_method = 'RWlike'
+propagation_method = 'random_walk'
 
 activation_method =["relu"]
-dropout = [0.2, 0.5, 0.5]
-start_lr = 0.03
-lr_decay = 0.002
+dropout = [0.2, 0.1, 0.1]
+start_lr = 0.01
+lr_decay = 0.001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 100
@@ -36,7 +36,6 @@ target_as_1_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'ta
 target_as_0_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'target_0_simulated_result_matrix_string.csv')
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
 random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix')
-propagated_drug_target = os.path.join(working_dir, 'chemicals', 'propagated_drug_target')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -50,7 +49,7 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
 combine_gene_expression_renew = False
-expression_data_renew = True
+expression_data_renew = False
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
 processed_expression = os.path.join(working_dir, 'processed_expression.csv')
@@ -66,4 +65,10 @@ drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
 add_dp_feature = True
-add_ge_feature = True
+add_ge_feature = False
+
+n_feature_type = 4
+d_model = 2324
+attention_heads = 1
+attention_dropout = 0.2
+n_layers = 1

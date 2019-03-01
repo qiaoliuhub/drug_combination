@@ -3,11 +3,14 @@ import pandas as pd
 import random_test
 import os
 
-class DataLoader:
+import torch
+from torch.utils import data
+
+class CustomDataLoader:
     pass
 
 
-class ExpressionDataLoader(DataLoader):
+class ExpressionDataLoader(CustomDataLoader):
     gene_expression = None
     backup_expression = None
 
@@ -48,7 +51,7 @@ class ExpressionDataLoader(DataLoader):
             unfound = interested_genes - repo_genes
             random_test.logger.debug("{!r} are not found!".format(unfound))
 
-        result_df.dropna(0, inplace=True)
+        result_df.fillna(0, inplace=True)
         return result_df
 
     def __filter_celllines(self, df, celllines):
@@ -85,8 +88,35 @@ class ExpressionDataLoader(DataLoader):
 
         result_df = self.__filter_celllines(self.gene_expression, celllines)
         result_df = self.__filter_genes(result_df, entrezIDs)
-        if setting.expression_data_renew or os.path.exists(setting.processed_expression):
+        if setting.expression_data_renew or not os.path.exists(setting.processed_expression):
             random_test.logger.debug("Persist gene expression data frame")
             result_df.to_csv(setting.processed_expression, index = False)
 
         return result_df
+
+class MyDataset(data.Dataset):
+
+  'Characterizes a dataset for PyTorch'
+  def __init__(self, list_IDs, labels):
+        'Initialization'
+        self.labels = labels
+        self.list_IDs = list_IDs
+
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.list_IDs)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        # Select sample
+        ID = self.list_IDs[index]
+
+        # Load data and get label
+        try:
+            X = torch.load('datas/' + ID + '.pt')
+        except:
+            random_test.logger.error("Fail to get {}".format(ID))
+            raise
+        y = self.labels[ID]
+
+        return X, y

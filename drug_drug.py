@@ -38,7 +38,7 @@ def split_data(df, group_df = None, group_col = None):
 
     return train_index, test_index
 
-def drugs_combo_split(df, group_df, group_col, n_split = 10, rd_state = setting.split_random_seed):
+def drugs_combo_split(df, group_df, group_col, n_split = 5, rd_state = setting.split_random_seed):
 
     if group_df is None:
         logging.debug("group df should not be empty")
