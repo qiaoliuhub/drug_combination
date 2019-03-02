@@ -96,16 +96,13 @@ class OutputFeedForward(nn.Module):
 
         self.linear_1 = nn.Linear(H*W, d_layers[0])
         self.n_layers = len(d_layers)
-        self.dropouts = {}
-        self.layers = {}
-        for i in range(1, self.n_layers):
-            self.dropouts[i] = nn.Dropout(dropout)
-            self.layers[i] = nn.Linear(d_layers[i-1], d_layers[i])
+        self.dropouts = nn.ModuleList(nn.Dropout(dropout) for _ in range(1, self.n_layers))
+        self.layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
 
     def forward(self, x):
 
         x = self.linear_1(x)
-        for i in range(1, self.n_layers):
+        for i in range(self.n_layers-1):
             x = self.dropouts[i](F.relu(x))
             x = self.layers[i](x)
         return x

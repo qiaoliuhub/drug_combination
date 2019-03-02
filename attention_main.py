@@ -17,6 +17,7 @@ from torch.utils import data
 import attention_model
 import torch.nn.functional as F
 import torchsummary
+from scipy.stats import pearsonr
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -157,15 +158,17 @@ if __name__ == "__main__":
     labels = {key: value for key, value in zip(list(final_index_1) + list(final_index_2),
                                                list(Y_labels) * 2)}
 
-    params = {'batch_size': 64,
+    train_params = {'batch_size': 64,
               'shuffle': True}
+    test_params = {'batch_size': len(test_index),
+                   'shuffle': True}
 
     logger.debug("Preparing datasets ... ")
     training_set = my_data.MyDataset(partition['train'], labels)
-    training_generator = data.DataLoader(training_set, **params)
+    training_generator = data.DataLoader(training_set, **train_params)
 
     validation_set = my_data.MyDataset(partition['test1'], labels)
-    validation_generator = data.DataLoader(validation_set, **params)
+    validation_generator = data.DataLoader(validation_set, **test_params)
 
     logger.debug("Preparing models")
     drug_model = attention_model.get_model()
@@ -199,7 +202,7 @@ if __name__ == "__main__":
 
             total_loss += loss.item()
 
-            n_iter = 1
+            n_iter = 50
             if (i + 1) % n_iter == 0:
                 p = int(100 * (i + 1) / setting.batch_size)
                 avg_loss = total_loss / n_iter
@@ -225,6 +228,7 @@ if __name__ == "__main__":
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 loss = F.mse_loss(preds, ys)
+                pearson_loss = pearsonr(preds, ys)[0]
                 test_total_loss += loss.item()
 
                 n_iter = 1
@@ -233,4 +237,4 @@ if __name__ == "__main__":
                     test_loss.append(avg_loss)
                     test_total_loss = 0
 
-        logger.debug("Testing mse is {}".format(sum(test_loss)/len(test_loss)))
+        logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(sum(test_loss)/len(test_loss), pearson_loss))
