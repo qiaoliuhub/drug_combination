@@ -222,8 +222,9 @@ if __name__ == "__main__":
     #Y = scaler.fit_transform(synergy_score.loc[:, 'synergy'].values.reshape(-1,1)).reshape((-1,))
     Y_half = synergy_score.loc[:, 'synergy'].values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
+    synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
 
-    train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['drug_a_name', 'drug_b_name'])
+    train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['group'])
     train_index = np.concatenate([train_index + X_for.shape[0], train_index])
     test_index_2 = test_index + X_for.shape[0]
 
