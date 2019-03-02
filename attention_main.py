@@ -230,6 +230,5 @@ if __name__ == "__main__":
                 if (test_i + 1) % n_iter == 0:
                     avg_loss = total_loss / n_iter
                     test_loss.append(avg_loss)
-                    test_loss = 0
 
         logger.debug("Testing mse is {}".format(sum(test_loss)/len(test_loss)))
