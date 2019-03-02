@@ -210,6 +210,7 @@ if __name__ == "__main__":
 
         # Testing
         test_i = 0
+        test_total_loss = 0
         test_loss = []
 
         with torch.set_grad_enabled(False):
@@ -224,11 +225,12 @@ if __name__ == "__main__":
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 loss = F.mse_loss(preds, ys)
-                total_loss += loss.item()
+                test_total_loss += loss.item()
 
                 n_iter = 1
                 if (test_i + 1) % n_iter == 0:
-                    avg_loss = total_loss / n_iter
+                    avg_loss = test_total_loss / n_iter
                     test_loss.append(avg_loss)
+                    test_total_loss = 0
 
         logger.debug("Testing mse is {}".format(sum(test_loss)/len(test_loss)))
