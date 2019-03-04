@@ -85,6 +85,7 @@ if __name__ == "__main__":
     ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
     synergy_score = pd.read_csv("../drug_drug/synergy_score/combin_data_2.csv", dtype = {'fold': np.str})
     synergy_score = synergy_score[(synergy_score['drug_a_name'].isin(sel_drugs)) & (synergy_score['drug_b_name'].isin(sel_drugs))]
+    synergy_score = synergy_score.reset_index(drop = True)
     print("synergy_score filtered data amount %s" %str(len(synergy_score)))
     cell_lines = set(synergy_score['cell_line'])
     exp_drugs = set(synergy_score['drug_a_name']).union(set(synergy_score['drug_b_name']))
@@ -132,9 +133,11 @@ if __name__ == "__main__":
                                                                                        setting.gene_expression_simulated_result_matrix)
     logger.debug("preprocessed expression is ready")
 
-    final_index_1 = synergy_score.apply(lambda row: row['drug_a_name']+'_'+row['drug_b_name']+'_' +row['cell_line']+row.index, axis = 1)
-    final_index_2 = synergy_score.apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +row['cell_line']+row.index, axis = 1)
-    final_index = pd.concat([final_index_1, final_index_2], axis = 0)
+    final_index_1 = synergy_score.reset_index().apply(lambda row: row['drug_a_name']+'_'+row['drug_b_name']+'_' +
+                                               row['cell_line'] + '_' + str(row['index']), axis = 1)
+    final_index_2 = synergy_score.reset_index().apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +
+                                                                  row['cell_line'] + '_' + str(row['index']), axis = 1)
+    final_index = pd.concat([final_index_1, final_index_2], axis = 0).reset_index(drop=True)
     half_df_1 = pd.concat([drug_a_features, drug_b_features, dp_features, gene_expression_features], axis=0)
     half_df_2 = pd.concat([drug_b_features, drug_a_features, dp_features, gene_expression_features], axis=0)
     half_df_1.fillna(0, inplace = True)
@@ -142,7 +145,7 @@ if __name__ == "__main__":
     logger.debug("Reshaping the ndarrray")
     half_df_1 = half_df_1.values.reshape((4, -1, half_df_1.shape[-1])).transpose(1,0,2)
     half_df_2 = half_df_2.values.reshape((4, -1, half_df_2.shape[-1])).transpose(1,0,2)
-    whole_df = pd.concat([half_df_1, half_df_2], axis=0)
+    whole_df = np.concatenate([half_df_1, half_df_2], axis=0)
 
     Y_labels = synergy_score.loc[:, 'synergy']
     Y_half = Y_labels.values.reshape(-1,1)
@@ -152,9 +155,8 @@ if __name__ == "__main__":
 
     train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     if setting.index_in_literature:
-        synergy_split = synergy_score.reset_index(drop = True)
-        train_index = synergy_split[synergy_split['fold'] != '0'].index
-        test_index = synergy_split[synergy_split['fold'] == '0'].index
+        train_index = np.array(synergy_score[synergy_score['fold'] != '0'].index)
+        test_index = np.array(synergy_score[synergy_score['fold'] == '0'].index)
     train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
     std_scaler.fit(Y[train_index])
     Y = std_scaler.transform(Y) * 100
@@ -164,7 +166,7 @@ if __name__ == "__main__":
     for i, combin_drug_feature_array in enumerate(whole_df[train_index,]):
         if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt'))
-    for i, combin_drug_feature_array in enumerate(half_df_1[test_index,]):
+    for i, combin_drug_feature_array in enumerate(whole_df[test_index,]):
         if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[test_index[i]]) + '.pt'))
 
