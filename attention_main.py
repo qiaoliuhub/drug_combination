@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
             total_loss += loss.item()
 
-            n_iter = 1
+            n_iter = 2
             if (i + 1) % n_iter == 0:
                 p = int(100 * (i + 1) / setting.batch_size)
                 avg_loss = total_loss / n_iter
@@ -244,10 +244,10 @@ if __name__ == "__main__":
                 prediction_on_cpu = preds.cpu().numpy()
                 ori_local_labels_on_cpu, ori_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1)), \
-                    std_scaler.inverse_transform(prediction_on_cpu.reshape((-1, 1)))
+                    std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1))
                 loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
                 pearson_loss = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
-                test_total_loss += loss.item()
+                test_total_loss += loss
 
                 n_iter = 1
                 if (test_i + 1) % n_iter == 0:
@@ -255,4 +255,4 @@ if __name__ == "__main__":
                     test_loss.append(avg_loss)
                     test_total_loss = 0
 
-        logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(sum(test_loss)/len(test_loss), pearson_loss))
+            logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(sum(test_loss)/len(test_loss), pearson_loss))
