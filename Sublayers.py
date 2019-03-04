@@ -91,11 +91,13 @@ class FeedForward(nn.Module):
 
 class OutputFeedForward(nn.Module):
 
-    def __init__(self, H, W, d_layers = (512, 1), dropout=0.1):
+    def __init__(self, H, W, d_layers = None, dropout=0.1):
+
         super().__init__()
 
-        self.linear_1 = nn.Linear(H*W, d_layers[0])
-        self.n_layers = len(d_layers)
+        self.d_layers = [512, 1] if d_layers is None else d_layers
+        self.linear_1 = nn.Linear(H*W, self.d_layers[0])
+        self.n_layers = len(self.d_layers)
         self.dropouts = nn.ModuleList(nn.Dropout(dropout) for _ in range(1, self.n_layers))
         self.layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
 

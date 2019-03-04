@@ -24,6 +24,7 @@ use_cuda = cuda.is_available()
 if use_cuda:
     device2 = device("cuda:0")
     cuda.set_device(device2)
+    cuda.empty_cache()
 else:
     device2 = device("cpu")
 

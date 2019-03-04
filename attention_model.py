@@ -42,7 +42,7 @@ class Transformer(nn.Module):
         super().__init__()
         self.encoder = Encoder(d_input, d_model, N, heads, dropout)
         self.decoder = Decoder(d_input, d_model, N, heads, dropout)
-        self.out = OutputFeedForward(d_model, n_feature_type)
+        self.out = OutputFeedForward(d_model, n_feature_type, d_layers=setting.output_FF_layers)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None):
         e_outputs = self.encoder(src, src_mask)

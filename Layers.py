@@ -7,7 +7,7 @@ class EncoderLayer(nn.Module):
     def __init__(self, d_input, d_model, heads, dropout=0.1):
         super().__init__()
         self.input_linear = nn.Linear(d_input, d_model)
-        self.norm_1 = Norm(d_input)
+        self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
         self.attn = MultiHeadAttention(heads, d_model, dropout=dropout)
         self.ff = FeedForward(d_model, dropout=dropout)
@@ -30,7 +30,7 @@ class DecoderLayer(nn.Module):
     def __init__(self, d_input, d_model, heads, dropout=0.1):
         super().__init__()
         self.input_linear = nn.Linear(d_input, d_model)
-        self.norm_1 = Norm(d_input)
+        self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
         self.norm_3 = Norm(d_model)
 

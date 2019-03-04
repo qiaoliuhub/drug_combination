@@ -67,9 +67,10 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 add_dp_feature = True
 add_ge_feature = False
 
+output_FF_layers = [512, 1]
 n_feature_type = 4
 d_input = 2324
-d_model = 800
-attention_heads = 1
+d_model = 200
+attention_heads = 8
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
