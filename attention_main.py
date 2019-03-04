@@ -132,8 +132,9 @@ if __name__ == "__main__":
                                                                                        setting.gene_expression_simulated_result_matrix)
     logger.debug("preprocessed expression is ready")
 
-    final_index_1 = synergy_score.apply(lambda row: row['drug_a_name']+'_'+row['drug_b_name']+'_' +row['cell_line'], axis = 1)
-    final_index_2 = synergy_score.apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +row['cell_line'], axis = 1)
+    final_index_1 = synergy_score.apply(lambda row: row['drug_a_name']+'_'+row['drug_b_name']+'_' +row['cell_line']+row.index, axis = 1)
+    final_index_2 = synergy_score.apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +row['cell_line']+row.index, axis = 1)
+    final_index = pd.concat([final_index_1, final_index_2], axis = 0)
     half_df_1 = pd.concat([drug_a_features, drug_b_features, dp_features, gene_expression_features], axis=0)
     half_df_2 = pd.concat([drug_b_features, drug_a_features, dp_features, gene_expression_features], axis=0)
     half_df_1.fillna(0, inplace = True)
@@ -141,34 +142,38 @@ if __name__ == "__main__":
     logger.debug("Reshaping the ndarrray")
     half_df_1 = half_df_1.values.reshape((4, -1, half_df_1.shape[-1])).transpose(1,0,2)
     half_df_2 = half_df_2.values.reshape((4, -1, half_df_2.shape[-1])).transpose(1,0,2)
+    whole_df = pd.concat([half_df_1, half_df_2], axis=0)
 
     Y_labels = synergy_score.loc[:, 'synergy']
-    Y_half = Y_labels.values.reshape((-1,1))
+    Y_half = Y_labels.values.reshape(-1,1)
     Y = np.concatenate((Y_half, Y_half), axis=0)
     std_scaler = StandardScaler()
     #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
-    synergy_score['fold'] = synergy_score['fold'].astype(str)
 
     train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
-    #train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
+    if setting.index_in_literature:
+        synergy_split = synergy_score.reset_index(drop = True)
+        train_index = synergy_split[synergy_split['fold'] != '0'].index
+        test_index = synergy_split[synergy_split['fold'] == '0'].index
+    train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
     std_scaler.fit(Y[train_index])
-    Y = std_scaler.transform(Y)
-    test_index_2 = test_index + half_df_1.shape[0]
-    train_index, test_index, test_index_2 = train_index[:100], test_index[:100], test_index_2[:100]
+    Y = std_scaler.transform(Y) * 100
+    # test_index_2 = test_index + half_df_1.shape[0]
+    train_index, test_index = train_index[:100], test_index[:100]
 
-    for i, combin_drug_feature_array in enumerate(half_df_1[train_index,]):
+    for i, combin_drug_feature_array in enumerate(whole_df[train_index,]):
         if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt'))
     for i, combin_drug_feature_array in enumerate(half_df_1[test_index,]):
         if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[test_index[i]]) + '.pt'))
 
-    partition = {'train': list(final_index_1.iloc[train_index]),
-                 'test1': list(final_index_1.iloc[test_index]), 'test2': list(final_index_2.iloc[test_index])}
+    partition = {'train': list(final_index.iloc[train_index]),
+                 'test1': list(final_index.iloc[test_index]), 'test2': list(final_index_2.iloc[test_index])}
 
     #+ list(final_index_2.loc[train_index])
-    labels = {key: value for key, value in zip(list(final_index_1) + list(final_index_2),
-                                               list(Y.reshape(-1)) * 2)}
+    labels = {key: value for key, value in zip(list(final_index),
+                                               list(Y.reshape(-1)))}
 
     train_params = {'batch_size': setting.batch_size,
               'shuffle': True}
