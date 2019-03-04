@@ -194,7 +194,7 @@ if __name__ == "__main__":
         for local_batch, local_labels in training_generator:
             i += 1
             # Transfer to GPU
-            local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device2), local_labels.float().to(device2)
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
             preds = drug_model(local_batch, local_batch).view(-1)
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                 # Transfer to GPU
                 test_i += 1
                 local_labels_on_cpu = local_labels
-                local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
                 # Model computations
                 preds = drug_model(local_batch, local_batch).contiguous().view(-1)
