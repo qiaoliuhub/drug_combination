@@ -143,7 +143,8 @@ if __name__ == "__main__":
     Y_labels = synergy_score.loc[:, 'synergy']
     Y_half = Y_labels.values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
-    synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
+    #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
+    synergy_score['fold'].astype(str, inplace = True)
 
     train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     #train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
