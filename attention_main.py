@@ -18,6 +18,8 @@ import attention_model
 import torch.nn.functional as F
 import torchsummary
 from scipy.stats import pearsonr
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -143,19 +145,22 @@ if __name__ == "__main__":
     Y_labels = synergy_score.loc[:, 'synergy']
     Y_half = Y_labels.values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
+    std_scaler = StandardScaler()
     #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
     synergy_score['fold'] = synergy_score['fold'].astype(str)
 
     train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     #train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
+    std_scaler.fit(Y[train_index])
+    Y = std_scaler.transform(Y)
     test_index_2 = test_index + half_df_1.shape[0]
     train_index, test_index, test_index_2 = train_index[:100], test_index[:100], test_index_2[:100]
 
     for i, combin_drug_feature_array in enumerate(half_df_1[train_index,]):
-        if i<=101:
+        if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt'))
     for i, combin_drug_feature_array in enumerate(half_df_1[test_index,]):
-        if i<=101:
+        if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
             save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[test_index[i]]) + '.pt'))
 
     partition = {'train': list(final_index_1.iloc[train_index]),
@@ -165,7 +170,7 @@ if __name__ == "__main__":
     labels = {key: value for key, value in zip(list(final_index_1) + list(final_index_2),
                                                list(Y_labels) * 2)}
 
-    train_params = {'batch_size': 64,
+    train_params = {'batch_size': setting.batch_size,
               'shuffle': True}
     test_params = {'batch_size': len(test_index),
                    'shuffle': True}
@@ -236,8 +241,8 @@ if __name__ == "__main__":
                 preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
-                loss = F.mse_loss(preds, ys)
                 prediction_on_cpu = preds.cpu().numpy()
+                loss = mean_squared_error(std_scaler.inverse_transform(local_labels_on_cpu), std_scaler.inverse_transform(prediction_on_cpu))
                 pearson_loss = pearsonr(prediction_on_cpu,local_labels_on_cpu)[0]
                 test_total_loss += loss.item()
 

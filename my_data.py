@@ -110,13 +110,15 @@ class MyDataset(data.Dataset):
         'Generates one sample of data'
         # Select sample
         ID = self.list_IDs[index]
-
+        drug_combine_file = 'datas/' + ID + '.pt'
         # Load data and get label
         try:
-            X = torch.load('datas/' + ID + '.pt')
+            X = torch.load(drug_combine_file)
         except:
             random_test.logger.error("Fail to get {}".format(ID))
             raise
+        finally:
+            drug_combine_file.close()
         y = self.labels[ID]
 
         return X, y
