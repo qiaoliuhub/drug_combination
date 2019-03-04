@@ -21,7 +21,12 @@ from scipy.stats import pearsonr
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
-device = device("cuda:0" if use_cuda else "cpu")
+if use_cuda:
+    device2 = device("cuda:0")
+    cuda.set_device(device2)
+else:
+    device2 = device("cpu")
+
 torch.set_default_tensor_type('torch.FloatTensor')
 # cudnn.benchmark = True
 
@@ -187,9 +192,9 @@ if __name__ == "__main__":
 
         # Training
         for local_batch, local_labels in training_generator:
-            i+=1
+            i += 1
             # Transfer to GPU
-            local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device), local_labels.float().to(device)
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
             preds = drug_model(local_batch, local_batch).view(-1)
@@ -202,7 +207,7 @@ if __name__ == "__main__":
 
             total_loss += loss.item()
 
-            n_iter = 50
+            n_iter = 1
             if (i + 1) % n_iter == 0:
                 p = int(100 * (i + 1) / setting.batch_size)
                 avg_loss = total_loss / n_iter
@@ -221,14 +226,17 @@ if __name__ == "__main__":
             drug_model.eval()
             for local_batch, local_labels in validation_generator:
                 # Transfer to GPU
-                local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device), local_labels.float().to(device)
+                test_i += 1
+                local_labels_on_cpu = local_labels
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
                 # Model computations
                 preds = drug_model(local_batch, local_batch).view(-1)
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 loss = F.mse_loss(preds, ys)
-                pearson_loss = pearsonr(preds.cpu().numpy(), ys.cpu().numpy())[0]
+                prediction_on_cpu = preds.cpu().numpy()
+                pearson_loss = pearsonr(prediction_on_cpu,local_labels_on_cpu)[0]
                 test_total_loss += loss.item()
 
                 n_iter = 1
