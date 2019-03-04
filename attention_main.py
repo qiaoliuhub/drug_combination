@@ -138,13 +138,21 @@ if __name__ == "__main__":
     final_index_2 = synergy_score.reset_index().apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +
                                                                   row['cell_line'] + '_' + str(row['index']), axis = 1)
     final_index = pd.concat([final_index_1, final_index_2], axis = 0).reset_index(drop=True)
-    half_df_1 = pd.concat([drug_a_features, drug_b_features, dp_features, gene_expression_features], axis=0)
-    half_df_2 = pd.concat([drug_b_features, drug_a_features, dp_features, gene_expression_features], axis=0)
+    features_list_1 = [drug_a_features, drug_b_features]
+    features_list_2 = [drug_b_features, drug_a_features]
+    if setting.add_dp_feature:
+        features_list_1.append(dp_features)
+        features_list_2.append(dp_features)
+    if setting.add_ge_feature:
+        features_list_1.append(gene_expression_features)
+        features_list_2.append(gene_expression_features)
+    half_df_1 = pd.concat(features_list_1, axis=0)
+    half_df_2 = pd.concat(features_list_2, axis=0)
     half_df_1.fillna(0, inplace = True)
     half_df_2.fillna(0, inplace = True)
     logger.debug("Reshaping the ndarrray")
-    half_df_1 = half_df_1.values.reshape((4, -1, half_df_1.shape[-1])).transpose(1,0,2)
-    half_df_2 = half_df_2.values.reshape((4, -1, half_df_2.shape[-1])).transpose(1,0,2)
+    half_df_1 = half_df_1.values.reshape((len(features_list_1), -1, half_df_1.shape[-1])).transpose(1,0,2)
+    half_df_2 = half_df_2.values.reshape((len(features_list_2), -1, half_df_2.shape[-1])).transpose(1,0,2)
     whole_df = np.concatenate([half_df_1, half_df_2], axis=0)
 
     Y_labels = synergy_score.loc[:, 'synergy']

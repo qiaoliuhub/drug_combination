@@ -69,7 +69,7 @@ add_dp_feature = True
 add_ge_feature = False
 
 output_FF_layers = [512, 1]
-n_feature_type = 4
+n_feature_type = 3
 d_input = 2324
 d_model = 200
 attention_heads = 8
