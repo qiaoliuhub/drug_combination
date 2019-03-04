@@ -10,10 +10,10 @@ def get_clones(module, N):
 
 
 class Encoder(nn.Module):
-    def __init__(self, d_model, N, heads, dropout):
+    def __init__(self, d_input, d_model, N, heads, dropout):
         super().__init__()
         self.N = N
-        self.layers = get_clones(EncoderLayer(d_model, heads, dropout), N)
+        self.layers = get_clones(EncoderLayer(d_input, d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
     def forward(self, src, mask=None):
@@ -24,10 +24,10 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, d_model, N, heads, dropout):
+    def __init__(self, d_input, d_model, N, heads, dropout):
         super().__init__()
         self.N = N
-        self.layers = get_clones(DecoderLayer(d_model, heads, dropout), N)
+        self.layers = get_clones(DecoderLayer(d_input, d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
     def forward(self, trg, e_outputs, src_mask=None, trg_mask=None):

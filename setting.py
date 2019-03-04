@@ -72,5 +72,5 @@ d_input = 2324
 d_model = 4
 attention_heads = 1
 attention_dropout = 0.2
-n_layers = 1
+n_layers = 1 # This has to be 1
 88,663,397
