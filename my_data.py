@@ -117,8 +117,6 @@ class MyDataset(data.Dataset):
         except:
             random_test.logger.error("Fail to get {}".format(ID))
             raise
-        finally:
-            drug_combine_file.close()
         y = self.labels[ID]
 
         return X, y
