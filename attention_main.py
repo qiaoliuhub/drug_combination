@@ -178,7 +178,7 @@ if __name__ == "__main__":
     logger.debug("Preparing models")
     drug_model = attention_model.get_model()
     torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_model), (setting.n_feature_type, setting.d_model)])
-    optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
 
     logger.debug("Start training")
     # Loop over epochs
@@ -194,7 +194,7 @@ if __name__ == "__main__":
         for local_batch, local_labels in training_generator:
             i += 1
             # Transfer to GPU
-            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+            local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device2), local_labels.float().to(device2)
 
             # Model computations
             preds = drug_model(local_batch, local_batch).view(-1)
@@ -228,10 +228,10 @@ if __name__ == "__main__":
                 # Transfer to GPU
                 test_i += 1
                 local_labels_on_cpu = local_labels
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = local_batch.transpose(-2,-1).float().to(device2), local_labels.float().to(device2)
 
                 # Model computations
-                preds = drug_model(local_batch, local_batch).view(-1)
+                preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 loss = F.mse_loss(preds, ys)

@@ -4,11 +4,11 @@ from Sublayers import FeedForward, MultiHeadAttention, Norm
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout=0.1):
+    def __init__(self, d_input, d_model, heads, dropout=0.1):
         super().__init__()
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
-        self.attn = MultiHeadAttention(heads, d_model, dropout=dropout)
+        self.attn = MultiHeadAttention(heads, d_input, d_model, dropout=dropout)
         self.ff = FeedForward(d_model, dropout=dropout)
         self.dropout_1 = nn.Dropout(dropout)
         self.dropout_2 = nn.Dropout(dropout)
@@ -25,7 +25,7 @@ class EncoderLayer(nn.Module):
 # build a decoder layer with two multi-head attention layers and
 # one feed-forward layer
 class DecoderLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout=0.1):
+    def __init__(self, d_input, d_model, heads, dropout=0.1):
         super().__init__()
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
@@ -35,8 +35,8 @@ class DecoderLayer(nn.Module):
         self.dropout_2 = nn.Dropout(dropout)
         self.dropout_3 = nn.Dropout(dropout)
 
-        self.attn_1 = MultiHeadAttention(heads, d_model, dropout=dropout)
-        self.attn_2 = MultiHeadAttention(heads, d_model, dropout=dropout)
+        self.attn_1 = MultiHeadAttention(heads, d_input, d_model, dropout=dropout)
+        self.attn_2 = MultiHeadAttention(heads, d_model, d_model, dropout=dropout)
         self.ff = FeedForward(d_model, dropout=dropout)
 
     def forward(self, x, e_outputs, src_mask=None, trg_mask=None):

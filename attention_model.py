@@ -38,10 +38,10 @@ class Decoder(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, d_model, n_feature_type, N, heads, dropout):
+    def __init__(self, d_input, d_model, n_feature_type, N, heads, dropout):
         super().__init__()
-        self.encoder = Encoder(d_model, N, heads, dropout)
-        self.decoder = Decoder(d_model, N, heads, dropout)
+        self.encoder = Encoder(d_input, d_model, N, heads, dropout)
+        self.decoder = Decoder(d_input, d_model, N, heads, dropout)
         self.out = OutputFeedForward(d_model, n_feature_type)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None):
@@ -57,7 +57,7 @@ def get_model():
     assert setting.d_model % setting.attention_heads == 0
     assert setting.attention_dropout < 1
 
-    model = Transformer(setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = Transformer(setting.d_input, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
