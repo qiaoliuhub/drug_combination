@@ -81,7 +81,7 @@ if __name__ == "__main__":
     ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
     ### 5-FU_ABT-888_A2058,5-FU,ABT-888,A2058,7.6935301658
     ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
-    synergy_score = pd.read_csv("../drug_drug/synergy_score/combin_data_2.csv")
+    synergy_score = pd.read_csv("../drug_drug/synergy_score/combin_data_2.csv", dtype = {'fold': np.str})
     synergy_score = synergy_score[(synergy_score['drug_a_name'].isin(sel_drugs)) & (synergy_score['drug_b_name'].isin(sel_drugs))]
     print("synergy_score filtered data amount %s" %str(len(synergy_score)))
     cell_lines = set(synergy_score['cell_line'])
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     Y_half = Y_labels.values.reshape((-1,))
     Y = np.concatenate((Y_half, Y_half), axis=0)
     #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
-    synergy_score['fold'].astype(str, inplace = True)
+    synergy_score['fold'] = synergy_score['fold'].astype(str)
 
     train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     #train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
