@@ -143,7 +143,7 @@ if __name__ == "__main__":
     half_df_2 = half_df_2.values.reshape((4, -1, half_df_2.shape[-1])).transpose(1,0,2)
 
     Y_labels = synergy_score.loc[:, 'synergy']
-    Y_half = Y_labels.values.reshape((-1,))
+    Y_half = Y_labels.values.reshape((-1,1))
     Y = np.concatenate((Y_half, Y_half), axis=0)
     std_scaler = StandardScaler()
     #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     #+ list(final_index_2.loc[train_index])
     labels = {key: value for key, value in zip(list(final_index_1) + list(final_index_2),
-                                               list(Y_labels) * 2)}
+                                               list(Y.reshape(-1)) * 2)}
 
     train_params = {'batch_size': setting.batch_size,
               'shuffle': True}
@@ -242,8 +242,11 @@ if __name__ == "__main__":
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 prediction_on_cpu = preds.cpu().numpy()
-                loss = mean_squared_error(std_scaler.inverse_transform(local_labels_on_cpu), std_scaler.inverse_transform(prediction_on_cpu))
-                pearson_loss = pearsonr(prediction_on_cpu,local_labels_on_cpu)[0]
+                ori_local_labels_on_cpu, ori_prediction_on_cpu = \
+                    std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1)), \
+                    std_scaler.inverse_transform(prediction_on_cpu.reshape((-1, 1)))
+                loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
+                pearson_loss = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
                 test_total_loss += loss.item()
 
                 n_iter = 1
