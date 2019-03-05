@@ -66,10 +66,10 @@ drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
 add_dp_feature = True
-add_ge_feature = False
+add_ge_feature = True
 
 output_FF_layers = [512, 1]
-n_feature_type = 3
+n_feature_type = 4
 d_input = 2324
 d_model = 200
 attention_heads = 8

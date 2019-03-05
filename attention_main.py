@@ -172,11 +172,11 @@ if __name__ == "__main__":
     train_index, test_index = train_index[:100], test_index[:100]
 
     for i, combin_drug_feature_array in enumerate(whole_df[train_index,]):
-        if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
-            save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt'))
+        if i<=101: #and not os.path.exists(os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt')):
+            save(combin_drug_feature_array, os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt'))
     for i, combin_drug_feature_array in enumerate(whole_df[test_index,]):
-        if i<=101 and not os.path.exists(os.path.join('datas', str(final_index_1.iloc[train_index[i]]) + '.pt')):
-            save(combin_drug_feature_array, os.path.join('datas', str(final_index_1.iloc[test_index[i]]) + '.pt'))
+        if i<=101: #and not os.path.exists(os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt')):
+            save(combin_drug_feature_array, os.path.join('datas', str(final_index.iloc[test_index[i]]) + '.pt'))
 
     partition = {'train': list(final_index.iloc[train_index]),
                  'test1': list(final_index.iloc[test_index]), 'test2': list(final_index_2.iloc[test_index])}
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     logger.debug("Preparing models")
     drug_model = attention_model.get_model()
-    torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_model), (setting.n_feature_type, setting.d_model)])
+    torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
 
     logger.debug("Start training")
