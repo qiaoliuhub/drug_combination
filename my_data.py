@@ -9,7 +9,6 @@ from torch.utils import data
 class CustomDataLoader:
     pass
 
-
 class ExpressionDataLoader(CustomDataLoader):
     gene_expression = None
     backup_expression = None
