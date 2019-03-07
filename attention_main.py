@@ -167,7 +167,8 @@ if __name__ == "__main__":
         test_index = np.array(synergy_score[synergy_score['fold'] == '0'].index)
     train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
     std_scaler.fit(Y[train_index])
-    Y = std_scaler.transform(Y) * 100
+    if setting.y_transform:
+        Y = std_scaler.transform(Y) * 100
     # test_index_2 = test_index + half_df_1.shape[0]
     train_index, test_index = train_index[:100], test_index[:100]
 
@@ -257,9 +258,11 @@ if __name__ == "__main__":
                 ys = local_labels.contiguous().view(-1)
                 assert preds.size(-1) == ys.size(-1)
                 prediction_on_cpu = preds.cpu().numpy()
-                ori_local_labels_on_cpu, ori_prediction_on_cpu = \
-                    std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1)), \
-                    std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1))
+                ori_local_labels_on_cpu, ori_prediction_on_cpu = local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1,1)
+                if setting.y_transform:
+                    ori_local_labels_on_cpu, ori_prediction_on_cpu = \
+                    std_scaler.inverse_transform(ori_local_labels_on_cpu/100), \
+                    std_scaler.inverse_transform(ori_prediction_on_cpu/100)
                 loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
                 pearson_loss = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
                 test_total_loss += loss

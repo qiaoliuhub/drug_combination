@@ -67,6 +67,7 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
 add_dp_feature = True
 add_ge_feature = True
+y_transform = True
 
 output_FF_layers = [512, 1]
 n_feature_type = 4
