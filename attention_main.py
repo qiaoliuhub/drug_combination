@@ -208,6 +208,7 @@ if __name__ == "__main__":
     logger.debug("Start training")
     # Loop over epochs
     mse_visualizer = torch_visual.VisTorch(env_name='MSE')
+    pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
     for epoch in range(setting.n_epochs):
 
         drug_model.train()
@@ -216,6 +217,8 @@ if __name__ == "__main__":
         cur_epoch_loss = []
         total_loss = 0
         i = 0
+        train_preds = []
+        train_ys = Y[train_index]
 
         # Training
         for local_batch, local_labels in training_generator:
@@ -224,7 +227,7 @@ if __name__ == "__main__":
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
-            preds = drug_model(local_batch, local_batch).view(-1)
+            preds = drug_model(local_batch, local_batch).contiguous().view(-1)
             ys = local_labels.contiguous().view(-1)
             optimizer.zero_grad()
             assert preds.size(-1) == ys.size(-1)
@@ -279,6 +282,7 @@ if __name__ == "__main__":
                     test_loss.append(avg_loss)
                     test_total_loss = 0
 
-            logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(sum(test_loss)/len(test_loss), pearson_loss))
+        logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), pearson_loss))
 
         mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_loss), np.mean(test_loss), loss_type='mse')
+        pearson_visualizer.plot_loss(epoch, pearson_loss, loss_type='pearson_loss')

@@ -34,6 +34,8 @@ class VisTorch:
                                              opts = {
                                                  'xlabel': 'Epoch',
                                                  'ylabel': loss_type,
+                                                 'ytickmin': 100,
+                                                 'ytickmax': 500,
                                                  'title': 'Learning curve',
                                                  'showlegend': True,
                                                  'linecolor': linecolors[:len(losses)],
