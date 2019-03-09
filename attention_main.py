@@ -284,5 +284,5 @@ if __name__ == "__main__":
 
         logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), pearson_loss))
 
-        mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_loss), np.mean(test_loss), loss_type='mse')
-        pearson_visualizer.plot_loss(epoch, pearson_loss, loss_type='pearson_loss')
+        mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_loss), np.mean(test_loss), loss_type='mse', ytickmin=100, ytickmax=500)
+        pearson_visualizer.plot_loss(epoch, pearson_loss, loss_type='pearson_loss', ytickmin=0, ytickmax=1)

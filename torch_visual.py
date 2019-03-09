@@ -22,7 +22,7 @@ class VisTorch:
 
         assert self.VIS_CON.check_connection(timeout_seconds=3), 'No connection could be formed quickly'
 
-    def plot_loss(self, epoch, *losses, loss_type='Loss'):
+    def plot_loss(self, epoch, *losses, loss_type='Loss', ytickmin = None, ytickmax = None):
 
         self.__vis_initializer()
         legend = ['Training', 'Evaluation', 'Training_1']
@@ -34,8 +34,8 @@ class VisTorch:
                                              opts = {
                                                  'xlabel': 'Epoch',
                                                  'ylabel': loss_type,
-                                                 'ytickmin': 100,
-                                                 'ytickmax': 500,
+                                                 'ytickmin': ytickmin,
+                                                 'ytickmax': ytickmax,
                                                  'title': 'Learning curve',
                                                  'showlegend': True,
                                                  'linecolor': linecolors[:len(losses)],
