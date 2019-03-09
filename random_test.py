@@ -224,7 +224,11 @@ if __name__ == "__main__":
     Y = np.concatenate((Y_half, Y_half), axis=0)
     synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
 
-    train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['group'])
+    #train_index, test_index = drug_drug.split_data(X_for, group_df=synergy_score, group_col=['group'])
+    if setting.index_in_literature:
+        synergy_score.reset_index(inplace=True)
+        train_index = np.array(synergy_score[synergy_score['fold'] != 0].index)
+        test_index = np.array(synergy_score[synergy_score['fold'] == 0].index)
     train_index = np.concatenate([train_index + X_for.shape[0], train_index])
     test_index_2 = test_index + X_for.shape[0]
 
@@ -251,9 +255,9 @@ if __name__ == "__main__":
         logger.debug("Training is done")
         train_prediction = drug_model.predict(x=X[train_index]).reshape((-1,))
         train_mse = mean_squared_error(Y[train_index], train_prediction)
-        train_pearson = pearsonr(Y[train_index], train_prediction)
+        train_pearson = pearsonr(Y[train_index], train_prediction)[0]
 
-        logger.info("training dataset: mse: %s, pearson: %s" % (str(train_mse), str(train_pearson)))
+        logger.info("training dataset: mse: %s, pearson: %s" % (str(train_mse), str(1-train_pearson**2)))
 
         test_prediction = drug_model.predict(x=X[test_index]).reshape((-1,))
         test_prediction_2 = drug_model.predict(x=X[test_index_2]).reshape((-1,))
@@ -261,6 +265,6 @@ if __name__ == "__main__":
         comparison = pd.DataFrame({'ground_truth':Y[test_index],'prediction':final_prediction})
         comparison.to_csv("last_output_{!r}".format(int(time())) + ".csv")
         test_mse = mean_squared_error(Y[test_index], final_prediction)
-        test_pearson = pearsonr(Y[test_index], final_prediction)
+        test_pearson = pearsonr(Y[test_index], final_prediction)[0]
 
-        logger.info("Testing dataset: mse: %s, pearson: %s" % (str(test_mse), str(test_pearson)))
+        logger.info("Testing dataset: mse: %s, pearson: %s" % (str(test_mse), str(1-test_pearson**2)))

@@ -20,6 +20,7 @@ import torchsummary
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
+import torch_visual
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -161,10 +162,11 @@ if __name__ == "__main__":
     std_scaler = StandardScaler()
     #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
 
-    train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     if setting.index_in_literature:
         train_index = np.array(synergy_score[synergy_score['fold'] != '0'].index)
         test_index = np.array(synergy_score[synergy_score['fold'] == '0'].index)
+    else:
+        train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
     train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
     std_scaler.fit(Y[train_index])
     if setting.y_transform:
@@ -205,11 +207,13 @@ if __name__ == "__main__":
 
     logger.debug("Start training")
     # Loop over epochs
+    mse_visualizer = torch_visual.VisTorch(env_name='MSE')
     for epoch in range(setting.n_epochs):
 
         drug_model.train()
         start = time()
         cptime = start
+        cur_epoch_loss = []
         total_loss = 0
         i = 0
 
@@ -234,10 +238,12 @@ if __name__ == "__main__":
             if (i + 1) % n_iter == 0:
                 p = int(100 * (i + 1) / setting.batch_size)
                 avg_loss = total_loss / n_iter
+                avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
                 random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
                       ((time() - start) // 60, epoch + 1, "".join('#' * (p // 5)),
                        "".join(' ' * (20 - (p // 5))), p, avg_loss))
                 total_loss = 0
+                cur_epoch_loss.append(avg_loss)
 
         # Testing
         test_i = 0
@@ -274,3 +280,5 @@ if __name__ == "__main__":
                     test_total_loss = 0
 
             logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(sum(test_loss)/len(test_loss), pearson_loss))
+
+        mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_loss), np.mean(test_loss), loss_type='mse')
