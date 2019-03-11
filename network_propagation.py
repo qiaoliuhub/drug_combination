@@ -40,7 +40,7 @@ def combin_drug_target_probabilities_matrix(drug_pairs, drug_target):
     return combine_drug_target_matrix
 
 
-def gene_expression_network_propagation(network, gene_expression_df, genes, drug_target, synergy_df, result_matrix_file):
+def gene_expression_network_propagation(network, gene_expression_df, entrez_set, drug_target, synergy_df, result_matrix_file):
 
     ### network: gene-gene network
     ### gene_expression_df: index = genes, columns = cell lines
@@ -58,7 +58,7 @@ def gene_expression_network_propagation(network, gene_expression_df, genes, drug
     drug_pairs = synergy_df[['drug_a_name', 'drug_b_name']]
     combine_drug_target_matrix = combin_drug_target_probabilities_matrix(drug_pairs, drug_target)
     logger.debug('Computing for target as 0 propagated data frame')
-    processed_drug_target = target_as_0_network_propagation(network, combine_drug_target_matrix.T, genes, setting.intermediate_ge_target0_matrix)
+    processed_drug_target = target_as_0_network_propagation(network, combine_drug_target_matrix.T, entrez_set, setting.intermediate_ge_target0_matrix)
     logger.debug('Computed for target as 0 propagated data frame successfully')
     processed_drug_target.columns = processed_drug_target.columns.astype(int)
     processed_drug_target = processed_drug_target.loc[:, gene_expression_df.index]
@@ -68,14 +68,14 @@ def gene_expression_network_propagation(network, gene_expression_df, genes, drug
     result_df.to_csv(result_matrix_file)
     return result_df
 
-def target_as_0_network_propagation(network, drug_target, genes, result_matrix_file):
+def target_as_0_network_propagation(network, drug_target, entrez_set, result_matrix_file):
 
     # input drug_target matrix: index = genes, columns = drugs
     # Set target gene feature for a drug to be 0 and non-target gene to be 1-max(probabilites of all edges)
     # Return dataframe: index = drugs, columns = genes
-    return 1-target_as_1_network_propagation(network, drug_target, genes, result_matrix_file)
+    return 1-target_as_1_network_propagation(network, drug_target, entrez_set, result_matrix_file)
 
-def target_as_1_network_propagation(network, drug_target, genes, result_matrix_file):
+def target_as_1_network_propagation(network, drug_target, entrez_set, result_matrix_file):
 
     # input drug_target matrix: index = genes, columns = drugs
     # Set target gene feature for a drug to be 1 and non-target gene to be max(probabilites of all edges)
@@ -88,10 +88,10 @@ def target_as_1_network_propagation(network, drug_target, genes, result_matrix_f
     else:
 
         # constructed a zero network matrix, columns and index are genes
-        network_matrix = get_matrix_from_network(network, genes['entrez'])
+        network_matrix = get_matrix_from_network(network, entrez_set)
 
         # drug_target_matrix: columns = genes, index = Drugs
-        drug_target_matrix = drug_target.loc[genes['entrez'], :].T
+        drug_target_matrix = drug_target.loc[entrez_set, :].T
 
         # Set target gene feature for a drug to be 1 and non-target gene to be max(probabilites of all edges)
         logger.debug("compute the max probability intermediate data frame")
@@ -143,7 +143,7 @@ def normalize_matrix(raw_matrix, axis):
 
     return normalized_matrix
 
-def get_matrix_from_network(network, genes):
+def get_matrix_from_network(network, entrez_set):
 
     # build the matrix from gene gene interaction network, so far
     # gene-gene self interaction weight is 0
@@ -155,10 +155,9 @@ def get_matrix_from_network(network, genes):
         network_matrix.columns = network_matrix.columns.astype(int)
         return network_matrix
 
-    network_matrix = np.zeros(shape=(len(genes), len(genes)), dtype='float')
+    network_matrix = np.zeros(shape=(len(entrez_set), len(entrez_set)), dtype='float')
     network_matrix = pd.DataFrame(data=network_matrix)
-    network_matrix.columns, network_matrix.index = genes, genes
-    entrez_set = set(genes)
+    network_matrix.columns, network_matrix.index = list(entrez_set), list(entrez_set)
 
     for row in network.iterrows():
 
@@ -170,7 +169,7 @@ def get_matrix_from_network(network, genes):
     network_matrix.to_csv(setting.network_matrix)
     return network_matrix
 
-def RWlike_network_propagation(network, drug_target, genes, result_matrix_file):
+def RWlike_network_propagation(network, drug_target, entrez_set, result_matrix_file):
 
     # input drug_target matrix: index = genes, columns = drugs
     if not setting.renew and os.path.exists(result_matrix_file):
@@ -181,7 +180,7 @@ def RWlike_network_propagation(network, drug_target, genes, result_matrix_file):
 
         # build the matrix from gene gene interaction network, so far
         # gene-gene self interaction weight is 0
-        network_matrix = get_matrix_from_network(network, genes['entrez'])
+        network_matrix = get_matrix_from_network(network, entrez_set)
 
         # Normalize gene gene association probability so that the total gene gene
         # association probability weights for one gene is 1
@@ -189,7 +188,7 @@ def RWlike_network_propagation(network, drug_target, genes, result_matrix_file):
         network_sparse_matrix = csr_matrix(normalized_network_matrix.values)
 
         # drug_target_matrix: columns = genes, index = Drugs
-        drug_target_matrix = drug_target.loc[genes['entrez'], :].values.T
+        drug_target_matrix = drug_target.loc[entrez_set, :].values.T
 
         # result_matrix: columns = genes, index = Drugs
         result_matrix = (csr_matrix(drug_target_matrix).dot(network_sparse_matrix)).todense()
@@ -197,7 +196,7 @@ def RWlike_network_propagation(network, drug_target, genes, result_matrix_file):
         # Set target genes effect to be 1, because it is 1 in drug_target_matrix and all non-target genes
         # effect is less than 1 since the sum of all weights for a gene is 1
         result_matrix = np.array([result_matrix, drug_target_matrix]).max(axis = 0)
-        result_matrix = pd.DataFrame(result_matrix, columns=genes['entrez'], index=drug_target.columns)
+        result_matrix = pd.DataFrame(result_matrix, columns=entrez_set, index=drug_target.columns)
         result_matrix.to_csv(result_matrix_file)
 
     return result_matrix
