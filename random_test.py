@@ -129,9 +129,9 @@ if __name__ == "__main__":
             eval_prediction_2 = std_scaler.inverse_transform(eval_prediction_2 / 100)
             final_prediction = np.mean([eval_prediction, eval_prediction_2], axis=0)
             comparison = pd.DataFrame(
-                {'ground_truth': Y[test_index].reshape(-1), 'prediction': final_prediction.reshape(-1)})
-            eval_mse = mean_squared_error(Y[test_index], final_prediction)
-            eval_pearson = pearsonr(Y[test_index].reshape(-1), final_prediction.reshape(-1))[0]
+                {'ground_truth': Y[evaluation_index].reshape(-1), 'prediction': final_prediction.reshape(-1)})
+            eval_mse = mean_squared_error(Y[evaluation_index], final_prediction)
+            eval_pearson = pearsonr(Y[evaluation_index].reshape(-1), final_prediction.reshape(-1))[0]
             cv_pearsonr_scores.append(eval_pearson)
 
             logger.info("Evaluation dataset: mse: %s, pearson: %s" % (str(eval_mse), str(1 - eval_pearson ** 2)))
