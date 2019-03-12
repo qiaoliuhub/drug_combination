@@ -7,12 +7,12 @@ import tensorflow as tf
 
 class DrugsCombModel():
 
-    def __init__(self, drug_a_features, drug_b_features, cl_genes_dp_features):
+    def __init__(self, drug_a_features_len, drug_b_features_len, cl_features_len):
 
-        self.drug_a_features = drug_a_features
-        self.drug_b_features = drug_b_features
-        self.cl_genes_dp_features = cl_genes_dp_features
-        self.input_len = int(drug_a_features.shape[1]) + int(drug_b_features.shape[1] + int(cl_genes_dp_features.shape[1]))
+        self.drug_a_features_len = drug_a_features_len
+        self.drug_b_features_len = drug_b_features_len
+        self.cl_features_len = cl_features_len
+        self.input_len = int(drug_a_features_len) + int(drug_b_features_len) + int(cl_features_len)
 
     def __mlp_model(self, nodes_nums, input_len):
 

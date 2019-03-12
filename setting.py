@@ -1,6 +1,8 @@
 import os
 from time import time
 
+unit_test = True
+
 working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
@@ -70,7 +72,7 @@ add_ge_feature = True
 y_transform = True
 
 output_FF_layers = [512, 1]
-n_feature_type = 4
+n_feature_type = 2 + int(add_ge_feature) + int(add_dp_feature)
 d_input = 2324
 d_model = 200
 attention_heads = 8

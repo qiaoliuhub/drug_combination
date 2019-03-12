@@ -44,212 +44,205 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
 
-    entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
-
-    ### Reading network data
-    ### entrez_a entrez_b association
-    ### 1001 10001 0.3
-    ### 10001 100001 0.2
-    network = my_data.NetworkDataReader.get_network()
-
-    ### Creating test drug target matrix ###
-    ###         5-FU  ABT-888  AZD1775  BEZ-235  BORTEZOMIB  CARBOPLATIN
-    ### ADH1B      1        0        0        0           0            0
-    ### ADRA1A     0        0        0        0           0            0
-    ### JAG1       0        1        1        0           1            0
-    ### AGTR2      1        1        1        1           0            1
-    ### ALB        0        0        0        0           1            0
-    drug_target = my_data.DrugTargetProfileDataLoader.get_drug_target_profiles()
-    simulated_drug_target = my_data.DrugTargetProfileDataLoader.get_filtered_simulated_drug_target_matrix()
-    print(simulated_drug_target, simulated_drug_target.shape)
-
-    ### Reading synergy score data ###
-    ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
-    ### 5-FU_ABT-888_A2058,5-FU,ABT-888,A2058,7.6935301658
-    ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
     synergy_score = my_data.SynergyDataReader.get_synergy_score()
-    print("synergy_score filtered data amount %s" %str(len(synergy_score)))
-
-    exp_drugs = my_data.SynergyDataReader.get_synergy_data_drugs()
-
-    ### Processing gene dependencies map
-    ###     "X127399","X1321N1","X143B",
-    ### entrez
-    ### 1001
-    ### 10001
-    sel_dp = my_data.GeneDependenciesDataReader.get_gene_dp()
-
-    ### Prepare gene expression data information
-    expression_df = my_data.ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(sel_dp.index),
-                                                                        celllines=list(sel_dp.columns))
-
-    ### Ignore drug target genes which have low variance and keep all genes dependencies df genes
-    print(simulated_drug_target.shape, sel_dp.shape)
-    print(sel_dp)
-    print(sel_dp.shape)
-
-    ### Check all data frames schema and contents
-    random_test.check_data_frames()
-
-    # Generate final dataset
-    drug_a_features = simulated_drug_target.loc[list(synergy_score['drug_a_name']), :]
-    drug_b_features = simulated_drug_target.loc[list(synergy_score['drug_b_name']), :]
-    dp_features = sel_dp[list(synergy_score['cell_line'])].T
-    gene_expression_features = network_propagation.gene_expression_network_propagation(network, expression_df,
-                                                                                       entrez_set, drug_target,
-                                                                                       synergy_score,
-                                                                                       setting.gene_expression_simulated_result_matrix)
-    logger.debug("preprocessed expression is ready")
 
     final_index_1 = synergy_score.reset_index().apply(lambda row: row['drug_a_name']+'_'+row['drug_b_name']+'_' +
                                                row['cell_line'] + '_' + str(row['index']), axis = 1)
     final_index_2 = synergy_score.reset_index().apply(lambda row: row['drug_b_name']+'_'+row['drug_a_name']+'_' +
                                                row['cell_line'] + '_' + str(row['index']), axis = 1)
     final_index = pd.concat([final_index_1, final_index_2], axis = 0).reset_index(drop=True)
-    features_list_1 = [drug_a_features, drug_b_features]
-    features_list_2 = [drug_b_features, drug_a_features]
-    if setting.add_dp_feature:
-        features_list_1.append(dp_features)
-        features_list_2.append(dp_features)
-    if setting.add_ge_feature:
-        features_list_1.append(gene_expression_features)
-        features_list_2.append(gene_expression_features)
-    half_df_1 = pd.concat(features_list_1, axis=0)
-    half_df_2 = pd.concat(features_list_2, axis=0)
-    half_df_1.fillna(0, inplace = True)
-    half_df_2.fillna(0, inplace = True)
-    logger.debug("Reshaping the ndarrray")
-    half_df_1 = half_df_1.values.reshape((len(features_list_1), -1, half_df_1.shape[-1])).transpose(1,0,2)
-    half_df_2 = half_df_2.values.reshape((len(features_list_2), -1, half_df_2.shape[-1])).transpose(1,0,2)
-    whole_df = np.concatenate([half_df_1, half_df_2], axis=0)
 
-    Y_labels = synergy_score.loc[:, 'synergy']
-    Y_half = Y_labels.values.reshape(-1,1)
-    Y = np.concatenate((Y_half, Y_half), axis=0)
+    # print(simulated_drug_target, simulated_drug_target.shape)
+    # print("synergy_score filtered data amount %s" %str(len(synergy_score)))
+    # print(simulated_drug_target.shape, sel_dp.shape)
+    # print(sel_dp)
+    # print(sel_dp.shape)
     std_scaler = StandardScaler()
-    #synergy_score['group'] = synergy_score['drug_a_name'] + '_' + synergy_score['drug_b_name']
+    logger.debug("Getting features and synergy scores ...")
+    X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
+        my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
+    Y = my_data.SamplesDataLoader.Y_features_prep()
+    logger.debug("Spliting data ...")
 
-    if setting.index_in_literature:
-        train_index = np.array(synergy_score[synergy_score['fold'] != 0].index)
-        test_index = np.array(synergy_score[synergy_score['fold'] == 0].index)
-    else:
-        train_index, test_index = drug_drug.split_data(half_df_1, group_df=synergy_score, group_col=['fold'])
-    train_index = np.concatenate([train_index + half_df_1.shape[0], train_index])
-    std_scaler.fit(Y[train_index])
-    if setting.y_transform:
-        Y = std_scaler.transform(Y) * 100
-    # test_index_2 = test_index + half_df_1.shape[0]
-    train_index, test_index = train_index[:100], test_index[:100]
+    # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
+    #     my_data.DataPreprocessor.reg_train_eval_test_split()
+    test_index, test_index_2, test_generator = None, None, None
+    cv_pearson_scores = []
+    cv_models = []
 
-    for i, combin_drug_feature_array in enumerate(whole_df[train_index,]):
-        if i<=101: #and not os.path.exists(os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt')):
-            save(combin_drug_feature_array, os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt'))
-    for i, combin_drug_feature_array in enumerate(whole_df[test_index,]):
-        if i<=101: #and not os.path.exists(os.path.join('datas', str(final_index.iloc[train_index[i]]) + '.pt')):
-            save(combin_drug_feature_array, os.path.join('datas', str(final_index.iloc[test_index[i]]) + '.pt'))
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 \
+        in my_data.DataPreprocessor.cv_train_eval_test_split_generator():
 
-    partition = {'train': list(final_index.iloc[train_index]),
-                 'test1': list(final_index.iloc[test_index]), 'test2': list(final_index_2.iloc[test_index])}
+        local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
+        final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
 
-    #+ list(final_index_2.loc[train_index])
-    labels = {key: value for key, value in zip(list(final_index),
-                                               list(Y.reshape(-1)))}
+        std_scaler.fit(Y[train_index])
+        if setting.y_transform:
+            Y = std_scaler.transform(Y) * 100
 
-    train_params = {'batch_size': setting.batch_size,
-              'shuffle': True}
-    test_params = {'batch_size': len(test_index),
-                   'shuffle': True}
+        for i, combin_drug_feature_array in enumerate(local_X):
+            if setting.unit_test:
+                if i<=501:# and not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                    save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
+            else:
+                if not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                    save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
 
-    logger.debug("Preparing datasets ... ")
-    training_set = my_data.MyDataset(partition['train'], labels)
-    training_generator = data.DataLoader(training_set, **train_params)
+        partition = {'train': list(final_index.iloc[train_index]),
+                     'test1': list(final_index.iloc[test_index]), 'test2': list(final_index.iloc[test_index_2]),
+                     'eval1': list(final_index.iloc[evaluation_index]),
+                     'eval2': list(final_index.iloc[evaluation_index_2])}
 
-    validation_set = my_data.MyDataset(partition['test1'], labels)
-    validation_generator = data.DataLoader(validation_set, **test_params)
+        labels = {key: value for key, value in zip(list(final_index),
+                                                   list(Y.reshape(-1)))}
 
-    logger.debug("Preparing models")
-    drug_model = attention_model.get_model()
-    torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
-    optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
+        train_params = {'batch_size': setting.batch_size,
+                        'shuffle': True}
+        eval_params = {'batch_size': len(evaluation_index),
+                       'shuffle': True}
+        test_params = {'batch_size': len(test_index),
+                       'shuffle': True}
 
-    logger.debug("Start training")
-    # Loop over epochs
-    mse_visualizer = torch_visual.VisTorch(env_name='MSE')
-    pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
-    for epoch in range(setting.n_epochs):
+        logger.debug("Preparing datasets ... ")
+        training_set = my_data.MyDataset(partition['train'], labels)
+        training_generator = data.DataLoader(training_set, **train_params)
 
-        drug_model.train()
-        start = time()
-        cptime = start
-        cur_epoch_loss = []
-        total_loss = 0
-        i = 0
-        train_preds = []
-        train_ys = Y[train_index]
+        validation_set = my_data.MyDataset(partition['eval1'], labels)
+        validation_generator = data.DataLoader(validation_set, **eval_params)
 
-        # Training
-        for local_batch, local_labels in training_generator:
-            i += 1
-            # Transfer to GPU
-            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+        test_set = my_data.MyDataset(partition['test1'], labels)
+        test_generator = data.DataLoader(test_set, **test_params)
 
-            # Model computations
-            preds = drug_model(local_batch, local_batch).contiguous().view(-1)
-            ys = local_labels.contiguous().view(-1)
-            optimizer.zero_grad()
-            assert preds.size(-1) == ys.size(-1)
-            loss = F.mse_loss(preds, ys)
-            loss.backward()
-            optimizer.step()
+        logger.debug("Preparing models")
+        drug_model = attention_model.get_model()
+        torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
+        optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
 
-            total_loss += loss.item()
+        logger.debug("Start training")
+        # Loop over epochs
+        mse_visualizer = torch_visual.VisTorch(env_name='MSE')
+        pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
 
-            n_iter = 2
-            if (i + 1) % n_iter == 0:
-                p = int(100 * (i + 1) / setting.batch_size)
-                avg_loss = total_loss / n_iter
-                avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
-                random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
-                      ((time() - start) // 60, epoch + 1, "".join('#' * (p // 5)),
-                       "".join(' ' * (20 - (p // 5))), p, avg_loss))
-                total_loss = 0
-                cur_epoch_loss.append(avg_loss)
+        for epoch in range(setting.n_epochs):
 
-        # Testing
-        test_i = 0
-        test_total_loss = 0
-        test_loss = []
+            drug_model.train()
+            start = time()
+            cur_epoch_train_loss = []
+            train_total_loss = 0
+            i = 0
 
-        with torch.set_grad_enabled(False):
-
-            drug_model.eval()
-            for local_batch, local_labels in validation_generator:
+            # Training
+            for local_batch, local_labels in training_generator:
+                i += 1
                 # Transfer to GPU
-                test_i += 1
-                local_labels_on_cpu = local_labels
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
                 # Model computations
                 preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
+                optimizer.zero_grad()
                 assert preds.size(-1) == ys.size(-1)
-                prediction_on_cpu = preds.cpu().numpy()
-                ori_local_labels_on_cpu, ori_prediction_on_cpu = local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1,1)
-                if setting.y_transform:
+                loss = F.mse_loss(preds, ys)
+                loss.backward()
+                optimizer.step()
+
+                train_total_loss += loss.item()
+
+                n_iter = 2
+                if (i + 1) % n_iter == 0:
+                    p = int(100 * (i + 1) / setting.batch_size)
+                    avg_loss = train_total_loss / n_iter
+                    avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
+                    random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
+                          ((time() - start) // 60, epoch + 1, "".join('#' * (p // 5)),
+                           "".join(' ' * (20 - (p // 5))), p, avg_loss))
+                    train_total_loss = 0
+                    cur_epoch_train_loss.append(avg_loss)
+
+            ### Evaluation
+            val_i = 0
+            val_total_loss = 0
+            val_loss = []
+            val_pearson = 0
+
+            with torch.set_grad_enabled(False):
+
+                drug_model.eval()
+                for local_batch, local_labels in validation_generator:
+                    val_i += 1
+                    local_labels_on_cpu = local_labels
+                    # Transfer to GPU
+                    local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                    preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+                    ys = local_labels.contiguous().view(-1)
+                    assert preds.size(-1) == ys.size(-1)
+                    prediction_on_cpu = preds.cpu().numpy()
                     ori_local_labels_on_cpu, ori_prediction_on_cpu = \
-                    std_scaler.inverse_transform(ori_local_labels_on_cpu/100), \
-                    std_scaler.inverse_transform(ori_prediction_on_cpu/100)
-                loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
-                pearson_loss = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
-                test_total_loss += loss
+                        local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1, 1)
 
-                n_iter = 1
-                if (test_i + 1) % n_iter == 0:
-                    avg_loss = test_total_loss / n_iter
-                    test_loss.append(avg_loss)
-                    test_total_loss = 0
+                    if setting.y_transform:
+                        ori_local_labels_on_cpu, ori_prediction_on_cpu = \
+                            std_scaler.inverse_transform(ori_local_labels_on_cpu / 100), \
+                            std_scaler.inverse_transform(ori_prediction_on_cpu / 100)
+                    loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
+                    val_pearson = pearsonr(ori_prediction_on_cpu.reshape(-1), ori_local_labels_on_cpu.reshape(-1))[0]
+                    val_total_loss += loss
 
-        logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), pearson_loss))
+                    n_iter = 1
+                    if (val_i + 1) % n_iter == 0:
+                        avg_loss = val_total_loss / n_iter
+                        val_loss.append(avg_loss)
+                        val_total_loss = 0
 
-        mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_loss), np.mean(test_loss), loss_type='mse', ytickmin=100, ytickmax=500)
-        pearson_visualizer.plot_loss(epoch, pearson_loss, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+                cv_pearson_scores.append(val_pearson)
+                cv_models.append(drug_model)
+
+            logger.debug(
+                "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
+            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss), np.mean(val_loss), loss_type='mse',
+                                     ytickmin=100, ytickmax=500)
+            pearson_visualizer.plot_loss(epoch, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+
+    best_index = 0
+    for i in range(len(cv_pearson_scores)):
+
+        if cv_pearson_scores[best_index] < cv_pearson_scores[i]:
+            best_index = i
+    drug_model = cv_models[best_index]
+
+    ### Testing
+    test_i = 0
+    test_total_loss = 0
+    test_loss = []
+    test_pearson = 0
+
+    with torch.set_grad_enabled(False):
+
+        drug_model.eval()
+        for local_batch, local_labels in test_generator:
+            # Transfer to GPU
+            test_i += 1
+            local_labels_on_cpu = local_labels
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+
+            # Model computations
+            preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+            ys = local_labels.contiguous().view(-1)
+            assert preds.size(-1) == ys.size(-1)
+            prediction_on_cpu = preds.cpu().numpy()
+            ori_local_labels_on_cpu, ori_prediction_on_cpu = local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1,1)
+            if setting.y_transform:
+                ori_local_labels_on_cpu, ori_prediction_on_cpu = \
+                std_scaler.inverse_transform(ori_local_labels_on_cpu/100), \
+                std_scaler.inverse_transform(ori_prediction_on_cpu/100)
+            loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
+            test_pearson = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
+            test_total_loss += loss
+
+            n_iter = 1
+            if (test_i + 1) % n_iter == 0:
+                avg_loss = test_total_loss / n_iter
+                test_loss.append(avg_loss)
+                test_total_loss = 0
+
+    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), test_pearson))

@@ -6,6 +6,8 @@ import numpy as np
 import torch
 from torch.utils import data
 import network_propagation
+import drug_drug
+import random
 
 class CustomDataLoader:
     pass
@@ -411,6 +413,7 @@ class GeneDependenciesDataReader(CustomDataReader):
             random_test.logger.info("Unfound cell lines: %s" % str(unfound_cl))
 
 class ExpressionDataLoader(CustomDataLoader):
+
     gene_expression = None
     backup_expression = None
 
@@ -495,6 +498,241 @@ class ExpressionDataLoader(CustomDataLoader):
             result_df.to_csv(setting.processed_expression, index = False)
 
         return result_df
+
+class SamplesDataLoader(CustomDataLoader):
+
+    entrez_set = None
+    network = None
+    drug_target = None
+    simulated_drug_target = None
+    synergy_score = None
+    sel_dp = None
+    expression_df = None
+    drug_a_features = None
+    drug_b_features = None
+    cellline_features = None
+    data_initialized = False
+    whole_df = None
+    Y = None
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.data_initialized:
+            return
+        cls.entrez_set = GenesDataReader.get_gene_entrez_set()
+
+        ### Reading network data
+        ### entrez_a entrez_b association
+        ### 1001 10001 0.3
+        ### 10001 100001 0.2
+        cls.network = NetworkDataReader.get_network()
+
+        ### Creating test drug target matrix ###
+        ###                   1001    10001    235       32          25           2222
+        ### 5-FU               1        0        0        0           0            0
+        ### ABT-888            0        0        0        0           0            0
+        ### AZD1775            0        1        1        0           1            0
+        ### BORTEZOMIB         1        1        1        1           0            1
+        ### CARBOPLATIN        0        0        0        0           1            0
+        cls.drug_target = DrugTargetProfileDataLoader.get_drug_target_profiles()
+        cls.simulated_drug_target = DrugTargetProfileDataLoader.get_filtered_simulated_drug_target_matrix()
+
+        ### Reading synergy score data ###
+        ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
+        ### 5-FU_ABT-888_A2058,5-FU,ABT-888,A2058,7.6935301658
+        ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
+        cls.synergy_score = SynergyDataReader.get_synergy_score()
+
+        ### Processing gene dependencies map
+        ###     "X127399","X1321N1","X143B",
+        ### entrez
+        ### 1001
+        ### 10001
+        cls.sel_dp = GeneDependenciesDataReader.get_gene_dp()
+
+        ### Prepare gene expression data information
+        cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.sel_dp.index),
+                                                                            celllines=list(cls.sel_dp.columns))
+
+        cls.__check_data_frames()
+        cls.data_initialized = True
+
+    @classmethod
+    def __drug_features_prep(cls):
+
+        ### generate drugs features
+        if cls.drug_a_features is None or cls.drug_b_features is None:
+            cls.__dataloader_initializer()
+            cls.drug_a_features = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
+            cls.drug_a_features = pd.DataFrame(cls.drug_a_features, columns=cls.entrez_set).reset_index(drop=True)
+            cls.drug_a_features.fillna(0, inplace=True)
+            cls.drug_b_features = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
+            cls.drug_b_features = pd.DataFrame(cls.drug_b_features, columns=cls.entrez_set).reset_index(drop=True)
+            cls.drug_b_features.fillna(0, inplace=True)
+        return [cls.drug_a_features, cls.drug_b_features]
+
+    @classmethod
+    def __cellline_features_prep(cls):
+
+        if cls.cellline_features is None:
+            cls.__dataloader_initializer()
+            cls.cellline_features = []
+            ### generate cell lines features
+            if setting.add_dp_feature:
+                dp_features = cls.sel_dp[list(cls.synergy_score['cell_line'])].T
+                dp_features = pd.DataFrame(dp_features, columns=cls.entrez_set).reset_index(drop=True)
+                dp_features.fillna(0, inplace=True)
+                cls.cellline_features.append(dp_features)
+            if setting.add_ge_feature:
+                gene_expression_features = \
+                    network_propagation.gene_expression_network_propagation(cls.network, cls.expression_df,
+                                                                            cls.entrez_set, cls.drug_target,
+                                                                            cls.synergy_score,
+                                                                            setting.gene_expression_simulated_result_matrix)
+                gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set).reset_index(drop=True)
+                gene_expression_features.fillna(0, inplace=True)
+                cls.cellline_features.append(gene_expression_features)
+        return cls.cellline_features
+
+    @classmethod
+    def __construct_whole_raw_X(cls):
+
+        ### return dataframe
+        ###  first_half_drugs_features                first_half_cellline_features
+        ###  switched_second_half_drugs_features      second_half_cellline_features
+        if cls.whole_df is None:
+            first_half = pd.concat(cls.__drug_features_prep() + cls.__cellline_features_prep(), axis=1)
+            second_half = pd.concat(cls.__drug_features_prep()[::-1] + cls.__cellline_features_prep(), axis=1)
+            cls.whole_df = pd.concat([first_half, second_half], axis=0).reset_index(drop=True)
+        return cls.whole_df
+
+    @classmethod
+    def Raw_X_features_prep(cls, methods):
+
+        ### Generate final raw features dataset
+        ### return: ndarray (n_samples, n_type_features, feature_dim) if 'attn'
+        ###         ndarray (n_samples, n_type_features * feature_dim) else
+        raw_x = cls.__construct_whole_raw_X().values
+        entrez_array = np.array(list(cls.entrez_set))
+        if methods == 'attn':
+            x = raw_x.reshape(-1, setting.n_feature_type, len(cls.entrez_set))
+            filter_drug_features_len = filter_cl_features_len = x.shape[-1]
+            drug_features_name = cl_features_name = cls.entrez_set
+
+        else:
+            drug_features_len = int(1 / setting.n_feature_type * raw_x.shape[1])
+            cl_features_len = int(raw_x.shape[1] - 2 * drug_features_len)
+            assert cl_features_len == int((1 - 2 / setting.n_feature_type) * raw_x.shape[1]), \
+                "features len are calculated in wrong way"
+            var_filter = raw_x.var(axis=0) > 0
+            filter_drug_features_len = sum(var_filter[:drug_features_len])
+            filter_cl_features_len = sum(var_filter[2*drug_features_len:])
+            drug_features_name = entrez_array[var_filter[:drug_features_len]]
+            cl_features_name = np.array(list(entrez_array) * (setting.n_feature_type-2))[var_filter[2*drug_features_len:]]
+            x = raw_x[:, var_filter]
+            assert filter_drug_features_len == len(drug_features_name) and filter_cl_features_len == len(cl_features_name), \
+                                                                                  'features len and names do not match'
+        return x, filter_drug_features_len, filter_cl_features_len, list(drug_features_name), list(cl_features_name)
+
+    @classmethod
+    def Y_features_prep(cls):
+
+        ### Generate final y features in ndarray (-1, 1)
+        cls.__dataloader_initializer()
+        Y_labels = cls.synergy_score.loc[:, 'synergy']
+        Y_half = Y_labels.values.reshape(-1, 1)
+        Y = np.concatenate((Y_half, Y_half), axis=0)
+        return Y
+
+    @classmethod
+    def __check_data_frames(cls):
+        random_test.logger.debug("check_unfound_genes_in_drug_target ...")
+        DrugTargetProfileDataLoader.check_unfound_genes_in_drug_target()
+        random_test.logger.debug("check_unfound_genes_in_gene_dp ... ")
+        GeneDependenciesDataReader.check_unfound_genes_in_gene_dp()
+        random_test.logger.debug("check_drugs_in_drug_target ... ")
+        DrugTargetProfileDataLoader.check_drugs_in_drug_target()
+        random_test.logger.debug("check_genes_in_network ...")
+        NetworkDataReader.check_genes_in_network()
+        random_test.logger.debug("check_celllines_in_gene_dp...")
+        GeneDependenciesDataReader.check_celllines_in_gene_dp()
+
+        ### select only the drugs with features
+        ### select only the drug targets in genes
+
+class DataPreprocessor:
+
+    X = None
+    Y = None
+    drug_features_len = None
+    cl_features_len = None
+    synergy_score = None
+    methods = None
+
+    def __init__(self, methods):
+        self.methods = methods
+        pass
+
+    @classmethod
+    def __dataset_initializer(cls):
+
+        if cls.X is None:
+            cls.X, cls.drug_features_len, cls.cl_features_len, _, _ = SamplesDataLoader.Raw_X_features_prep(cls.methods)
+        if cls.Y is None:
+            cls.Y = SamplesDataLoader.Y_features_prep()
+        if cls.synergy_score is None:
+            cls.synergy_score = SynergyDataReader.get_synergy_score()
+
+    @classmethod
+    def reg_train_eval_test_split(cls):
+
+        if cls.synergy_score is None:
+            cls.synergy_score = SynergyDataReader.get_synergy_score()
+
+        if setting.index_in_literature:
+            evluation_fold = random.choice(range(1,5))
+            test_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == 0].index)
+            evaluation_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == evluation_fold].index)
+            train_index = np.array(cls.synergy_score[(cls.synergy_score['fold'] != 0) &
+                                                     (cls.synergy_score['fold'] != evluation_fold)].index)
+
+        else:
+            train_index, test_index = drug_drug.split_data(cls.synergy_score, group_df=cls.synergy_score, group_col=['fold'])
+            train_index, evaluation_index = drug_drug.split_data(cls.synergy_score,
+                                                                 group_df=cls.synergy_score[train_index],
+                                                                 group_col=['fold'])
+
+        train_index = np.concatenate([train_index + cls.synergy_score.shape[0], train_index])
+        evaluation_index_2 = evaluation_index + cls.synergy_score.shape[0]
+        test_index_2 = test_index + cls.synergy_score.shape[0]
+        if setting.unit_test:
+            train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
+                train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:30], evaluation_index_2[:30]
+        return train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
+
+    @classmethod
+    def cv_train_eval_test_split_generator(cls):
+
+        if cls.synergy_score is None:
+            cls.synergy_score = SynergyDataReader.get_synergy_score()
+
+        assert setting.index_in_literature, "Cross validation is only available when index_in_literature is set to True"
+        for evluation_fold in range(1,5):
+            test_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == 0].index)
+            evaluation_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == evluation_fold].index)
+            train_index = np.array(cls.synergy_score[(cls.synergy_score['fold'] != 0) &
+                                                     (cls.synergy_score['fold'] != evluation_fold)].index)
+            train_index = np.concatenate([train_index + cls.synergy_score.shape[0], train_index])
+            evaluation_index_2 = evaluation_index + cls.synergy_score.shape[0]
+            test_index_2 = test_index + cls.synergy_score.shape[0]
+            if setting.unit_test:
+                train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
+                    train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:100], evaluation_index_2[:100]
+            yield train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
 
 class MyDataset(data.Dataset):
 
