@@ -152,7 +152,8 @@ if __name__ == "__main__":
                 if (i + 1) % n_iter == 0:
                     p = int(100 * (i + 1) / setting.batch_size)
                     avg_loss = train_total_loss / n_iter
-                    avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
+                    if setting.y_transform:
+                        avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
                     random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
                           ((time() - start) // 60, epoch + 1, "".join('#' * (p // 5)),
                            "".join(' ' * (20 - (p // 5))), p, avg_loss))
