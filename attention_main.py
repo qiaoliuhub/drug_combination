@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
                 train_total_loss += loss.item()
 
-                n_iter = 2
+                n_iter = 50
                 if (i + 1) % n_iter == 0:
                     p = int(100 * (i + 1) / setting.batch_size)
                     avg_loss = train_total_loss / n_iter
