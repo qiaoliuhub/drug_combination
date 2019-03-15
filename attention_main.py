@@ -99,9 +99,9 @@ if __name__ == "__main__":
 
         train_params = {'batch_size': setting.batch_size,
                         'shuffle': True}
-        eval_params = {'batch_size': len(evaluation_index),
+        eval_params = {'batch_size': len(test_index) * 2,
                        'shuffle': True}
-        test_params = {'batch_size': len(test_index),
+        test_params = {'batch_size': len(test_index) * 2,
                        'shuffle': True}
 
         logger.debug("Preparing datasets ... ")
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                    sample_size = len(local_labels_on_cpu)/2
+                    sample_size = int(len(local_labels_on_cpu)/2)
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
@@ -224,7 +224,7 @@ if __name__ == "__main__":
             # Transfer to GPU
             test_i += 1
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
-            sample_size = len(local_labels_on_cpu) / 2
+            sample_size = int(len(local_labels_on_cpu) / 2)
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
