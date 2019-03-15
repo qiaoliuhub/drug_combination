@@ -180,7 +180,7 @@ if __name__ == "__main__":
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     preds = drug_model(local_batch, local_batch).contiguous().view(-1)
-                    assert preds.size(-1) == local_labels.size[-1]
+                    assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
                     mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                                                       prediction_on_cpu[sample_size:]], axis=0)
