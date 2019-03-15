@@ -70,8 +70,9 @@ if __name__ == "__main__":
     cv_pearson_scores = []
     cv_models = []
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 \
-        in my_data.DataPreprocessor.cv_train_eval_test_split_generator():
+    split_fun = my_data.DataPreprocessor.reg_train_eval_test_split
+
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_fun():
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
@@ -105,9 +106,11 @@ if __name__ == "__main__":
 
         logger.debug("Preparing datasets ... ")
         training_set = my_data.MyDataset(partition['train'], labels)
+        training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_generator = data.DataLoader(training_set, **train_params)
 
         validation_set = my_data.MyDataset(partition['eval1'], labels)
+        validation_set = my_data.MyDataset(partition['test1'], labels)
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
         test_set = my_data.MyDataset(partition['test1'], labels)
