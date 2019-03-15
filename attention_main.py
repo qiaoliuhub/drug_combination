@@ -105,11 +105,11 @@ if __name__ == "__main__":
                        'shuffle': True}
 
         logger.debug("Preparing datasets ... ")
-        training_set = my_data.MyDataset(partition['train'], labels)
+        #training_set = my_data.MyDataset(partition['train'], labels)
         training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_generator = data.DataLoader(training_set, **train_params)
 
-        validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
+        #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
         validation_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                    sample_size = int(len(local_labels_on_cpu)/2)
+                    sample_size = local_labels_on_cpu.shape[-1]//2
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
@@ -224,7 +224,7 @@ if __name__ == "__main__":
             # Transfer to GPU
             test_i += 1
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
-            sample_size = int(len(local_labels_on_cpu) / 2)
+            sample_size = local_labels_on_cpu.shape[-1] // 2
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
