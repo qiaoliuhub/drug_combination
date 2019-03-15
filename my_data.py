@@ -712,7 +712,7 @@ class DataPreprocessor:
         if setting.unit_test:
             train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
                 train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:30], evaluation_index_2[:30]
-        return train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
+        yield train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
 
     @classmethod
     def cv_train_eval_test_split_generator(cls):

@@ -109,11 +109,11 @@ if __name__ == "__main__":
         training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_generator = data.DataLoader(training_set, **train_params)
 
-        validation_set = my_data.MyDataset(partition['eval1'], labels)
-        validation_set = my_data.MyDataset(partition['test1'], labels)
+        validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
+        validation_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
-        test_set = my_data.MyDataset(partition['test1'], labels)
+        test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_generator = data.DataLoader(test_set, **test_params)
 
         logger.debug("Preparing models")
@@ -174,22 +174,23 @@ if __name__ == "__main__":
                 drug_model.eval()
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
-                    local_labels_on_cpu = local_labels
+                    local_labels_on_cpu = np.array(local_labels).reshape(-1)
+                    sample_size = len(local_labels_on_cpu)/2
+                    local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     preds = drug_model(local_batch, local_batch).contiguous().view(-1)
-                    ys = local_labels.contiguous().view(-1)
-                    assert preds.size(-1) == ys.size(-1)
-                    prediction_on_cpu = preds.cpu().numpy()
-                    ori_local_labels_on_cpu, ori_prediction_on_cpu = \
-                        local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1, 1)
-
+                    assert preds.size(-1) == local_labels.size[-1]
+                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                    mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                                                      prediction_on_cpu[sample_size:]], axis=0)
                     if setting.y_transform:
-                        ori_local_labels_on_cpu, ori_prediction_on_cpu = \
-                            std_scaler.inverse_transform(ori_local_labels_on_cpu / 100), \
-                            std_scaler.inverse_transform(ori_prediction_on_cpu / 100)
-                    loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
-                    val_pearson = pearsonr(ori_prediction_on_cpu.reshape(-1), ori_local_labels_on_cpu.reshape(-1))[0]
+                        local_labels_on_cpu, mean_prediction_on_cpu = \
+                            std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1) / 100), \
+                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
+
+                    loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
+                    val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                     val_total_loss += loss
 
                     n_iter = 1
@@ -207,12 +208,8 @@ if __name__ == "__main__":
                                      ytickmin=100, ytickmax=500)
             pearson_visualizer.plot_loss(epoch, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
-    best_index = 0
-    for i in range(len(cv_pearson_scores)):
-
-        if cv_pearson_scores[best_index] < cv_pearson_scores[i]:
-            best_index = i
-    drug_model = cv_models[best_index]
+    best_index = np.argmax(cv_pearson_scores)
+    drug_model = cv_models[int(best_index)]
 
     ### Testing
     test_i = 0
@@ -226,21 +223,22 @@ if __name__ == "__main__":
         for local_batch, local_labels in test_generator:
             # Transfer to GPU
             test_i += 1
-            local_labels_on_cpu = local_labels
+            local_labels_on_cpu = np.array(local_labels).reshape(-1)
+            sample_size = len(local_labels_on_cpu) / 2
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
             preds = drug_model(local_batch, local_batch).contiguous().view(-1)
-            ys = local_labels.contiguous().view(-1)
-            assert preds.size(-1) == ys.size(-1)
-            prediction_on_cpu = preds.cpu().numpy()
-            ori_local_labels_on_cpu, ori_prediction_on_cpu = local_labels_on_cpu.reshape(-1,1), prediction_on_cpu.reshape(-1,1)
+            assert preds.size(-1) == local_labels.size(-1)
+            prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+            mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                                              prediction_on_cpu[sample_size:]], axis=0)
             if setting.y_transform:
-                ori_local_labels_on_cpu, ori_prediction_on_cpu = \
-                std_scaler.inverse_transform(ori_local_labels_on_cpu/100), \
-                std_scaler.inverse_transform(ori_prediction_on_cpu/100)
-            loss = mean_squared_error(ori_local_labels_on_cpu, ori_prediction_on_cpu)
-            test_pearson = pearsonr(ori_local_labels_on_cpu.reshape(-1), ori_prediction_on_cpu.reshape(-1))[0]
+                local_labels_on_cpu, mean_prediction_on_cpu = \
+                    std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
+                    std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+            loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
+            test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_total_loss += loss
 
             n_iter = 1
