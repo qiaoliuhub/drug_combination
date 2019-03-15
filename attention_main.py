@@ -225,6 +225,7 @@ if __name__ == "__main__":
             test_i += 1
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
             sample_size = local_labels_on_cpu.shape[-1] // 2
+            local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
