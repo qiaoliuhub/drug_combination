@@ -711,7 +711,7 @@ class DataPreprocessor:
         test_index_2 = test_index + cls.synergy_score.shape[0]
         if setting.unit_test:
             train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
-                train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:30], evaluation_index_2[:30]
+                train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:100], evaluation_index_2[:100]
         yield train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
 
     @classmethod

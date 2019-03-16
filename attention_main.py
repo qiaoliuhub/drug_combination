@@ -100,9 +100,9 @@ if __name__ == "__main__":
         train_params = {'batch_size': setting.batch_size,
                         'shuffle': True}
         eval_params = {'batch_size': len(test_index) * 2,
-                       'shuffle': True}
+                       'shuffle': False}
         test_params = {'batch_size': len(test_index) * 2,
-                       'shuffle': True}
+                       'shuffle': False}
 
         logger.debug("Preparing datasets ... ")
         #training_set = my_data.MyDataset(partition['train'], labels)
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
                 train_total_loss += loss.item()
 
-                n_iter = 50
+                n_iter = 2
                 if (i + 1) % n_iter == 0:
                     p = int(100 * (i + 1) / setting.batch_size)
                     avg_loss = train_total_loss / n_iter
@@ -209,7 +209,7 @@ if __name__ == "__main__":
             pearson_visualizer.plot_loss(epoch, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
     best_index = np.argmax(cv_pearson_scores)
-    drug_model = cv_models[int(best_index)]
+    best_drug_model = cv_models[int(best_index)]
 
     ### Testing
     test_i = 0
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
     with torch.set_grad_enabled(False):
 
-        drug_model.eval()
+        best_drug_model.eval()
         for local_batch, local_labels in test_generator:
             # Transfer to GPU
             test_i += 1
@@ -229,7 +229,7 @@ if __name__ == "__main__":
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
 
             # Model computations
-            preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+            preds = best_drug_model(local_batch, local_batch).contiguous().view(-1)
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
             mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
