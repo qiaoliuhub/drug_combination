@@ -152,13 +152,14 @@ if __name__ == "__main__":
                 train_total_loss += loss.item()
 
                 n_iter = 2
-                if (i + 1) % n_iter == 0:
-                    p = int(100 * (i + 1) / setting.batch_size)
+                if i % n_iter == 0:
+                    sample_size = len(train_index) + 2* len(evaluation_index)
+                    p = int(100 * i * setting.batch_size/sample_size)
                     avg_loss = train_total_loss / n_iter
                     if setting.y_transform:
                         avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
                     random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
-                          ((time() - start) // 60, epoch + 1, "".join('#' * (p // 5)),
+                          ((time() - start) // 60, epoch, "".join('#' * (p // 5)),
                            "".join(' ' * (20 - (p // 5))), p, avg_loss))
                     train_total_loss = 0
                     cur_epoch_train_loss.append(avg_loss)
