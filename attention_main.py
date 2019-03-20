@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
         train_params = {'batch_size': setting.batch_size,
                         'shuffle': True}
-        eval_params = {'batch_size': len(test_index),
+        eval_params = {'batch_size': len(test_index) * 2,
                        'shuffle': False}
         test_params = {'batch_size': len(test_index)*2,
                        'shuffle': False}
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         training_generator = data.DataLoader(training_set, **train_params)
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
-        validation_set = my_data.MyDataset(partition['test1'], labels)
+        validation_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
@@ -176,21 +176,20 @@ if __name__ == "__main__":
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                    sample_size = local_labels_on_cpu.shape[-1]
+                    sample_size = local_labels_on_cpu.shape[-1]//2
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
-                    # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                    #                                   prediction_on_cpu[sample_size:]], axis=0)
-                    mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
+                    #mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
                     if setting.y_transform:
-                        local_labels_on_cpu, mean_prediction_on_cpu = \
+                        local_labels_on_cpu, prediction_on_cpu = \
                             std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1) / 100), \
-                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
-
+                            std_scaler.inverse_transform(prediction_on_cpu.reshape(-1,1) / 100)
+                    mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                                                      prediction_on_cpu[sample_size:]], axis=0)
                     loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
                     val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                     val_total_loss += loss
@@ -234,12 +233,12 @@ if __name__ == "__main__":
             preds = best_drug_model(local_batch, local_batch).contiguous().view(-1)
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
-            mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                                              prediction_on_cpu[:sample_size]], axis=0)
             if setting.y_transform:
-                local_labels_on_cpu, mean_prediction_on_cpu = \
+                local_labels_on_cpu, prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
-                    std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+                    std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
+            mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                                                  prediction_on_cpu[sample_size:]], axis=0)
             loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
             test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_total_loss += loss
