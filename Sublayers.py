@@ -76,7 +76,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, d_model, d_ff=512, dropout=0.1):
+    def __init__(self, d_model, d_ff=256, dropout=0.1):
         super().__init__()
 
         # We set d_ff as a default to 2048
