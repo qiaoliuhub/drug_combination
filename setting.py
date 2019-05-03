@@ -6,6 +6,9 @@ unit_test = True
 working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
+# feature type: F_representation, others
+feature_type = 'F_representation'
+F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
@@ -23,6 +26,8 @@ synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
+F_drug = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
+F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
 
 # networks: string_network, all_tissues_top
 network = os.path.join(working_dir, 'network', 'string_network')
@@ -73,7 +78,9 @@ y_transform = True
 
 output_FF_layers = [512, 1]
 n_feature_type = 2 + int(add_ge_feature) + int(add_dp_feature)
-d_input = 2324
+if feature_type == 'F_representation':
+    n_feature_type = 3
+d_input = 1000
 d_model = 200
 attention_heads = 8
 attention_dropout = 0.2

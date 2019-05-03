@@ -53,9 +53,8 @@ if __name__ == "__main__":
     # print(sel_dp.shape)
     std_scaler = StandardScaler()
     logger.debug("Getting features and synergy scores ...")
-    X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
-        my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
-    Y = my_data.SamplesDataLoader.Y_features_prep()
+    X = my_data.RepresentationSamplesDataLoader.Raw_X_features_prep(methods='attn')
+    Y = my_data.RepresentationSamplesDataLoader.Y_features_prep()
     logger.debug("Spliting data ...")
 
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
@@ -78,10 +77,10 @@ if __name__ == "__main__":
         for i, combin_drug_feature_array in enumerate(local_X):
             if setting.unit_test:
                 if i<=501:# and not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
+                    save(combin_drug_feature_array, os.path.join('repr_datas', str(final_index_for_X.iloc[i]) + '.pt'))
             else:
-                if not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
+                if not os.path.exists(os.path.join('repr_datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                    save(combin_drug_feature_array, os.path.join('repr_datas', str(final_index_for_X.iloc[i]) + '.pt'))
 
         partition = {'train': list(final_index.iloc[train_index]),
                      'test1': list(final_index.iloc[test_index]), 'test2': list(final_index.iloc[test_index_2]),

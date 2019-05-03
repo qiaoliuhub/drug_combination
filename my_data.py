@@ -249,6 +249,7 @@ class SynergyDataReader(CustomDataReader):
     synergy_score = None
     sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set()
     drugs_filtered = False
+    final_index = None
 
     def __init__(self):
         super().__init__()
@@ -269,6 +270,8 @@ class SynergyDataReader(CustomDataReader):
     ### Some drugs are removed because the drug feature vectors only have zero
         if cls.drugs_filtered:
             return
+        if setting.feature_type == 'F_representation':
+            cls.sel_drugs = set(list(pd.read_csv(setting.F_drug, header = None, index_col=0).index))
         filter1 = (cls.synergy_score['drug_a_name'].isin(cls.sel_drugs)) & (cls.synergy_score['drug_b_name'].isin(cls.sel_drugs))
         cls.synergy_score = cls.synergy_score[filter1]
         random_test.logger.debug("Post filteration, synergy score has {!r} data points".format(len(cls.synergy_score)))
@@ -298,6 +301,20 @@ class SynergyDataReader(CustomDataReader):
         if not filtered:
             cls.__filter_drugs()
         return set(cls.synergy_score['drug_a_name']).union(set(cls.synergy_score['drug_b_name']))
+
+    @classmethod
+    def get_final_index(cls):
+
+        if cls.final_index is None:
+            synergy_score = cls.get_synergy_score()
+            final_index_1 = synergy_score.reset_index().apply(
+                lambda row: row['drug_a_name'] + '_' + row['drug_b_name'] + '_' +
+                            row['cell_line'] + '_' + str(row['index']), axis=1)
+            final_index_2 = synergy_score.reset_index().apply(
+                lambda row: row['drug_b_name'] + '_' + row['drug_a_name'] + '_' +
+                            row['cell_line'] + '_' + str(row['index']), axis=1)
+            cls.final_index = pd.concat([final_index_1, final_index_2], axis=0).reset_index(drop=True)
+        return cls.final_index
 
 class GeneDependenciesDataReader(CustomDataReader):
 
@@ -498,6 +515,100 @@ class ExpressionDataLoader(CustomDataLoader):
             result_df.to_csv(setting.processed_expression, index = False)
 
         return result_df
+
+class RepresentationSamplesDataLoader(CustomDataLoader):
+
+    F_drug = None
+    F_cl = None
+    synergy_score = None
+    data_initialized = False
+    drug_a_features = None
+    drug_b_features = None
+    cellline_features = None
+    whole_df = None
+
+    def __init__(self):
+        super.__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.data_initialized:
+            return
+
+        ######################
+        ### 5-FU ....
+        #####################
+        cls.F_drug = pd.read_csv(setting.F_drug, header = None, index_col = 0)
+
+        ######################
+        ### A2058 ......
+        #####################
+        cls.F_cl = pd.read_csv(setting.F_cl, header = None, index_col = 0)
+
+        ### Reading synergy score data ###
+        ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
+        ### 5-FU_ABT-888_A2058,5-FU,ABT-888,A2058,7.6935301658
+        ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
+        cls.synergy_score = SynergyDataReader.get_synergy_score()
+        cls.data_initialized = True
+
+    @classmethod
+    def __features_prep(cls):
+
+        ### generate drugs features
+        if cls.drug_a_features is None or cls.drug_b_features is None or cls.cellline_features is None:
+            cls.__dataloader_initializer()
+            cls.drug_a_features = cls.F_drug.loc[list(cls.synergy_score['drug_a_name']), :].reset_index(drop=True)
+            #cls.drug_a_features.fillna(0, inplace=True)
+            cls.drug_b_features = cls.F_drug.loc[list(cls.synergy_score['drug_b_name']), :].reset_index(drop=True)
+            #cls.drug_b_features.fillna(0, inplace=True)
+            cls.cellline_features = cls.F_cl.loc[list(cls.synergy_score['cell_line']), :].reset_index(drop=True)
+            #cls.cellline_features.fillna(0, inplace=True)
+        return [cls.drug_a_features, cls.drug_b_features, cls.cellline_features]
+
+    @classmethod
+    def __construct_whole_raw_X(cls):
+
+        ### return dataframe
+        ###  first_half_drugs_features                first_half_cellline_features
+        ###  switched_second_half_drugs_features      second_half_cellline_features
+        if cls.whole_df is None:
+            features_list = cls.__features_prep()
+            first_half = pd.concat(features_list, axis=1)
+            second_half = pd.concat([features_list[1], features_list[0], features_list[2]], axis=1)
+            cls.whole_df = pd.concat([first_half, second_half], axis=0).reset_index(drop=True)
+        return cls.whole_df
+
+    @classmethod
+    def Raw_X_features_prep(cls, methods):
+
+        ### Generate final raw features dataset
+        ### return: ndarray (n_samples, n_type_features, feature_dim) if 'attn'
+        ###         ndarray (n_samples, n_type_features * feature_dim) else
+        raw_x = cls.__construct_whole_raw_X().values
+        if methods == 'attn':
+            x = raw_x.reshape(-1, 3, setting.F_repr_feature_length)
+
+        else:
+            drug_features_len = int(1 / setting.n_feature_type * raw_x.shape[1])
+            cl_features_len = int(raw_x.shape[1] - 2 * drug_features_len)
+            assert cl_features_len == int((1 - 2 / setting.n_feature_type) * raw_x.shape[1]), \
+                "features len are calculated in wrong way"
+            var_filter = raw_x.var(axis=0) > 0
+            x = raw_x[:, var_filter]
+
+        return x
+
+    @classmethod
+    def Y_features_prep(cls):
+
+        ### Generate final y features in ndarray (-1, 1)
+        cls.__dataloader_initializer()
+        Y_labels = cls.synergy_score.loc[:, 'synergy']
+        Y_half = Y_labels.values.reshape(-1, 1)
+        Y = np.concatenate((Y_half, Y_half), axis=0)
+        return Y
 
 class SamplesDataLoader(CustomDataLoader):
 
@@ -750,7 +861,7 @@ class MyDataset(data.Dataset):
         'Generates one sample of data'
         # Select sample
         ID = self.list_IDs[index]
-        drug_combine_file = 'datas/' + ID + '.pt'
+        drug_combine_file = 'repr_datas/' + ID + '.pt'
         # Load data and get label
         try:
             X = torch.load(drug_combine_file)
