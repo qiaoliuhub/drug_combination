@@ -80,7 +80,7 @@ if __name__ == "__main__":
                 if i<=501:# and not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
                     save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
             else:
-                if not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                if setting.update_features or not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
                     save(combin_drug_feature_array, os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt'))
 
         partition = {'train': list(final_index.iloc[train_index]),

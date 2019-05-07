@@ -76,6 +76,8 @@ add_dp_feature = True
 add_ge_feature = True
 y_transform = True
 
+
+update_features = True
 output_FF_layers = [512, 1]
 n_feature_type = 2 + int(add_ge_feature) + int(add_dp_feature)
 if feature_type == 'F_representation':
