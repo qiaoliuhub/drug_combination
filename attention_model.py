@@ -57,8 +57,8 @@ class FlexibleTransformer(Transformer):
 
     def __init__(self, inputs_lengths, d_input, d_model, N, heads, dropout):
         super().__init__(d_input, d_model, len(inputs_lengths), N, heads, dropout)
-        self.linear_layers = []
-        self.final_inputs = []
+        self.linear_layers = nn.ModuleList([])
+        self.final_inputs = nn.ModuleList([])
         for i in range(len(inputs_lengths)):
             self.linear_layers.append(nn.Linear(inputs_lengths[i], d_input))
 
