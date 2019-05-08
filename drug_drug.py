@@ -15,6 +15,16 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
+def narrowed_tensors(raw_tensor, slice_indexs, dimension):
+
+    result_tensors = []
+    current_index = 0
+    for length in slice_indexs:
+        result_tensors.append(raw_tensor.narrow(dimension, current_index, length))
+        current_index += length
+    assert current_index == list(raw_tensor.size())[dimension], "narrowed tensors didn't use all raw tensor data"
+    return result_tensors
+
 def regular_split(df, group_df = None, group_col=None, n_split = 10, rd_state = setting.split_random_seed):
 
     shuffle_split = ShuffleSplit(test_size=1.0/n_split, random_state = rd_state)

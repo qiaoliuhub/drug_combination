@@ -53,8 +53,11 @@ if __name__ == "__main__":
     # print(sel_dp.shape)
     std_scaler = StandardScaler()
     logger.debug("Getting features and synergy scores ...")
-    X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
-        my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
+    # X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
+    #     my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
+
+    X, drug_features_length, cellline_features_length = \
+            my_data.SamplesDataLoader.Raw_X_features_prep(methods='flexible_attn')
     Y = my_data.SamplesDataLoader.Y_features_prep()
     logger.debug("Spliting data ...")
 
@@ -111,8 +114,9 @@ if __name__ == "__main__":
         test_generator = data.DataLoader(test_set, **test_params)
 
         logger.debug("Preparing models")
-        drug_model = attention_model.get_model()
-        torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
+        slice_indices = drug_features_length + drug_features_length + cellline_features_length
+        drug_model = attention_model.get_model(slice_indices)
+        #torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
         optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
 
         logger.debug("Start training")
@@ -133,7 +137,7 @@ if __name__ == "__main__":
                 i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-
+                local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)), slice_indices, dimension=2)
                 # Model computations
                 preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
@@ -174,6 +178,8 @@ if __name__ == "__main__":
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                    local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)),
+                                                             slice_indices, dimension=2)
                     preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -223,7 +229,8 @@ if __name__ == "__main__":
             sample_size = local_labels_on_cpu.shape[-1] // 2
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-
+            local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)),
+                                                     slice_indices, dimension=2)
             # Model computations
             preds = best_drug_model(local_batch, local_batch).contiguous().view(-1)
             assert preds.size(-1) == local_labels.size(-1)

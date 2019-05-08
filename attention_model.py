@@ -1,4 +1,5 @@
 import torch.nn as nn
+from torch import cat
 from Layers import EncoderLayer, DecoderLayer
 from Sublayers import Norm, OutputFeedForward
 import copy
@@ -52,12 +53,35 @@ class Transformer(nn.Module):
         output = self.out(flat_d_output)
         return output
 
+class FlexibleTransformer(Transformer):
 
-def get_model():
+    def __init__(self, inputs_lengths, d_input, d_model, N, heads, dropout):
+        super().__init__(d_input, d_model, len(inputs_lengths), N, heads, dropout)
+        self.linear_layers = []
+        self.final_inputs = []
+        for i in range(len(inputs_lengths)):
+            self.linear_layers.append(nn.Linear(inputs_lengths[i], d_input))
+
+    def forward(self, srcs, trgs, src_mask=None, trg_mask=None):
+
+        assert len(self.linear_layers) == len(srcs), "Features and sources length are different"
+        final_srcs = []
+        final_trgs = []
+        for i in range(len(self.linear_layers)):
+            final_srcs.append(self.linear_layers[i](srcs[i]))
+            final_trgs.append(self.linear_layers[i](trgs[i]))
+        final_src = cat(tuple(final_srcs), 1)
+        final_trg = cat(tuple(final_trgs), 1)
+        output = super().forward(final_src, final_trg)
+        return output
+
+
+def get_model(inputs_lengths):
     assert setting.d_model % setting.attention_heads == 0
     assert setting.attention_dropout < 1
 
-    model = Transformer(setting.d_input, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    #model = FlexibleTransformer(setting.d_input, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = FlexibleTransformer(inputs_lengths, setting.d_input, setting.d_model, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:

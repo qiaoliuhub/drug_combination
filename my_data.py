@@ -516,6 +516,51 @@ class ExpressionDataLoader(CustomDataLoader):
 
         return result_df
 
+class ECFPDataLoader(CustomDataLoader):
+
+    ECFP = None
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.ECFP is None:
+            cls.ECFP = pd.read_csv(setting.ECFP)
+
+    @classmethod
+    def get_ecfp_data(cls):
+
+        if cls.ECFP is None:
+            cls.__dataloader_initializer()
+        cls.ECFP = cls.ECFP[['Name', 'ECFP_6']]
+        cls.ECFP.set_index('Name', inplace= True)
+        cls.ECFP = cls.ECFP['ECFP_6'].apply(lambda i: pd.Series(list(i))).astype(int)
+        cls.ECFP = cls.ECFP.loc[:,~((cls.ECFP==0).all(axis = 0))]
+        return cls.ECFP
+
+class PhysicochemDataLoader(CustomDataLoader):
+
+    physicochem = None
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.physicochem is None:
+            cls.physicochem = pd.read_csv(setting.physicochem, index_col=0)
+
+    @classmethod
+    def get_physicochem_property(cls):
+
+        if cls.physicochem is None:
+            cls.__dataloader_initializer()
+        cls.physicochem.drop('SMILE', inplace=True, axis=1)
+        cls.physicochem = cls.physicochem.loc[:, ~((cls.physicochem == 0).all(axis=0))]
+        return cls.physicochem
+
 class RepresentationSamplesDataLoader(CustomDataLoader):
 
     F_drug = None
@@ -622,9 +667,16 @@ class SamplesDataLoader(CustomDataLoader):
     drug_a_features = None
     drug_b_features = None
     cellline_features = None
+    drug_features = None
     data_initialized = False
     whole_df = None
     Y = None
+    drug_features_lengths = []
+    cellline_features_lengths = []
+    ECFP = None
+    physicochem = None
+    F_drug = None
+    F_cl = None
 
     def __init__(self):
         super().__init__()
@@ -669,21 +721,82 @@ class SamplesDataLoader(CustomDataLoader):
         cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.sel_dp.index),
                                                                             celllines=list(cls.sel_dp.columns))
 
+        ### Prepare ECFP_6 features
+        ###         1     2    ....
+        ### Name
+        ### 5-FU    0     1    ....
+        cls.ECFP = ECFPDataLoader.get_ecfp_data()
+
+
+        ### Prepare drug physicochemiscal properties
+        ###         ATSp8     Chi5ch ...
+        ### Name
+        ### 5-FU    1.150	   0.221 ...
+        cls.physicochem = PhysicochemDataLoader.get_physicochem_property()
+
+        ######################
+        ### 5-FU ....
+        #####################
+        cls.F_drug = pd.read_csv(setting.F_drug, header = None, index_col = 0)
+
+        ######################
+        ### A2058 ......
+        #####################
+        cls.F_cl = pd.read_csv(setting.F_cl, header = None, index_col = 0)
+
         cls.__check_data_frames()
         cls.data_initialized = True
 
     @classmethod
     def __drug_features_prep(cls):
 
+
         ### generate drugs features
-        if cls.drug_a_features is None or cls.drug_b_features is None:
+        if cls.drug_a_features is None or cls.drug_b_features is None or cls.drug_features is None:
             cls.__dataloader_initializer()
-            cls.drug_a_features = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
-            cls.drug_a_features = pd.DataFrame(cls.drug_a_features, columns=cls.entrez_set).reset_index(drop=True)
-            cls.drug_a_features.fillna(0, inplace=True)
-            cls.drug_b_features = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
-            cls.drug_b_features = pd.DataFrame(cls.drug_b_features, columns=cls.entrez_set).reset_index(drop=True)
-            cls.drug_b_features.fillna(0, inplace=True)
+            cls.drug_features = []
+            cls.drug_a_features = []
+            cls.drug_b_features = []
+
+            if 'drug_target_profile' in setting.drug_features:
+
+                drug_a_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
+                drug_a_target_feature = pd.DataFrame(drug_a_target_feature, columns=cls.entrez_set).reset_index(drop=True)
+                drug_targe_feature_filter = ~drug_a_target_feature.isnull().all(axis=0)
+                drug_a_target_feature = drug_a_target_feature.loc[:, drug_targe_feature_filter]
+                drug_a_target_feature.fillna(0, inplace=True)
+                cls.drug_a_features.append(drug_a_target_feature.values)
+                cls.drug_features_lengths.append(drug_a_target_feature.shape[1])
+                drug_b_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
+                drug_b_target_feature = pd.DataFrame(drug_b_target_feature, columns=cls.entrez_set).reset_index(drop=True)
+                drug_b_target_feature = drug_b_target_feature.loc[:, drug_targe_feature_filter]
+                drug_b_target_feature.fillna(0, inplace=True)
+                cls.drug_b_features.append(drug_b_target_feature.values)
+
+            if 'ECFP' in setting.drug_features:
+
+                drug_a_ecfp = cls.ECFP.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_ecfp.values)
+                cls.drug_features_lengths.append(drug_a_ecfp.shape[1])
+                drug_b_ecfp = cls.ECFP.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_ecfp.values)
+
+            if 'drug_physiochemistry' in setting.drug_features:
+
+                drug_a_physiochem_feature = cls.physicochem.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_physiochem_feature.values)
+                cls.drug_features_lengths.append(drug_a_physiochem_feature.shape[1])
+                drug_b_physiochem_feature = cls.physicochem.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_physiochem_feature.values)
+
+            if 'F_repr' in setting.drug_features:
+
+                drug_a_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_F_feature.values)
+                cls.drug_features_lengths.append(drug_a_F_feature.shape[1])
+                drug_b_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_F_feature.values)
+
         return [cls.drug_a_features, cls.drug_b_features]
 
     @classmethod
@@ -693,20 +806,32 @@ class SamplesDataLoader(CustomDataLoader):
             cls.__dataloader_initializer()
             cls.cellline_features = []
             ### generate cell lines features
-            if setting.add_dp_feature:
+            if 'gene_dependence' in setting.cellline_features:
                 dp_features = cls.sel_dp[list(cls.synergy_score['cell_line'])].T
                 dp_features = pd.DataFrame(dp_features, columns=cls.entrez_set).reset_index(drop=True)
+                dp_features_filter = ~dp_features.isnull().all(axis=0)
+                dp_features = dp_features.loc[:, dp_features_filter]
                 dp_features.fillna(0, inplace=True)
-                cls.cellline_features.append(dp_features)
-            if setting.add_ge_feature:
+                cls.cellline_features.append(dp_features.values)
+                cls.cellline_features_lengths.append(dp_features.shape[1])
+            if 'gene_expression' in setting.cellline_features:
                 gene_expression_features = \
                     network_propagation.gene_expression_network_propagation(cls.network, cls.expression_df,
                                                                             cls.entrez_set, cls.drug_target,
                                                                             cls.synergy_score,
                                                                             setting.gene_expression_simulated_result_matrix)
                 gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set).reset_index(drop=True)
+                gene_expression_features_filter = ~gene_expression_features.isnull().all(axis=0)
+                gene_expression_features = gene_expression_features.loc[:, gene_expression_features_filter]
                 gene_expression_features.fillna(0, inplace=True)
-                cls.cellline_features.append(gene_expression_features)
+                cls.cellline_features.append(gene_expression_features.values)
+                cls.cellline_features_lengths.append(gene_expression_features.shape[1])
+
+            if 'cl_F_repr' in setting.cellline_features:
+                cellline_repr_features = cls.F_cl.loc[list(cls.synergy_score['cell_line']), :].reset_index(drop=True)
+                cls.cellline_features.append(cellline_repr_features.values)
+                cls.cellline_features_lengths.append(cellline_repr_features.shape[1])
+
         return cls.cellline_features
 
     @classmethod
@@ -716,9 +841,13 @@ class SamplesDataLoader(CustomDataLoader):
         ###  first_half_drugs_features                first_half_cellline_features
         ###  switched_second_half_drugs_features      second_half_cellline_features
         if cls.whole_df is None:
-            first_half = pd.concat(cls.__drug_features_prep() + cls.__cellline_features_prep(), axis=1)
-            second_half = pd.concat(cls.__drug_features_prep()[::-1] + cls.__cellline_features_prep(), axis=1)
-            cls.whole_df = pd.concat([first_half, second_half], axis=0).reset_index(drop=True)
+            two_drugs_features_list = cls.__drug_features_prep()
+            cellline_features_list = cls.__cellline_features_prep()
+            # first_half = pd.concat(two_drugs_features_list[0] + two_drugs_features_list[1] + cellline_features_list, axis=1)
+            # second_half = pd.concat(two_drugs_features_list[1] + two_drugs_features_list[0] + cellline_features_list, axis=1)
+            first_half = np.concatenate(tuple(two_drugs_features_list[0] + two_drugs_features_list[1] + cellline_features_list), axis=1)
+            second_half = np.concatenate(tuple(two_drugs_features_list[1] + two_drugs_features_list[0] + cellline_features_list), axis=1)
+            cls.whole_df = np.concatenate(tuple([first_half, second_half]), axis=0)#.reset_index(drop=True)
         return cls.whole_df
 
     @classmethod
@@ -727,12 +856,16 @@ class SamplesDataLoader(CustomDataLoader):
         ### Generate final raw features dataset
         ### return: ndarray (n_samples, n_type_features, feature_dim) if 'attn'
         ###         ndarray (n_samples, n_type_features * feature_dim) else
-        raw_x = cls.__construct_whole_raw_X().values
+        raw_x = cls.__construct_whole_raw_X()
         entrez_array = np.array(list(cls.entrez_set))
         if methods == 'attn':
             x = raw_x.reshape(-1, setting.n_feature_type, len(cls.entrez_set))
             filter_drug_features_len = filter_cl_features_len = x.shape[-1]
             drug_features_name = cl_features_name = cls.entrez_set
+
+        elif methods == 'flexible_attn':
+
+            return raw_x, cls.drug_features_lengths, cls.cellline_features_lengths
 
         else:
             drug_features_len = int(1 / setting.n_feature_type * raw_x.shape[1])
@@ -861,7 +994,7 @@ class MyDataset(data.Dataset):
         'Generates one sample of data'
         # Select sample
         ID = self.list_IDs[index]
-        drug_combine_file = 'repr_datas/' + ID + '.pt'
+        drug_combine_file = 'datas/' + ID + '.pt'
         # Load data and get label
         try:
             X = torch.load(drug_combine_file)

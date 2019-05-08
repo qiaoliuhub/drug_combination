@@ -6,8 +6,8 @@ unit_test = True
 working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
-# feature type: F_representation, others
-feature_type = 'F_representation'
+# feature type: F_representation, others, determine whether or not ignoring drugs without hidden representation
+feature_type = 'others'
 F_repr_feature_length = 1000
 
 activation_method =["relu"]
@@ -29,6 +29,9 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 F_drug = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
 
+ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
+physicochem = os.path.join(working_dir, 'chemicals', 'physicochemical_des.csv')
+
 # networks: string_network, all_tissues_top
 network = os.path.join(working_dir, 'network', 'string_network')
 network_matrix = os.path.join(working_dir, 'network', 'string_network_matrix.csv')
@@ -38,7 +41,7 @@ index_renewal = True
 train_index = os.path.join(working_dir, 'train_index_' + str(split_random_seed))
 test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
-renew = True
+renew = False
 RWlike_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'normalized_simulated_result_matrix_string.csv')
 target_as_1_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'target_1_simulated_result_matrix_string.csv')
 target_as_0_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'target_0_simulated_result_matrix_string.csv')
@@ -63,26 +66,26 @@ backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
 processed_expression = os.path.join(working_dir, 'processed_expression.csv')
 
 
-combine_drug_target_renew = True
+combine_drug_target_renew = False
 combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_drug_target_matrix.csv')
 
-drug_profiles_renew = True
+drug_profiles_renew = False
 drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
 
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
-add_dp_feature = True
-add_ge_feature = True
 y_transform = True
 
-
+cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr']
+drug_features = ['drug_target_profile', 'drug_physiochemistry', 'ECFP', 'drug_F_repr']
 update_features = True
-output_FF_layers = [512, 1]
-n_feature_type = 2 + int(add_ge_feature) + int(add_dp_feature)
+output_FF_layers = [400, 1]
+d_input = 400
+n_feature_type = 2 + len(cellline_features)
 if feature_type == 'F_representation':
     n_feature_type = 3
-d_input = 1000
+    d_input = 1000
 d_model = 200
 attention_heads = 8
 attention_dropout = 0.2
