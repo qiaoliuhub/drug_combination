@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
-    test_index, test_index_2, test_generator = None, None, None
+    test_generator = None
     cv_pearson_scores = []
     cv_models = []
 
@@ -115,7 +115,8 @@ if __name__ == "__main__":
 
         logger.debug("Preparing models")
         slice_indices = drug_features_length + drug_features_length + cellline_features_length
-        drug_model = attention_model.get_model(slice_indices)
+        drug_model = attention_model.get_multi_models(slice_indices)
+        drug_model.to(device2)
         #torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
         optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
 

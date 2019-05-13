@@ -82,11 +82,11 @@ drug_features = ['drug_target_profile', 'drug_physiochemistry', 'ECFP', 'drug_F_
 update_features = True
 output_FF_layers = [400, 1]
 d_input = 400
-n_feature_type = 2 + len(cellline_features)
+n_feature_type = 1
 if feature_type == 'F_representation':
     n_feature_type = 3
     d_input = 1000
-d_model = 200
+d_model = 400
 attention_heads = 8
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
