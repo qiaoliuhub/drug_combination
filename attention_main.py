@@ -61,6 +61,15 @@ if __name__ == "__main__":
     Y = my_data.SamplesDataLoader.Y_features_prep()
     logger.debug("Spliting data ...")
 
+    logger.debug("Preparing models")
+    slice_indices = drug_features_length + drug_features_length + cellline_features_length
+    reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices())
+    drug_model.to(device2)
+    # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
+    optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
+                                 betas=(0.9, 0.98), eps=1e-9)
+
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
     test_generator = None
@@ -113,13 +122,6 @@ if __name__ == "__main__":
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_generator = data.DataLoader(test_set, **test_params)
 
-        logger.debug("Preparing models")
-        slice_indices = drug_features_length + drug_features_length + cellline_features_length
-        drug_model = attention_model.get_multi_models(slice_indices)
-        drug_model.to(device2)
-        #torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
-        optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay, betas=(0.9, 0.98), eps=1e-9)
-
         logger.debug("Start training")
         # Loop over epochs
         mse_visualizer = torch_visual.VisTorch(env_name='MSE')
@@ -138,7 +140,9 @@ if __name__ == "__main__":
                 i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)), slice_indices, dimension=2)
+                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices))
+                reorder_tensor.load_raw_tensor(local_batch)
+                local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
                 preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
@@ -179,8 +183,8 @@ if __name__ == "__main__":
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                    local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)),
-                                                             slice_indices, dimension=2)
+                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+                    local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds = drug_model(local_batch, local_batch).contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -230,8 +234,8 @@ if __name__ == "__main__":
             sample_size = local_labels_on_cpu.shape[-1] // 2
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-            local_batch = drug_drug.narrowed_tensors(local_batch.contiguous().view(-1, 1, sum(slice_indices)),
-                                                     slice_indices, dimension=2)
+            reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+            local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
             preds = best_drug_model(local_batch, local_batch).contiguous().view(-1)
             assert preds.size(-1) == local_labels.size(-1)

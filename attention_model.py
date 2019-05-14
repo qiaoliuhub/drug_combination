@@ -1,5 +1,6 @@
 import torch.nn as nn
 from torch import cat
+import torch
 from Layers import EncoderLayer, DecoderLayer
 from Sublayers import Norm, OutputFeedForward
 import copy
@@ -65,16 +66,17 @@ class MultiTransformers(nn.Module):
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
         super().__init__()
         self.transformer_list = nn.ModuleList()
+        self.n_feature_type_list = n_feature_type_list
         assert len(d_input_list) == len(n_feature_type_list) and len(d_input_list) == len(d_model_list),\
             "claimed inconsistent number of transformers"
         for i in range(len(d_input_list)):
-            self.transformer_list.append(Transformer(d_input_list[i], d_model_list[i], N, heads, dropout))
+            self.transformer_list.append(Transformer(d_input_list[i]//n_feature_type_list[i], d_model_list[i], N, heads, dropout))
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
 
-        assert len(src_list) == len(self.transformer_list),"inputs length is not same with input length for model"
+        assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
         output_list = []
         for i in range(len(self.transformer_list)):
             output_list.append(self.transformer_list[i](src_list[i], trg_list[i]))

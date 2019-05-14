@@ -6,6 +6,7 @@ import logging
 import os
 import pickle
 from pandas.io.common import EmptyDataError
+import torch
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -14,6 +15,72 @@ fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
+
+class reorganize_tensor:
+
+    raw_tensor = None
+    def __init__(self, slice_indices, arrangement, dimension):
+
+        self.slice_indices = slice_indices
+        self.arrangement = arrangement
+        self.dimension = dimension
+
+    def load_raw_tensor(self, raw_tensor):
+        self.raw_tensor = raw_tensor
+
+    @classmethod
+    def recursive_len(cls, item):
+        if type(item) == list:
+            return sum(cls.recursive_len(subitem) for subitem in item)
+        else:
+            return 1
+
+    def get_reordered_slice_indices(self):
+
+        ### slice_indices: [2324, 400, 1200, 2324, 400, 1200, 2324]
+        ### arrangement: [[0, 3, 6], [1, 4], [2, 5]]
+        ### return: [2324+2324, 400+400, 1200+1200]
+
+        assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
+            "slice indices length is not same with arrangement length"
+
+        result_slice_indices = []
+        for ls in self.arrangement:
+            cur_len = self.slice_indices[ls[0]]
+            for i in ls:
+                assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
+            result_slice_indices.append(sum([self.slice_indices[i] for i in ls]))
+
+        return result_slice_indices
+
+    def __accum_slice_indices(self):
+
+        result_slice_indices = [0]
+        for i in range(1, len(self.slice_indices)):
+            result_slice_indices.append(result_slice_indices[-1] + self.slice_indices[i-1])
+        return result_slice_indices
+
+    def get_reordered_narrow_tensor(self):
+
+        ### arrangement: [[0, 3, 6], [1, 4], [2, 5]]
+
+        assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
+            "slice indices length is not same with arrangement length"
+
+        assert self.raw_tensor is not None, "Raw tensor should be loaded firstly"
+
+        result_tensors = []
+        cat_tensor_list = []
+        start_indices = self.__accum_slice_indices()
+        for ls in self.arrangement:
+            cur_len = self.slice_indices[ls[0]]
+            for index in ls:
+                assert self.slice_indices[index] == cur_len, "concatenated tensor has different dimensions"
+                cat_tensor_list.append(self.raw_tensor.narrow(dim=self.dimension, start=start_indices[index],
+                                                              length=self.slice_indices[index]))
+            result_tensors.append(torch.cat(tuple(cat_tensor_list), dim=1))
+            cat_tensor_list = []
+        return result_tensors
 
 def narrowed_tensors(raw_tensor, slice_indexs, dimension):
 
