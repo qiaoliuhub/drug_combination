@@ -84,12 +84,11 @@ drug_features = ['drug_target_profile', 'drug_physiochemistry', 'ECFP']
 arrangement = [[0,3],[1,4],[2,5],[6]]
 update_features = False
 output_FF_layers = [400, 1]
-d_input = 400
 n_feature_type = [2,2,2,1]
 if feature_type == 'F_representation':
     n_feature_type = 3
     d_input = 1000
-d_model = 200
-attention_heads = 8
+d_model = 400
+attention_heads = 1
 attention_dropout = 0.2
-n_layers = 1 # This has to be 1
+n_layers = 2 # This has to be 1

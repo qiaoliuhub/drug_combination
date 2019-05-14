@@ -74,7 +74,7 @@ class MultiTransformers(nn.Module):
             "claimed inconsistent number of transformers"
         self.linear_layers = nn.ModuleList()
         for i in range(len(d_input_list)):
-            self.linear_layers.append(nn.Linear(d_input_list[i]//n_feature_type_list[i], d_model_list[i]))
+            self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
@@ -126,7 +126,7 @@ def get_model(inputs_lengths):
     assert setting.attention_dropout < 1
 
     #model = TransformerPlusLinear(setting.d_input, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = FlexibleTransformer(inputs_lengths, setting.d_input, setting.d_model, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = FlexibleTransformer(inputs_lengths, setting.d_model, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
@@ -150,8 +150,10 @@ def get_multi_models(inputs_lengths):
         assert d_model % setting.attention_heads == 0
     assert setting.attention_dropout < 1
 
+    final_inputs_lengths = [inputs_lengths[i]//n_feature_types[i] for i in range(len(inputs_lengths))]
+
     #model = TransformerPlusLinear(setting.d_input, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = MultiTransformers(inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = MultiTransformers(final_inputs_lengths, final_inputs_lengths, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
