@@ -76,7 +76,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, d_model, d_ff=256, dropout=0.1):
+    def __init__(self, d_model, d_ff=200, dropout=0.1):
         super().__init__()
 
         # We set d_ff as a default to 2048
@@ -99,14 +99,16 @@ class OutputFeedForward(nn.Module):
         self.linear_1 = nn.Linear(H*W, self.d_layers[0])
         self.n_layers = len(self.d_layers)
         self.dropouts = nn.ModuleList(nn.Dropout(dropout) for _ in range(1, self.n_layers))
-        self.layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
+        self.linear_layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
+        self.norms = nn.ModuleList(Norm(d_layers[i]) for i in range(self.n_layers))
 
     def forward(self, x):
 
         x = self.linear_1(x)
         for i in range(self.n_layers-1):
-            x = self.dropouts[i](F.relu(x))
-            x = self.layers[i](x)
+            x = self.norms[i](F.relu(x))
+            x = self.dropouts[i](x)
+            x = self.linear_layers[i](x)
         return x
 
 

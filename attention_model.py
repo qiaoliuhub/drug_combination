@@ -12,10 +12,10 @@ def get_clones(module, N):
 
 
 class Encoder(nn.Module):
-    def __init__(self, d_input, d_model, N, heads, dropout):
+    def __init__(self, d_model, N, heads, dropout):
         super().__init__()
         self.N = N
-        self.layers = get_clones(EncoderLayer(d_input, d_model, heads, dropout), N)
+        self.layers = get_clones(EncoderLayer(d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
     def forward(self, src, mask=None):
@@ -26,10 +26,10 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, d_input, d_model, N, heads, dropout):
+    def __init__(self, d_model, N, heads, dropout):
         super().__init__()
         self.N = N
-        self.layers = get_clones(DecoderLayer(d_input, d_model, heads, dropout), N)
+        self.layers = get_clones(DecoderLayer(d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
     def forward(self, trg, e_outputs, src_mask=None, trg_mask=None):
@@ -40,10 +40,10 @@ class Decoder(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, d_input, d_model, N, heads, dropout):
+    def __init__(self, d_model, N, heads, dropout):
         super().__init__()
-        self.encoder = Encoder(d_input, d_model, N, heads, dropout)
-        self.decoder = Decoder(d_input, d_model, N, heads, dropout)
+        self.encoder = Encoder(d_model, N, heads, dropout)
+        self.decoder = Decoder(d_model, N, heads, dropout)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None):
         e_outputs = self.encoder(src, src_mask)
@@ -54,44 +54,57 @@ class Transformer(nn.Module):
 
 class TransformerPlusLinear(Transformer):
     def __init__(self, d_input, d_model, n_feature_type, N, heads, dropout):
-        super().__init__(d_input, d_model, N, heads, dropout)
+        super().__init__(d_model, N, heads, dropout)
+        self.input_linear = nn.Linear(d_input, d_model)
         self.out = OutputFeedForward(d_model, n_feature_type, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None):
+        src = self.input_linear(src)
+        trg = self.input_linear(trg)
         flat_d_output = super().forward(src, trg)
         output = self.out(flat_d_output)
+        return output
 
 class MultiTransformers(nn.Module):
 
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
         super().__init__()
-        self.transformer_list = nn.ModuleList()
-        self.n_feature_type_list = n_feature_type_list
+
         assert len(d_input_list) == len(n_feature_type_list) and len(d_input_list) == len(d_model_list),\
             "claimed inconsistent number of transformers"
+        self.linear_layers = nn.ModuleList()
         for i in range(len(d_input_list)):
-            self.transformer_list.append(Transformer(d_input_list[i]//n_feature_type_list[i], d_model_list[i], N, heads, dropout))
+            self.linear_layers.append(nn.Linear(d_input_list[i]//n_feature_type_list[i], d_model_list[i]))
+        self.transformer_list = nn.ModuleList()
+        self.n_feature_type_list = n_feature_type_list
+        for i in range(len(d_input_list)):
+            self.transformer_list.append(Transformer(d_model_list[i], N, heads, dropout))
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
 
         assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
+        src_list_linear = []
+        trg_list_linear = []
+        for i in range(len(self.linear_layers)):
+            src_list_linear.append(self.linear_layers[i](src_list[i]))
+            trg_list_linear.append(self.linear_layers[i](trg_list[i]))
         output_list = []
         for i in range(len(self.transformer_list)):
-            output_list.append(self.transformer_list[i](src_list[i], trg_list[i]))
+            output_list.append(self.transformer_list[i](src_list_linear[i], trg_list_linear[i]))
         cat_output = cat(tuple(output_list), dim=1)
         output = self.out(cat_output)
         return output
 
 class FlexibleTransformer(Transformer):
 
-    def __init__(self, inputs_lengths, d_input, d_model, N, heads, dropout):
-        super().__init__(d_input, d_model, len(inputs_lengths), N, heads, dropout)
-        self.linear_layers = nn.ModuleList()
+    def __init__(self, inputs_lengths, d_model, N, heads, dropout):
+        super().__init__(d_model, N, heads, dropout)
         self.final_inputs = nn.ModuleList()
+        self.linear_layers = nn.ModuleList()
         for i in range(len(inputs_lengths)):
-            self.linear_layers.append(nn.Linear(inputs_lengths[i], d_input))
+            self.linear_layers.append(nn.Linear(inputs_lengths[i], d_model))
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
 

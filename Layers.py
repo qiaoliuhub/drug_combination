@@ -4,9 +4,8 @@ from Sublayers import FeedForward, MultiHeadAttention, Norm
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, d_input, d_model, heads, dropout=0.1):
+    def __init__(self, d_model, heads, dropout=0.1):
         super().__init__()
-        self.input_linear = nn.Linear(d_input, d_model)
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
         self.attn = MultiHeadAttention(heads, d_model, dropout=dropout)
@@ -16,7 +15,6 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, mask=None):
 
-        x = F.relu(self.input_linear(x))
         x2 = self.norm_1(x)
         x = x + self.dropout_1(self.attn(x2, x2, x2, mask))
         x2 = self.norm_2(x)
@@ -27,9 +25,8 @@ class EncoderLayer(nn.Module):
 # build a decoder layer with two multi-head attention layers and
 # one feed-forward layer
 class DecoderLayer(nn.Module):
-    def __init__(self, d_input, d_model, heads, dropout=0.1):
+    def __init__(self, d_model, heads, dropout=0.1):
         super().__init__()
-        self.input_linear = nn.Linear(d_input, d_model)
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
         self.norm_3 = Norm(d_model)
@@ -43,7 +40,6 @@ class DecoderLayer(nn.Module):
         self.ff = FeedForward(d_model, dropout=dropout)
 
     def forward(self, x, e_outputs, src_mask=None, trg_mask=None):
-        x = F.relu(self.input_linear(x))
         x2 = self.norm_1(x)
         x = x + self.dropout_1(self.attn_1(x2, x2, x2, trg_mask))
         x2 = self.norm_2(x)

@@ -59,6 +59,7 @@ if __name__ == "__main__":
     X, drug_features_length, cellline_features_length = \
             my_data.SamplesDataLoader.Raw_X_features_prep(methods='flexible_attn')
     Y = my_data.SamplesDataLoader.Y_features_prep()
+
     logger.debug("Spliting data ...")
 
     logger.debug("Preparing models")
