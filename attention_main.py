@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
-
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min = 1e-7)
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
     test_generator = None
@@ -167,6 +167,8 @@ if __name__ == "__main__":
                            "".join(' ' * (20 - (p // 5))), p, avg_loss))
                     train_total_loss = 0
                     cur_epoch_train_loss.append(avg_loss)
+
+            scheduler.step()
 
             ### Evaluation
             val_i = 0
