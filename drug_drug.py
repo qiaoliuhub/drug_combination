@@ -78,7 +78,8 @@ class reorganize_tensor:
                 assert self.slice_indices[index] == cur_len, "concatenated tensor has different dimensions"
                 cat_tensor_list.append(self.raw_tensor.narrow(dim=self.dimension, start=start_indices[index],
                                                               length=self.slice_indices[index]))
-            result_tensors.append(torch.cat(tuple(cat_tensor_list), dim=1))
+            catted_tensor = torch.cat(tuple(cat_tensor_list), dim=1)
+            result_tensors.append(torch.transpose(catted_tensor, -1, -2))
             cat_tensor_list = []
         return result_tensors
 

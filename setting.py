@@ -88,7 +88,7 @@ n_feature_type = [2,2,2,1]
 if feature_type == 'F_representation':
     n_feature_type = 3
     d_input = 1000
-d_model = 400
+d_model = 2
 attention_heads = 1
 attention_dropout = 0.2
 n_layers = 2 # This has to be 1

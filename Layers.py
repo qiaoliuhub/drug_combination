@@ -21,6 +21,13 @@ class EncoderLayer(nn.Module):
         x = x + self.dropout_2(self.ff(x2))
         return x
 
+class OutputAttentionLayer(nn.Module):
+
+    def __init__(self, src_d_model, trg_d_model, heads, dropout=0.1):
+
+        super.__init__()
+        pass
+
 
 # build a decoder layer with two multi-head attention layers and
 # one feed-forward layer
