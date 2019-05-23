@@ -254,15 +254,14 @@ if __name__ == "__main__":
 
             logger.debug(
                 "Training mse is {0}, Training pearson correlation is {1!r}".format(np.mean(val_train_loss), val_train_pearson))
-            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss), np.mean(val_train_loss), loss_type='mse',
-                                     ytickmin=100, ytickmax=500)
-            pearson_visualizer.plot_loss(epoch, val_train_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
             logger.debug(
                 "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
-            mse_visualizer.plot_loss(epoch, np.mean(val_loss), loss_type='mse',
+
+            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                      ytickmin=100, ytickmax=500)
-            pearson_visualizer.plot_loss(epoch, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+            pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+
 
     best_index = np.argmax(cv_pearson_scores)
     best_drug_model = cv_models[int(best_index)]
