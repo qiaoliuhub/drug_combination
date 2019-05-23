@@ -106,6 +106,8 @@ if __name__ == "__main__":
 
         train_params = {'batch_size': setting.batch_size,
                         'shuffle': True}
+        eval_train_params = {'batch_size': len(train_index),
+                        'shuffle': False}
         eval_params = {'batch_size': len(test_index),
                        'shuffle': False}
         test_params = {'batch_size': len(test_index)*2,
@@ -115,6 +117,9 @@ if __name__ == "__main__":
         #training_set = my_data.MyDataset(partition['train'], labels)
         training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_generator = data.DataLoader(training_set, **train_params)
+
+        eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+        eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
         validation_set = my_data.MyDataset(partition['test1'], labels)
@@ -171,6 +176,11 @@ if __name__ == "__main__":
             scheduler.step()
 
             ### Evaluation
+            val_train_i = 0
+            val_train_total_loss = 0
+            val_train_loss = []
+            val_train_pearson = 0
+
             val_i = 0
             val_total_loss = 0
             val_loss = []
@@ -179,6 +189,36 @@ if __name__ == "__main__":
             with torch.set_grad_enabled(False):
 
                 drug_model.eval()
+                for local_batch, local_labels in eval_train_generator:
+                    val_train_i += 1
+                    local_labels_on_cpu = np.array(local_labels).reshape(-1)
+                    sample_size = local_labels_on_cpu.shape[-1]
+                    local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+                    # Transfer to GPU
+                    local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+                    local_batch = reorder_tensor.get_reordered_narrow_tensor()
+                    preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+                    assert preds.size(-1) == local_labels.size(-1)
+                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                    # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                    #                                   prediction_on_cpu[sample_size:]], axis=0)
+                    mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
+                    if setting.y_transform:
+                        local_labels_on_cpu, mean_prediction_on_cpu = \
+                            std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
+                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+
+                    loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
+                    val_train_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                    val_train_total_loss += loss
+
+                    n_iter = 1
+                    if val_train_i % n_iter == 0:
+                        avg_loss = val_train_total_loss / n_iter
+                        val_train_loss.append(avg_loss)
+                        val_train_total_loss = 0
+
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
@@ -213,8 +253,14 @@ if __name__ == "__main__":
                 cv_models.append(drug_model)
 
             logger.debug(
+                "Training mse is {0}, Training pearson correlation is {1!r}".format(np.mean(val_train_loss), val_train_pearson))
+            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss), np.mean(val_train_loss), loss_type='mse',
+                                     ytickmin=100, ytickmax=500)
+            pearson_visualizer.plot_loss(epoch, val_train_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+
+            logger.debug(
                 "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
-            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss), np.mean(val_loss), loss_type='mse',
+            mse_visualizer.plot_loss(epoch, np.mean(val_loss), loss_type='mse',
                                      ytickmin=100, ytickmax=500)
             pearson_visualizer.plot_loss(epoch, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
