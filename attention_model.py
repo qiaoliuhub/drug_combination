@@ -166,7 +166,7 @@ class MultiTransformersPlusRNN(MultiTransformers):
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
         self.hidden_size = 200
         self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True)
-        self.out = OutputFeedForward(sum(self.n_feature_type_list), d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
+        self.out = OutputFeedForward(sum(self.n_feature_type_list), self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
         output_list = super().forward(src_list, trg_list)
@@ -189,9 +189,21 @@ class MultiTransformersPlusMulAttention(MultiTransformers):
 
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
+        self.hidden_size = 20
+        self.linear = nn.Linear(d_model_list[-1], self.hidden_size)
+        H = sum(self.n_feature_type_list)-1
+        self.out = OutputFeedForward(H*self.hidden_size, d_model_list[-1],d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
         output_list = super().forward(src_list, trg_list)
+        bs = output_list[0].size(0)
+        for i, output_tensor in enumerate(output_list):
+            output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
+        cat_output = cat(tuple(output_list[:-1]), dim=1)
+        cat_output = self.linear(cat_output)
+        mul_output = torch.matmul(cat_output.contiguous().view(bs,-1,1), output_list[-1].contiguous().view(bs,1,-1))
+        output = self.out(mul_output.contiguous().view(bs,-1))
+        return output
 
 def get_model(inputs_lengths):
     assert setting.d_model % setting.attention_heads == 0
@@ -228,7 +240,7 @@ def get_multi_models(inputs_lengths):
     #model = MultiTransformersPlusLinear(final_inputs_lengths, final_inputs_lengths, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = MultiTransformersPlusRNN(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
