@@ -5,6 +5,7 @@ from Layers import EncoderLayer, DecoderLayer, OutputAttentionLayer
 from Sublayers import Norm, OutputFeedForward
 import copy
 import setting
+from attention_main import use_cuda, device2
 
 
 def get_clones(module, N):
@@ -173,8 +174,11 @@ class MultiTransformersPlusRNN(MultiTransformers):
         for i, output_tensor in enumerate(output_list):
             output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
         cat_output = cat(tuple(output_list), dim=1)
-        hidden = (torch.randn(1, bs, self.hidden_size), torch.randn(1, bs, self.hidden_size))
-        rnn_output, hidden = self.rnn(cat_output, hidden)
+        h_s, c_s = torch.randn(1, bs, self.hidden_size), torch.randn(1, bs, self.hidden_size)
+        if use_cuda:
+            h_s = h_s.to(device2)
+            c_s = c_s.to(device2)
+        rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
         return output
