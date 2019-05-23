@@ -148,7 +148,7 @@ class MultiTransformersPlusSDPAttention(MultiTransformers):
         output_list = super().forward(src_list, trg_list)
         bs = output_list[0].size(0)
         for i, output_tensor in enumerate(output_list):
-            output_list[i] = output_tensor.view(bs, self.n_feature_type_list[i], -1)
+            output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
         cat_output = cat(tuple(output_list[:-1]), dim=1)
         attn_output = self.output_attn(cat_output, output_list[-1])
         attn_output = attn_output.view(bs, -1)

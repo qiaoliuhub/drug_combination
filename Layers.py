@@ -33,8 +33,8 @@ class OutputAttentionLayer(nn.Module):
 
     def forward(self, src, trg):
 
-        src = self.src_linear(self.src_norm(src))
-        trg = self.trg_linear(self.trg_norm(trg))
+        #src = self.src_linear(self.src_norm(src))
+        #trg = self.trg_linear(self.trg_norm(trg))
         output = attention(src, trg, trg)
         return output
 
