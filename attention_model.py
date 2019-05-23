@@ -142,7 +142,8 @@ class MultiTransformersPlusSDPAttention(MultiTransformers):
         self.n_feature_type_list = n_feature_type_list
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
         self.output_attn = OutputAttentionLayer(d_model_list[0], d_model_list[-1])
-        self.out = OutputFeedForward(sum(self.n_feature_type_list)-1, d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
+        H = sum(self.n_feature_type_list)-1
+        self.out = OutputFeedForward(1, d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
         output_list = super().forward(src_list, trg_list)
@@ -150,8 +151,31 @@ class MultiTransformersPlusSDPAttention(MultiTransformers):
         for i, output_tensor in enumerate(output_list):
             output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
         cat_output = cat(tuple(output_list[:-1]), dim=1)
-        attn_output = self.output_attn(cat_output, output_list[-1])
-        attn_output = attn_output.view(bs, -1)
+        attn_output = self.output_attn(output_list[-1], cat_output)
+        attn_output = attn_output.contiguous().view(bs, -1)
+        output = self.out(attn_output)
+        return output
+
+class MultiTransformersPlusRNN(MultiTransformers):
+
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+
+        super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
+        self.n_feature_type_list = n_feature_type_list
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
+        self.hidden_size = 200
+        self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True)
+        self.out = OutputFeedForward(sum(self.n_feature_type_list), d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
+
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
+        output_list = super().forward(src_list, trg_list)
+        bs = output_list[0].size(0)
+        for i, output_tensor in enumerate(output_list):
+            output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
+        cat_output = cat(tuple(output_list), dim=1)
+        hidden = (torch.randn(1, bs, self.hidden_size), torch.randn(1, bs, self.hidden_size))
+        rnn_output, hidden = self.rnn(cat_output, hidden)
+        attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
         return output
 
@@ -199,7 +223,8 @@ def get_multi_models(inputs_lengths):
     #model = TransformerPlusLinear(final_inputs_lengths, d_models, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusLinear(final_inputs_lengths, final_inputs_lengths, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = MultiTransformersPlusRNN(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
