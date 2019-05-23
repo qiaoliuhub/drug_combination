@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torch import cat
 import torch
-from Layers import EncoderLayer, DecoderLayer
+from Layers import EncoderLayer, DecoderLayer, OutputAttentionLayer
 from Sublayers import Norm, OutputFeedForward
 import copy
 import setting
@@ -137,9 +137,33 @@ class MultiTransformersPlusLinear(MultiTransformers):
 class MultiTransformersPlusSDPAttention(MultiTransformers):
 
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
+        self.n_feature_type_list = n_feature_type_list
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
+        self.output_attn = OutputAttentionLayer(d_model_list[0], d_model_list[-1])
+        self.out = OutputFeedForward(sum(self.n_feature_type_list)-1, d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
 
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
+        output_list = super().forward(src_list, trg_list)
+        bs = output_list[0].size(0)
+        for i, output_tensor in enumerate(output_list):
+            output_list[i] = output_tensor.view(bs, self.n_feature_type_list[i], -1)
+        cat_output = cat(tuple(output_list[:-1]), dim=1)
+        attn_output = self.output_attn(cat_output, output_list[-1])
+        attn_output = attn_output.view(bs, -1)
+        output = self.out(attn_output)
+        return output
 
+class MultiTransformersPlusMulAttention(MultiTransformers):
+
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+
+        super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
+
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
+        output_list = super().forward(src_list, trg_list)
 
 def get_model(inputs_lengths):
     assert setting.d_model % setting.attention_heads == 0
@@ -174,8 +198,8 @@ def get_multi_models(inputs_lengths):
     #model = FlexibleTransformer(final_inputs_lengths, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransformerPlusLinear(final_inputs_lengths, d_models, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusLinear(final_inputs_lengths, final_inputs_lengths, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = MultiTransformersPlusLinear(n_feature_types, n_feature_types, final_inputs_lengths, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-
+    #model = MultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:

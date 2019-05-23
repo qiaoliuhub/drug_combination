@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 import torch.nn as nn
-from Sublayers import FeedForward, MultiHeadAttention, Norm
-
+from Sublayers import FeedForward, MultiHeadAttention, Norm, attention
+import torch
 
 class EncoderLayer(nn.Module):
     def __init__(self, d_model, heads, dropout=0.1):
@@ -23,11 +23,36 @@ class EncoderLayer(nn.Module):
 
 class OutputAttentionLayer(nn.Module):
 
-    def __init__(self, src_d_model, trg_d_model, heads, dropout=0.1):
+    def __init__(self, src_d_model, trg_d_model):
+        ## norm(src) + norm(trg) + linear + attn
+        super().__init__()
+        self.src_norm = Norm(src_d_model)
+        self.trg_norm = Norm(trg_d_model)
+        self.src_linear = nn.Linear(src_d_model, src_d_model)
+        self.trg_linear = nn.Linear(trg_d_model, trg_d_model)
 
-        super.__init__()
-        pass
+    def forward(self, src, trg):
 
+        src = self.src_linear(self.src_norm(src))
+        trg = self.trg_linear(self.trg_norm(trg))
+        output = attention(src, trg, trg)
+        return output
+
+class MulAttentionLayer(nn.Module):
+
+    def __init__(self, src_d_model, trg_d_model):
+
+        super().__init__()
+        self.context = nn.Parameter(torch.FloatTensor(src_d_model, 1))
+        self.src_norm = Norm(src_d_model)
+        self.trg_norm = Norm(trg_d_model)
+        self.src_linear = nn.Linear(src_d_model, src_d_model)
+        self.trg_linear = nn.Linear(trg_d_model, trg_d_model)
+
+    def forward(self, src, trg):
+        src = torch.tanh(self.src_linear(self.src_norm(src)))
+        trg = self.trg_linear(self.trg_norm(trg))
+        transfered_src = torch.matmul(src, self.context)
 
 # build a decoder layer with two multi-head attention layers and
 # one feed-forward layer

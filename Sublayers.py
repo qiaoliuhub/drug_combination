@@ -21,7 +21,7 @@ class Norm(nn.Module):
         return norm
 
 
-def attention(q, k, v, d_k, mask=None, dropout=None):
+def attention(q, k, v, d_k = 1, mask=None, dropout=None):
     scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
 
     if mask is not None:
@@ -75,8 +75,10 @@ class MultiHeadAttention(nn.Module):
         return output
 
 
+
+
 class FeedForward(nn.Module):
-    def __init__(self, d_model, d_ff=2, dropout=0.1):
+    def __init__(self, d_model, d_ff=200, dropout=0.1):
         super().__init__()
 
         # We set d_ff as a default to 2048
