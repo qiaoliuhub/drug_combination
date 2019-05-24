@@ -19,11 +19,11 @@ class Encoder(nn.Module):
         self.layers = get_clones(EncoderLayer(d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
-    def forward(self, src, mask=None):
+    def forward(self, src, mask=None, low_dim=False):
         x = src
         for i in range(self.N):
-            x = self.layers[i](x, mask)
-        return self.norm(x)
+            x = self.layers[i](x, mask, low_dim=low_dim)
+        return x if low_dim else self.norm(x)
 
 
 class Decoder(nn.Module):
@@ -33,11 +33,11 @@ class Decoder(nn.Module):
         self.layers = get_clones(DecoderLayer(d_model, heads, dropout), N)
         self.norm = Norm(d_model)
 
-    def forward(self, trg, e_outputs, src_mask=None, trg_mask=None):
+    def forward(self, trg, e_outputs, src_mask=None, trg_mask=None, low_dim = False):
         x = trg
         for i in range(self.N):
-            x = self.layers[i](x, e_outputs, src_mask, trg_mask)
-        return self.norm(x)
+            x = self.layers[i](x, e_outputs, src_mask, trg_mask, low_dim=low_dim)
+        return x if low_dim else self.norm(x)
 
 
 class Transformer(nn.Module):
@@ -46,10 +46,10 @@ class Transformer(nn.Module):
         self.encoder = Encoder(d_model, N, heads, dropout)
         self.decoder = Decoder(d_model, N, heads, dropout)
 
-    def forward(self, src, trg, src_mask=None, trg_mask=None):
-        e_outputs = self.encoder(src, src_mask)
+    def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
+        e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         # print("DECODER")
-        d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
+        d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
         flat_d_output = d_output.view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
@@ -59,7 +59,7 @@ class TransformerPlusLinear(Transformer):
         self.input_linear = nn.Linear(d_input, d_model)
         self.out = OutputFeedForward(d_model, n_feature_type, d_layers=setting.output_FF_layers, dropout=dropout)
 
-    def forward(self, src, trg, src_mask=None, trg_mask=None):
+    def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
         src = self.input_linear(src)
         trg = self.input_linear(trg)
         flat_d_output = super().forward(src, trg)
@@ -77,7 +77,7 @@ class FlexibleTransformer(Transformer):
         out_input_length = d_model * sum(n_feature_type_list)
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
 
-    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
 
         assert len(self.linear_layers) == len(src_list), "Features and sources length are different"
         final_srcs = []
@@ -120,6 +120,36 @@ class MultiTransformers(nn.Module):
 
         return output_list
 
+class TransposeMultiTransformers(nn.Module):
+
+    def __init__(self,  d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+        super().__init__()
+
+        assert len(d_input_list) == len(n_feature_type_list) and len(d_input_list) == len(d_model_list),\
+            "claimed inconsistent number of transformers"
+        self.linear_layers = nn.ModuleList()
+        for i in range(len(d_input_list)):
+            self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+        self.transformer_list = nn.ModuleList()
+        self.n_feature_type_list = n_feature_type_list
+        for i in range(len(d_input_list)):
+            self.transformer_list.append(Transformer(n_feature_type_list[i], N, heads, dropout))
+
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
+
+        assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
+        src_list_linear = []
+        trg_list_linear = []
+        for i in range(len(self.linear_layers)):
+            src_list_linear.append(self.linear_layers[i](src_list[i]))
+            trg_list_linear.append(self.linear_layers[i](trg_list[i]))
+        output_list = []
+        for i in range(len(self.transformer_list)):
+            src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
+            trg_list_linear[i] = torch.transpose(trg_list_linear[i], -1, -2)
+            output_list.append(self.transformer_list[i](src_list_linear[i], trg_list_linear[i], low_dim=low_dim))
+        return output_list
+
 class MultiTransformersPlusLinear(MultiTransformers):
 
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
@@ -131,6 +161,21 @@ class MultiTransformersPlusLinear(MultiTransformers):
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
 
         output_list = super().forward(src_list, trg_list)
+        cat_output = cat(tuple(output_list), dim=1)
+        output = self.out(cat_output)
+        return output
+
+class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
+
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+
+        super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
+        self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
+
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
+
+        output_list = super().forward(src_list, trg_list, low_dim=low_dim)
         cat_output = cat(tuple(output_list), dim=1)
         output = self.out(cat_output)
         return output
@@ -240,7 +285,8 @@ def get_multi_models(inputs_lengths):
     #model = MultiTransformersPlusLinear(final_inputs_lengths, final_inputs_lengths, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:

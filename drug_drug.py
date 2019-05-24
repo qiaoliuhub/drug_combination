@@ -79,7 +79,7 @@ class reorganize_tensor:
                 cat_tensor_list.append(self.raw_tensor.narrow(dim=self.dimension, start=start_indices[index],
                                                               length=self.slice_indices[index]))
             catted_tensor = torch.cat(tuple(cat_tensor_list), dim=1)
-            result_tensors.append(catted_tensor)
+            result_tensors.append(torch.transpose(catted_tensor, -1, -2))
             cat_tensor_list = []
         return result_tensors
 

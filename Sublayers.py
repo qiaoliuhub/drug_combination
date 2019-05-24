@@ -105,12 +105,16 @@ class OutputFeedForward(nn.Module):
         self.linear_layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
         self.norms = nn.ModuleList(Norm(d_layers[i-1]) for i in range(1, self.n_layers))
 
-    def forward(self, x):
-
-        x = self.dropouts[0](self.norm_1(x))
+    def forward(self, x, norm_ = True):
+        ### test whether the norm layers are needed
+        if norm_:
+            x = self.norm_1(x)
+        x = self.dropouts[0](x)
         x = self.linear_1(x)
         for i in range(self.n_layers-1):
-            x = self.norms[i](F.relu(x))
+            x = F.relu(x)
+            if norm_:
+                x = self.norms[i](x)
             x = self.dropouts[i+1](x)
             x = self.linear_layers[i](x)
         return x

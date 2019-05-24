@@ -9,15 +9,15 @@ class EncoderLayer(nn.Module):
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
         self.attn = MultiHeadAttention(heads, d_model, dropout=dropout)
-        self.ff = FeedForward(d_model, dropout=dropout)
+        self.ff = FeedForward(d_model, d_ff=d_model, dropout=dropout)
         self.dropout_1 = nn.Dropout(dropout)
         self.dropout_2 = nn.Dropout(dropout)
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask=None, low_dim = False):
 
-        x2 = self.norm_1(x)
+        x2 = x if low_dim else self.norm_1(x)
         x = x + self.dropout_1(self.attn(x2, x2, x2, mask))
-        x2 = self.norm_2(x)
+        x2 = x if low_dim else self.norm_2(x)
         x = x + self.dropout_2(self.ff(x2))
         return x
 
@@ -69,13 +69,13 @@ class DecoderLayer(nn.Module):
 
         self.attn_1 = MultiHeadAttention(heads, d_model, dropout=dropout)
         self.attn_2 = MultiHeadAttention(heads, d_model, dropout=dropout)
-        self.ff = FeedForward(d_model, dropout=dropout)
+        self.ff = FeedForward(d_model, d_ff=d_model, dropout=dropout)
 
-    def forward(self, x, e_outputs, src_mask=None, trg_mask=None):
-        x2 = self.norm_1(x)
+    def forward(self, x, e_outputs, src_mask=None, trg_mask=None, low_dim = False):
+        x2 = x if low_dim else self.norm_1(x)
         x = x + self.dropout_1(self.attn_1(x2, x2, x2, trg_mask))
-        x2 = self.norm_2(x)
+        x2 = x if low_dim else self.norm_2(x)
         x = x + self.dropout_2(self.attn_2(x2, e_outputs, e_outputs, src_mask))
-        x2 = self.norm_3(x)
+        x2 = x if low_dim else self.norm_3(x)
         x = x + self.dropout_3(self.ff(x2))
         return x

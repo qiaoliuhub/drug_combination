@@ -17,7 +17,7 @@ lr_decay = 0.001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 5
-batch_size = 256
+batch_size = 32
 loss = 'mse'
 logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
@@ -88,7 +88,7 @@ n_feature_type = [2,1]
 if feature_type == 'F_representation':
     n_feature_type = 3
     d_input = 1000
-d_model = 200
+d_model = 20
 attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
