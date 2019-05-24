@@ -173,7 +173,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
 
-    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
+    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = True):
 
         output_list = super().forward(src_list, trg_list, low_dim=low_dim)
         cat_output = cat(tuple(output_list), dim=1)
