@@ -29,8 +29,10 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 F_drug = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
 
-ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
-physicochem = os.path.join(working_dir, 'chemicals', 'physicochemical_des.csv')
+drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
+drug_physicochem = os.path.join(working_dir, 'chemicals', 'physicochemical_des.csv')
+cl_ECFP = os.path.join(working_dir, 'RF_features', 'features_importance_df.csv')
+cl_physicochem = os.path.join(working_dir, 'RF_features', 'features_importance_df_phychem.csv')
 
 # networks: string_network, all_tissues_top
 network = os.path.join(working_dir, 'network', 'string_network')
@@ -77,10 +79,12 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
 y_transform = True
 
-### ['gene_dependence', 'gene_expression', 'cl_F_repr']
-cellline_features = ['gene_expression']
-### ['drug_target_profile', 'drug_physiochemistry', 'ECFP', 'drug_F_repr']
+### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
 drug_features = ['drug_target_profile']
+
+### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
+cellline_features = ['gene_expression']
+
 arrangement = [[0,1,2]]
 update_features = True
 output_FF_layers = [400, 1]

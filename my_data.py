@@ -519,7 +519,8 @@ class ExpressionDataLoader(CustomDataLoader):
 
 class ECFPDataLoader(CustomDataLoader):
 
-    ECFP = None
+    drug_ECFP = None
+    cl_ECFP = None
 
     def __init__(self):
         super().__init__()
@@ -527,40 +528,84 @@ class ECFPDataLoader(CustomDataLoader):
     @classmethod
     def __dataloader_initializer(cls):
 
-        if cls.ECFP is None:
-            cls.ECFP = pd.read_csv(setting.ECFP)
+        if cls.drug_ECFP is None:
+            cls.drug_ECFP = pd.read_csv(setting.drug_ECFP)
+        if cls.cl_ECFP is None:
+            cls.cl_ECFP = pd.read_csv(setting.cl_ECFP, index_col=0)
 
     @classmethod
-    def get_ecfp_data(cls):
+    def get_drug_ecfp_data(cls):
 
-        if cls.ECFP is None:
+        if cls.drug_ECFP is None:
             cls.__dataloader_initializer()
-        cls.ECFP = cls.ECFP[['Name', 'ECFP_6']]
-        cls.ECFP.set_index('Name', inplace= True)
-        cls.ECFP = cls.ECFP['ECFP_6'].apply(lambda i: pd.Series(list(i))).astype(int)
-        cls.ECFP = cls.ECFP.loc[:,~((cls.ECFP==0).all(axis = 0))]
-        return cls.ECFP
+        cls.drug_ECFP = cls.drug_ECFP[['Name', 'ECFP_6']]
+        cls.drug_ECFP.set_index('Name', inplace= True)
+        cls.drug_ECFP = cls.drug_ECFP['ECFP_6'].apply(lambda i: pd.Series(list(i))).astype(int)
+        #cls.ECFP = cls.ECFP.loc[:,~((cls.drug_ECFP==0).all(axis = 0))]
+        cls.drug_ECFP = cls.drug_ECFP.loc[:, cls.__get_ecfp_filter()]
+        return cls.drug_ECFP
+
+    @classmethod
+    def get_cl_ecfp_data(cls):
+
+        if cls.cl_ECFP is None:
+            cls.__dataloader_initializer()
+        cls.cl_ECFP = cls.cl_ECFP.loc[:, cls.__get_ecfp_filter()]
+        return cls.cl_ECFP
+
+    @classmethod
+    def __get_ecfp_filter(cls):
+
+        if cls.cl_ECFP is None or cls.drug_ECFP is None:
+            cls.__dataloader_initializer()
+        drug_filter = ~((cls.drug_ECFP==0).all(axis = 0))
+        cl_filter = ~((cls.cl_ECFP==0).all(axis = 0))
+        common_filter = drug_filter & cl_filter
+        return common_filter
 
 class PhysicochemDataLoader(CustomDataLoader):
 
-    physicochem = None
+    drug_physicochem = None
+    cl_physicochem = None
+
     def __init__(self):
         super().__init__()
 
     @classmethod
     def __dataloader_initializer(cls):
 
-        if cls.physicochem is None:
-            cls.physicochem = pd.read_csv(setting.physicochem, index_col=0)
+        if cls.drug_physicochem is None:
+            cls.drug_physicochem = pd.read_csv(setting.drug_physicochem, index_col=0)
+        if cls.cl_physicochem is None:
+            cls.cl_physicochem = pd.read_csv(setting.cl_physicochem, index_col = 0)
 
     @classmethod
-    def get_physicochem_property(cls):
+    def get_drug_physicochem_property(cls):
 
-        if cls.physicochem is None:
+        if cls.drug_physicochem is None:
             cls.__dataloader_initializer()
-        cls.physicochem.drop('SMILE', inplace=True, axis=1)
-        cls.physicochem = cls.physicochem.loc[:, ~((cls.physicochem == 0).all(axis=0))]
-        return cls.physicochem
+        cls.drug_physicochem.drop('SMILE', inplace=True, axis=1)
+        #cls.physicochem = cls.physicochem.loc[:, ~((cls.physicochem == 0).all(axis=0))]
+        cls.drug_physicochem = cls.drug_physicochem.loc[:, cls.__get_physicochem_filter()]
+        return cls.drug_physicochem
+
+    @classmethod
+    def get_cl_physiochem_property(cls):
+
+        if cls.cl_physicochem is None:
+            cls.__dataloader_initializer()
+        cls.cl_physicochem = cls.cl_physicochem.loc[:, cls.__get_physicochem_filter()]
+        return cls.cl_physicochem
+
+    @classmethod
+    def __get_physicochem_filter(cls):
+
+        if cls.drug_physicochem is None or cls.cl_physicochem is None:
+            cls.__dataloader_initializer()
+        drug_filter = ~((cls.drug_physicochem == 0).all(axis=0))
+        cl_filter =  ~((cls.cl_physicochem == 0).all(axis=0))
+        common_filter = drug_filter & cl_filter
+        return common_filter
 
 class RepresentationSamplesDataLoader(CustomDataLoader):
 
@@ -674,8 +719,10 @@ class SamplesDataLoader(CustomDataLoader):
     Y = None
     drug_features_lengths = []
     cellline_features_lengths = []
-    ECFP = None
-    physicochem = None
+    drug_ECFP = None
+    drug_physicochem = None
+    cl_ECFP = None
+    cl_physicochem = None
     F_drug = None
     F_cl = None
 
@@ -726,14 +773,27 @@ class SamplesDataLoader(CustomDataLoader):
         ###         1     2    ....
         ### Name
         ### 5-FU    0     1    ....
-        cls.ECFP = ECFPDataLoader.get_ecfp_data()
+        cls.drug_ECFP = ECFPDataLoader.get_drug_ecfp_data()
 
+        ### Prepare ECFP RF feature from cellline
+        ###         1         2        ....
+        ### Name
+        ### 5-FU    0.003     0.002    ....
+
+        cls.cl_ECFP = ECFPDataLoader.get_cl_ecfp_data()
 
         ### Prepare drug physicochemiscal properties
         ###         ATSp8     Chi5ch ...
         ### Name
         ### 5-FU    1.150	   0.221 ...
-        cls.physicochem = PhysicochemDataLoader.get_physicochem_property()
+        cls.drug_physicochem = PhysicochemDataLoader.get_drug_physicochem_property()
+
+        ### Prepare cellline features using random forest and drugs physicochemiscal properties
+        ###         ATSp8     Chi5ch ...
+        ### Name
+        ### 5-FU    0.150	   0.221 ...
+
+        cls.cl_physicochem = PhysicochemDataLoader.get_cl_physiochem_property()
 
         ######################
         ### 5-FU ....
@@ -774,26 +834,26 @@ class SamplesDataLoader(CustomDataLoader):
                 drug_b_target_feature.fillna(0, inplace=True)
                 cls.drug_b_features.append(drug_b_target_feature.values)
 
-            if 'ECFP' in setting.drug_features:
+            if 'drug_ECFP' in setting.drug_features:
 
-                drug_a_ecfp = cls.ECFP.loc[list(cls.synergy_score['drug_a_name']), :]
+                drug_a_ecfp = cls.drug_ECFP.loc[list(cls.synergy_score['drug_a_name']), :]
                 cls.drug_a_features.append(drug_a_ecfp.values)
                 cls.drug_features_lengths.append(drug_a_ecfp.shape[1])
-                drug_b_ecfp = cls.ECFP.loc[list(cls.synergy_score['drug_b_name']), :]
+                drug_b_ecfp = cls.drug_ECFP.loc[list(cls.synergy_score['drug_b_name']), :]
                 cls.drug_b_features.append(drug_b_ecfp.values)
 
             if 'drug_physiochemistry' in setting.drug_features:
 
                 physicochem_scaler = MinMaxScaler()
-                physicochem = physicochem_scaler.fit_transform(cls.physicochem)
-                physicochem = pd.DataFrame(physicochem, index=cls.physicochem.index, columns=cls.physicochem.columns)
+                physicochem = physicochem_scaler.fit_transform(cls.drug_physicochem)
+                physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
                 drug_a_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_a_name']), :]
                 cls.drug_a_features.append(drug_a_physiochem_feature.values)
                 cls.drug_features_lengths.append(drug_a_physiochem_feature.shape[1])
                 drug_b_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_b_name']), :]
                 cls.drug_b_features.append(drug_b_physiochem_feature.values)
 
-            if 'F_repr' in setting.drug_features:
+            if 'drug_F_repr' in setting.drug_features:
 
                 drug_a_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_a_name']), :]
                 cls.drug_a_features.append(drug_a_F_feature.values)
@@ -835,6 +895,25 @@ class SamplesDataLoader(CustomDataLoader):
                 cellline_repr_features = cls.F_cl.loc[list(cls.synergy_score['cell_line']), :].reset_index(drop=True)
                 cls.cellline_features.append(cellline_repr_features.values)
                 cls.cellline_features_lengths.append(cellline_repr_features.shape[1])
+
+            if 'cl_ECFP' in setting.drug_features:
+
+                drug_a_ecfp = cls.drug_ECFP.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_ecfp.values)
+                cls.drug_features_lengths.append(drug_a_ecfp.shape[1])
+                drug_b_ecfp = cls.drug_ECFP.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_ecfp.values)
+
+            if 'cl_drug_physiochemistry' in setting.drug_features:
+
+                physicochem_scaler = MinMaxScaler()
+                physicochem = physicochem_scaler.fit_transform(cls.drug_physicochem)
+                physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
+                drug_a_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_physiochem_feature.values)
+                cls.drug_features_lengths.append(drug_a_physiochem_feature.shape[1])
+                drug_b_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_physiochem_feature.values)
 
         return cls.cellline_features
 
