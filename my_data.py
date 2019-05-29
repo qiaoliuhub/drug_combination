@@ -763,14 +763,14 @@ class SamplesDataLoader(CustomDataLoader):
 
                 drug_a_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
                 drug_a_target_feature = pd.DataFrame(drug_a_target_feature, columns=cls.entrez_set).reset_index(drop=True)
-                drug_targe_feature_filter = ~drug_a_target_feature.isnull().all(axis=0)
-                drug_a_target_feature = drug_a_target_feature.loc[:, drug_targe_feature_filter]
+                # drug_targe_feature_filter = ~drug_a_target_feature.isnull().all(axis=0)
+                # drug_a_target_feature = drug_a_target_feature.loc[:, drug_targe_feature_filter]
                 drug_a_target_feature.fillna(0, inplace=True)
                 cls.drug_a_features.append(drug_a_target_feature.values)
                 cls.drug_features_lengths.append(drug_a_target_feature.shape[1])
                 drug_b_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
                 drug_b_target_feature = pd.DataFrame(drug_b_target_feature, columns=cls.entrez_set).reset_index(drop=True)
-                drug_b_target_feature = drug_b_target_feature.loc[:, drug_targe_feature_filter]
+                # drug_b_target_feature = drug_b_target_feature.loc[:, drug_targe_feature_filter]
                 drug_b_target_feature.fillna(0, inplace=True)
                 cls.drug_b_features.append(drug_b_target_feature.values)
 
@@ -813,8 +813,8 @@ class SamplesDataLoader(CustomDataLoader):
             if 'gene_dependence' in setting.cellline_features:
                 dp_features = cls.sel_dp[list(cls.synergy_score['cell_line'])].T
                 dp_features = pd.DataFrame(dp_features, columns=cls.entrez_set).reset_index(drop=True)
-                dp_features_filter = ~dp_features.isnull().all(axis=0)
-                dp_features = dp_features.loc[:, dp_features_filter]
+                # dp_features_filter = ~dp_features.isnull().all(axis=0)
+                # dp_features = dp_features.loc[:, dp_features_filter]
                 dp_features.fillna(0, inplace=True)
                 cls.cellline_features.append(dp_features.values)
                 cls.cellline_features_lengths.append(dp_features.shape[1])
@@ -825,8 +825,8 @@ class SamplesDataLoader(CustomDataLoader):
                                                                             cls.synergy_score,
                                                                             setting.gene_expression_simulated_result_matrix)
                 gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set).reset_index(drop=True)
-                gene_expression_features_filter = ~gene_expression_features.isnull().all(axis=0)
-                gene_expression_features = gene_expression_features.loc[:, gene_expression_features_filter]
+                # gene_expression_features_filter = ~gene_expression_features.isnull().all(axis=0)
+                # gene_expression_features = gene_expression_features.loc[:, gene_expression_features_filter]
                 gene_expression_features.fillna(0, inplace=True)
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])

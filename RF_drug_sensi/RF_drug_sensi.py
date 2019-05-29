@@ -24,15 +24,16 @@ if __name__ == '__main__':
     gene_expression = pd.read_csv(setting.gene_expression_file).T
 
     gene_sensitivity = pd.read_csv(setting.gene_sensitivity_file)
-    cellline = {'RKO', 'OCUBM', 'NCIH520', 'UACC62', 'A375', 'T47D', 'MDAMB436', 'KPL1', 'LOVO', 'SKMEL30', 'ZR751', 'A2058',
-     'OV90', 'SW837', 'HCT116', 'NCIH23', 'SKOV3', 'NCIH460', 'A2780', 'SW620', 'A427', 'DLD1', 'RPMI7951', 'HT144',
-     'CAOV3', 'SKMES1', 'NCIH2122', 'VCAP', 'HT29', 'NCIH1650', 'ES2'}
+    # cellline = {'RKO', 'OCUBM', 'NCIH520', 'UACC62', 'A375', 'T47D', 'MDAMB436', 'KPL1', 'LOVO', 'SKMEL30', 'ZR751', 'A2058',
+    #  'OV90', 'SW837', 'HCT116', 'NCIH23', 'SKOV3', 'NCIH460', 'A2780', 'SW620', 'A427', 'DLD1', 'RPMI7951', 'HT144',
+    #  'CAOV3', 'SKMES1', 'NCIH2122', 'VCAP', 'HT29', 'NCIH1650', 'ES2'}
+    cellline = ''
 
     sensi_filter = gene_sensitivity['cell_line'].isin(cellline)
     gene_sensitivity = gene_sensitivity[sensi_filter]
-    RF_reg = RandomForestRegressor(max_depth=5 ,n_jobs=6, random_state=33,verbose=2)
-    X = gene_expression.loc[gene_sensitivity['cell_line'], :].values
-    y = gene_sensitivity.loc[:, 'pIC50'].values
+    RF_reg = RandomForestRegressor(n_jobs=6, random_state=33,verbose=2)
+    X = gene_expression.loc[gene_sensitivity['cell_line'], :].values ## drug ECFP features
+    y = gene_sensitivity.loc[:, 'pIC50'].values ## IC50 values
     if setting.test_model:
         data_length = len(gene_sensitivity)
         index_list = [i for i in range(data_length)]

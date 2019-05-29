@@ -78,11 +78,11 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 y_transform = True
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr']
-cellline_features = ['gene_dependence']
+cellline_features = ['gene_expression']
 ### ['drug_target_profile', 'drug_physiochemistry', 'ECFP', 'drug_F_repr']
-drug_features = ['drug_physiochemistry']
-arrangement = [[0,1],[2]]
-update_features = False
+drug_features = ['drug_target_profile']
+arrangement = [[0,1,2]]
+update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [2,1]
 if feature_type == 'F_representation':
