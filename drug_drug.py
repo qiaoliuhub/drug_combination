@@ -38,11 +38,11 @@ class reorganize_tensor:
     def get_reordered_slice_indices(self):
 
         ### slice_indices: [2324, 400, 1200, 2324, 400, 1200, 2324]
-        ### arrangement: [[0, 3, 6], [1, 4], [2, 5]]
-        ### return: [2324+2324, 400+400, 1200+1200]
+        ### arrangement: [[0, 3, 6, 6], [1, 4], [2, 5]]
+        ### return: [2324+2324+2324+2324, 400+400, 1200+1200]
 
-        assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
-            "slice indices length is not same with arrangement length"
+        # assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
+        #     "slice indices length is not same with arrangement length"
 
         result_slice_indices = []
         for ls in self.arrangement:
@@ -64,8 +64,8 @@ class reorganize_tensor:
 
         ### arrangement: [[0, 3, 6], [1, 4], [2, 5]]
 
-        assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
-            "slice indices length is not same with arrangement length"
+        # assert len(self.slice_indices) == self.recursive_len(self.arrangement), \
+        #     "slice indices length is not same with arrangement length"
 
         assert self.raw_tensor is not None, "Raw tensor should be loaded firstly"
 
