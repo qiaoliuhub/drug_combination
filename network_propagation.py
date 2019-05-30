@@ -21,7 +21,7 @@ def combin_drug_target_probabilities_matrix(drug_pairs, drug_target):
     ### drug_target: drug_target dataframe, index = genes, columns = drugs
     ### return: combine_drug_target_matrix: index = drugA_drugB, columns = genes
     if not setting.combine_drug_target_renew and os.path.exists(setting.combine_drug_target_matrix):
-        combine_drug_target_matrix = pd.read_csv(setting.combine_drug_target_matrix)
+        combine_drug_target_matrix = pd.read_csv(setting.combine_drug_target_matrix, index_col=0)
         return combine_drug_target_matrix
 
     if len(drug_pairs.columns) != 2:
@@ -91,6 +91,7 @@ def target_as_1_network_propagation(network, drug_target, entrez_set, result_mat
         network_matrix = get_matrix_from_network(network, entrez_set)
 
         # drug_target_matrix: columns = genes, index = Drugs
+        drug_target.index = drug_target.index.astype(int)
         drug_target_matrix = drug_target.loc[entrez_set, :].T
 
         # Set target gene feature for a drug to be 1 and non-target gene to be max(probabilites of all edges)

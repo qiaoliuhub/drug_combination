@@ -7,7 +7,7 @@ working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
 # feature type: F_representation, others, determine whether or not ignoring drugs without hidden representation
-feature_type = 'others'
+feature_type = 'F_representation'
 F_repr_feature_length = 1000
 
 activation_method =["relu"]
@@ -47,7 +47,10 @@ renew = False
 RWlike_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'normalized_simulated_result_matrix_string.csv')
 target_as_1_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'target_1_simulated_result_matrix_string.csv')
 target_as_0_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'target_0_simulated_result_matrix_string.csv')
-gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
+if feature_type == 'F_representation':
+    gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_for_F_repr.csv')
+else:
+    gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
 random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
@@ -81,17 +84,17 @@ y_transform = True
 
 ### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
 drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
+#drug_features = ['drug_F_repr']
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
+#cellline_features = ['cl_F_repr']
 
 arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9],[3,7,10]]
+#arrangement = [[0,1,2]]
 update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3,3,3,3,3]
-if feature_type == 'F_representation':
-    n_feature_type = 3
-    d_input = 1000
 d_model = 20
 attention_heads = 1
 attention_dropout = 0.2
