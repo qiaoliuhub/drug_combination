@@ -74,6 +74,7 @@ if __name__ == "__main__":
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
     test_generator = None
+    test_index_list = None
     cv_pearson_scores = []
     cv_models = []
 
@@ -84,6 +85,7 @@ if __name__ == "__main__":
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
 
+        ori_Y = Y
         std_scaler.fit(Y[train_index])
         if setting.y_transform:
             Y = std_scaler.transform(Y) * 100
@@ -103,6 +105,9 @@ if __name__ == "__main__":
 
         labels = {key: value for key, value in zip(list(final_index),
                                                    list(Y.reshape(-1)))}
+        ori_labels = {key: value for key, value in zip(list(final_index),
+                                                   list(ori_Y.reshape(-1)))}
+        save(ori_labels, setting.y_labels_file)
 
         train_params = {'batch_size': setting.batch_size,
                         'shuffle': True}
@@ -119,6 +124,7 @@ if __name__ == "__main__":
         training_generator = data.DataLoader(training_set, **train_params)
 
         eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+        training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
@@ -126,6 +132,7 @@ if __name__ == "__main__":
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
+        test_index_list = partition['test1'] + partition['test2']
         test_generator = data.DataLoader(test_set, **test_params)
 
         logger.debug("Start training")
@@ -150,7 +157,8 @@ if __name__ == "__main__":
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
-                preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+                preds, _ = drug_model(local_batch, local_batch)
+                preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
                 assert preds.size(-1) == ys.size(-1)
@@ -198,7 +206,16 @@ if __name__ == "__main__":
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+                    preds, catoutput = drug_model(local_batch, local_batch)
+                    if epoch == setting.n_epochs - 1:
+                        for i, train_combination in enumerate(training_index_list):
+                            if setting.unit_test and i>=100:
+                                break
+                            if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
+                                os.mkdir("train_" + setting.catoutput_output_type + "_datas")
+                            save(catoutput.narrow(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
+                                                                       str(train_combination) + '.pt'))
+                    preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
@@ -228,7 +245,8 @@ if __name__ == "__main__":
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    preds = drug_model(local_batch, local_batch).contiguous().view(-1)
+                    preds, _ = drug_model(local_batch, local_batch)
+                    preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
@@ -285,7 +303,13 @@ if __name__ == "__main__":
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
-            preds = best_drug_model(local_batch, local_batch).contiguous().view(-1)
+            preds, catoutput = drug_model(local_batch, local_batch)
+            preds = preds.contiguous().view(-1)
+            for i, test_combination in enumerate(test_index_list):
+                if not os.path.exists("test_" + setting.catoutput_output_type + "_datas"):
+                    os.mkdir("test_" + setting.catoutput_output_type + "_datas")
+                save(catoutput.narrow(0, i, 1), os.path.join("test_" + setting.catoutput_output_type + "_datas",
+                                                             str(test_combination) + '.pt'))
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
             mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],

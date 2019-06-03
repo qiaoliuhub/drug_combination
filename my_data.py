@@ -605,7 +605,7 @@ class PhysicochemDataLoader(CustomDataLoader):
             cls.__dataloader_initializer()
         drug_filter = ~((cls.drug_physicochem == 0).all(axis=0))
         cl_filter = ~((cls.cl_physicochem == 0).all(axis=0))
-        common_filter = drug_filter & cl_filter
+        common_filter = drug_filter | cl_filter
         return common_filter
 
 class RepresentationSamplesDataLoader(CustomDataLoader):
@@ -1061,21 +1061,25 @@ class DataPreprocessor:
 
 class MyDataset(data.Dataset):
 
-  'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs, labels):
+    'Characterizes a dataset for PyTorch'
+    def __init__(self, list_IDs, labels, prefix=None):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
+        self.prefix = prefix
 
-  def __len__(self):
+    def __len__(self):
         'Denotes the total number of samples'
         return len(self.list_IDs)
 
-  def __getitem__(self, index):
+    def __getitem__(self, index):
         'Generates one sample of data'
         # Select sample
         ID = self.list_IDs[index]
-        drug_combine_file = 'datas/' + ID + '.pt'
+        if self.prefix is None:
+            drug_combine_file = 'datas/' + ID + '.pt'
+        else:
+            drug_combine_file = self.prefix + '_datas/' + ID + '.pt'
         # Load data and get label
         try:
             X = torch.load(drug_combine_file)

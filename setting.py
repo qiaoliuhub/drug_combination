@@ -7,7 +7,7 @@ working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
 # feature type: F_representation, others, determine whether or not ignoring drugs without hidden representation
-feature_type = 'F_representation'
+feature_type = 'others'
 F_repr_feature_length = 1000
 
 activation_method =["relu"]
@@ -21,6 +21,13 @@ batch_size = 32
 loss = 'mse'
 logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
+
+y_labels_file = os.path.join(working_dir, 'y_labels.p')
+### ecfp, phy, ge, gd
+catoutput_output_type = "ecfp"
+#["ecfp", "phy", "ge", "gd"]
+catoutput_intput_type = ["ecfp"]
+
 
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
@@ -90,11 +97,11 @@ drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'dr
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
-arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9],[3,7,10]]
+arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 #arrangement = [[0,1,2]]
 update_features = True
 output_FF_layers = [400, 1]
-n_feature_type = [3,3,3,3,3]
+n_feature_type = [3,3,3,3]
 d_model = 20
 attention_heads = 1
 attention_dropout = 0.2

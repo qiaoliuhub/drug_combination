@@ -163,7 +163,7 @@ class MultiTransformersPlusLinear(MultiTransformers):
         output_list = super().forward(src_list, trg_list)
         cat_output = cat(tuple(output_list), dim=1)
         output = self.out(cat_output)
-        return output
+        return output, cat_output
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
@@ -178,7 +178,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         output_list = super().forward(src_list, trg_list, low_dim=low_dim)
         cat_output = cat(tuple(output_list), dim=1)
         output = self.out(cat_output)
-        return output
+        return output, cat_output
 
 class MultiTransformersPlusSDPAttention(MultiTransformers):
 
@@ -200,7 +200,7 @@ class MultiTransformersPlusSDPAttention(MultiTransformers):
         attn_output = self.output_attn(output_list[-1], cat_output)
         attn_output = attn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
-        return output
+        return output, cat_output
 
 class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
 
@@ -226,7 +226,7 @@ class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
         rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
-        return output
+        return output, cat_output
 
 
 class MultiTransformersPlusRNN(MultiTransformers):
@@ -253,7 +253,7 @@ class MultiTransformersPlusRNN(MultiTransformers):
         rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
-        return output
+        return output, cat_output
 
 class MultiTransformersPlusMulAttention(MultiTransformers):
 
@@ -264,7 +264,7 @@ class MultiTransformersPlusMulAttention(MultiTransformers):
         self.hidden_size = 20
         self.linear = nn.Linear(d_model_list[-1], self.hidden_size)
         H = sum(self.n_feature_type_list)-1
-        self.out = OutputFeedForward(H*self.hidden_size, d_model_list[-1],d_layers=setting.output_FF_layers, dropout=dropout)
+        self.out = OutputFeedForward(H*self.hidden_size, d_model_list[-1], d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
         output_list = super().forward(src_list, trg_list)
@@ -275,7 +275,47 @@ class MultiTransformersPlusMulAttention(MultiTransformers):
         cat_output = self.linear(cat_output)
         mul_output = torch.matmul(cat_output.contiguous().view(bs,-1,1), output_list[-1].contiguous().view(bs,1,-1))
         output = self.out(mul_output.contiguous().view(bs,-1))
+        return output, cat_output
+
+class LastLSTM(nn.Module):
+
+    def __init__(self, d_model_list, dropout):
+
+        super(LastLSTM, self).__init__()
+        self.hidden_size = 100
+        self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True, bidirectional=True)
+        self.out = OutputFeedForward(12, 2*self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
+
+    def forward(self, input):
+
+        #cat_input = cat(tuple(input), dim=1)
+        bs = input.size(0)
+        h_s, c_s = torch.randn(2, bs, self.hidden_size), torch.randn(2, bs, self.hidden_size)
+        if use_cuda:
+            h_s = h_s.to(device2)
+            c_s = c_s.to(device2)
+        rnn_output, hidden = self.rnn(input, (h_s, c_s))
+        attn_output = rnn_output.contiguous().view(bs, -1)
+        output = self.out(attn_output)
         return output
+
+def get_retrain_model():
+
+    if not isinstance(setting.d_model, list):
+        d_models = [setting.d_model] * 12
+    else:
+        d_models = setting.d_model
+
+    model = LastLSTM(d_models, setting.attention_dropout)
+
+    for p in model.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+
+    if use_cuda:
+        model.to(device2)
+
+    return model
 
 def get_model(inputs_lengths):
     assert setting.d_model % setting.attention_heads == 0
