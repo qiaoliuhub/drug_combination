@@ -284,7 +284,7 @@ class LastLSTM(nn.Module):
         super(LastLSTM, self).__init__()
         self.hidden_size = 100
         self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True, bidirectional=True)
-        self.out = OutputFeedForward(12, 2*self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type), 2*self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, input):
 
@@ -302,7 +302,7 @@ class LastLSTM(nn.Module):
 def get_retrain_model():
 
     if not isinstance(setting.d_model, list):
-        d_models = [setting.d_model] * 12
+        d_models = [setting.d_model] * 3 * len(setting.catoutput_intput_type)
     else:
         d_models = setting.d_model
 
