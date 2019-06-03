@@ -1077,7 +1077,7 @@ class MyDataset(data.Dataset):
         # Select sample
         ID = self.list_IDs[index]
         if self.prefix is None:
-            drug_combine_file = 'datas/' + ID + '.pt'
+            drug_combine_file = os.path.join(setting.data_folder, ID + '.pt')
         else:
             drug_combine_file = self.prefix + '_datas/' + ID + '.pt'
         # Load data and get label

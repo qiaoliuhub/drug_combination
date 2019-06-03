@@ -21,6 +21,7 @@ batch_size = 32
 loss = 'mse'
 logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
+data_folder = os.path.join(working_dir, 'datas')
 
 y_labels_file = os.path.join(working_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
@@ -97,11 +98,11 @@ drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'dr
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
-arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
-#arrangement = [[0,1,2]]
+#arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
+arrangement = [[1,5,11]]
 update_features = True
 output_FF_layers = [400, 1]
-n_feature_type = [3,3,3,3]
+n_feature_type = [3]
 d_model = 20
 attention_heads = 1
 attention_dropout = 0.2
