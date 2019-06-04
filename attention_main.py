@@ -109,30 +109,29 @@ if __name__ == "__main__":
                                                    list(ori_Y.reshape(-1)))}
         save(ori_labels, setting.y_labels_file)
 
-        train_params = {'batch_size': setting.batch_size,
-                        'shuffle': True}
-        eval_train_params = {'batch_size': len(train_index),
-                        'shuffle': False}
-        eval_params = {'batch_size': len(test_index),
-                       'shuffle': False}
-        test_params = {'batch_size': len(test_index)*2,
-                       'shuffle': False}
-
         logger.debug("Preparing datasets ... ")
         #training_set = my_data.MyDataset(partition['train'], labels)
         training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+        train_params = {'batch_size': setting.batch_size,
+                        'shuffle': True}
         training_generator = data.DataLoader(training_set, **train_params)
 
         eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
+        eval_train_params = {'batch_size': len(training_index_list),
+                        'shuffle': False}
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
         validation_set = my_data.MyDataset(partition['test1'], labels)
+        eval_params = {'batch_size': len(test_index),
+                       'shuffle': False}
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
+        test_params = {'batch_size': len(test_index)*2,
+                       'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
 
         logger.debug("Start training")
@@ -209,8 +208,8 @@ if __name__ == "__main__":
                     preds, catoutput = drug_model(local_batch, local_batch)
                     if epoch == setting.n_epochs - 1:
                         for i, train_combination in enumerate(training_index_list):
-                            if setting.unit_test and i>=100:
-                                break
+                            # if setting.unit_test and i>=100:
+                            #     break
                             if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
                                 os.mkdir("train_" + setting.catoutput_output_type + "_datas")
                             save(catoutput.narrow(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
