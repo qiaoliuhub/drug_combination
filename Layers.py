@@ -18,7 +18,7 @@ class EncoderLayer(nn.Module):
         x2 = x if low_dim else self.norm_1(x)
         x = x + self.dropout_1(self.attn(x2, x2, x2, mask))
         x2 = x if low_dim else self.norm_2(x)
-        x = x + self.dropout_2(self.ff(x2))
+        x = x + self.dropout_2(self.ff(x2, low_dim = low_dim))
         return x
 
 class OutputAttentionLayer(nn.Module):
@@ -77,5 +77,5 @@ class DecoderLayer(nn.Module):
         x2 = x if low_dim else self.norm_2(x)
         x = x + self.dropout_2(self.attn_2(x2, e_outputs, e_outputs, src_mask))
         x2 = x if low_dim else self.norm_3(x)
-        x = x + self.dropout_3(self.ff(x2))
+        x = x + self.dropout_3(self.ff(x2, low_dim = low_dim))
         return x

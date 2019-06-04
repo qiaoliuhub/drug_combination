@@ -75,8 +75,6 @@ class MultiHeadAttention(nn.Module):
         return output
 
 
-
-
 class FeedForward(nn.Module):
     def __init__(self, d_model, d_ff=200, dropout=0.1):
         super().__init__()
@@ -84,10 +82,13 @@ class FeedForward(nn.Module):
         # We set d_ff as a default to 2048
         self.linear_1 = nn.Linear(d_model, d_ff)
         self.dropout = nn.Dropout(dropout)
+        self.norm = Norm(d_ff)
         self.linear_2 = nn.Linear(d_ff, d_model)
 
-    def forward(self, x):
-        x = self.dropout(F.relu(self.linear_1(x)))
+    def forward(self, x, low_dim = False):
+        x = F.relu(self.linear_1(x))
+        x = x if low_dim else self.norm(x)
+        x = self.dropout(x)
         x = self.linear_2(x)
         return x
 
@@ -105,15 +106,15 @@ class OutputFeedForward(nn.Module):
         self.linear_layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
         self.norms = nn.ModuleList(Norm(d_layers[i-1]) for i in range(1, self.n_layers))
 
-    def forward(self, x, norm_ = True):
+    def forward(self, x, low_dim = False):
         ### test whether the norm layers are needed
-        if norm_:
+        if low_dim:
             x = self.norm_1(x)
         x = self.dropouts[0](x)
         x = self.linear_1(x)
         for i in range(self.n_layers-1):
             x = F.relu(x)
-            if norm_:
+            if low_dim:
                 x = self.norms[i](x)
             x = self.dropouts[i+1](x)
             x = self.linear_layers[i](x)

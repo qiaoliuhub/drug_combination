@@ -1,6 +1,7 @@
 import torch.nn as nn
 from torch import cat
 import torch
+import torch.nn.functional as F
 from Layers import EncoderLayer, DecoderLayer, OutputAttentionLayer
 from Sublayers import Norm, OutputFeedForward
 import copy
@@ -128,8 +129,12 @@ class TransposeMultiTransformers(nn.Module):
         assert len(d_input_list) == len(n_feature_type_list) and len(d_input_list) == len(d_model_list),\
             "claimed inconsistent number of transformers"
         self.linear_layers = nn.ModuleList()
+        self.norms = nn.ModuleList()
+        self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
             self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+            self.norms.append(Norm(d_model_list[i]))
+            self.dropouts.append(nn.Dropout(dropout))
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
@@ -137,12 +142,19 @@ class TransposeMultiTransformers(nn.Module):
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
 
+        # x = F.relu(self.linear_1(x))
+        # x = x if low_dim else self.norm(x)
+        # x = self.dropout(x)
         assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
         src_list_linear = []
         trg_list_linear = []
         for i in range(len(self.linear_layers)):
-            src_list_linear.append(self.linear_layers[i](src_list[i]))
-            trg_list_linear.append(self.linear_layers[i](trg_list[i]))
+            if low_dim:
+                src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
+                trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
+            else:
+                src_list_linear.append(self.norms[i](F.relu(self.linear_layers[i](src_list[i]))))
+                trg_list_linear.append(self.norms[i](F.relu(self.linear_layers[i](trg_list[i]))))
         output_list = []
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
@@ -225,7 +237,7 @@ class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
             c_s = c_s.to(device2)
         rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
-        output = self.out(attn_output)
+        output = self.out(attn_output, low_dim = low_dim)
         return output, cat_output
 
 
