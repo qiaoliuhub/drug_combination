@@ -249,8 +249,8 @@ class MultiTransformersPlusRNN(MultiTransformers):
         self.n_feature_type_list = n_feature_type_list
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list)-1)])
         self.hidden_size = 200
-        self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True)
-        self.out = OutputFeedForward(sum(self.n_feature_type_list), self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True, bidirectional=True)
+        self.out = OutputFeedForward(sum(self.n_feature_type_list), 2 * self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None):
         output_list = super().forward(src_list, trg_list)
@@ -258,7 +258,7 @@ class MultiTransformersPlusRNN(MultiTransformers):
         for i, output_tensor in enumerate(output_list):
             output_list[i] = output_tensor.contiguous().view(bs, self.n_feature_type_list[i], -1)
         cat_output = cat(tuple(output_list), dim=1)
-        h_s, c_s = torch.randn(1, bs, self.hidden_size), torch.randn(1, bs, self.hidden_size)
+        h_s, c_s = torch.randn(2, bs, self.hidden_size), torch.randn(2, bs, self.hidden_size)
         if use_cuda:
             h_s = h_s.to(device2)
             c_s = c_s.to(device2)
@@ -286,7 +286,7 @@ class MultiTransformersPlusMulAttention(MultiTransformers):
         cat_output = cat(tuple(output_list[:-1]), dim=1)
         cat_output = self.linear(cat_output)
         mul_output = torch.matmul(cat_output.contiguous().view(bs,-1,1), output_list[-1].contiguous().view(bs,1,-1))
-        output = self.out(mul_output.contiguous().view(bs,-1))
+        output = self.out(mul_output.contiguous().view(bs, -1))
         return output, cat_output
 
 class LastLSTM(nn.Module):
