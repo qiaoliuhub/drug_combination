@@ -212,7 +212,7 @@ if __name__ == "__main__":
                             #     break
                             if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
                                 os.mkdir("train_" + setting.catoutput_output_type + "_datas")
-                            save(catoutput.narrow(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
+                            save(catoutput.narrow_copy(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
@@ -307,7 +307,7 @@ if __name__ == "__main__":
             for i, test_combination in enumerate(test_index_list):
                 if not os.path.exists("test_" + setting.catoutput_output_type + "_datas"):
                     os.mkdir("test_" + setting.catoutput_output_type + "_datas")
-                save(catoutput.narrow(0, i, 1), os.path.join("test_" + setting.catoutput_output_type + "_datas",
+                save(catoutput.narrow_copy(0, i, 1), os.path.join("test_" + setting.catoutput_output_type + "_datas",
                                                              str(test_combination) + '.pt'))
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)

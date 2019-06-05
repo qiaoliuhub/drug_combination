@@ -153,8 +153,8 @@ class TransposeMultiTransformers(nn.Module):
                 src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
                 trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
             else:
-                src_list_linear.append(self.norms[i](F.relu(self.linear_layers[i](src_list[i]))))
-                trg_list_linear.append(self.norms[i](F.relu(self.linear_layers[i](trg_list[i]))))
+                src_list_linear.append(F.relu(self.linear_layers[i](src_list[i])))
+                trg_list_linear.append(F.relu(self.linear_layers[i](trg_list[i])))
         output_list = []
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)

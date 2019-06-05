@@ -108,8 +108,8 @@ class OutputFeedForward(nn.Module):
 
     def forward(self, x, low_dim = False):
         ### test whether the norm layers are needed
-        if low_dim:
-            x = self.norm_1(x)
+        # if low_dim:
+        #     x = self.norm_1(x)
         x = self.dropouts[0](x)
         x = self.linear_1(x)
         for i in range(self.n_layers-1):

@@ -8,7 +8,7 @@ from torch.utils import data
 import network_propagation
 import drug_drug
 import random
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 class CustomDataLoader:
     pass
@@ -845,7 +845,7 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'drug_physiochemistry' in setting.drug_features:
 
-                physicochem_scaler = MinMaxScaler()
+                physicochem_scaler = StandardScaler(with_mean=False)
                 physicochem = physicochem_scaler.fit_transform(cls.drug_physicochem)
                 physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
                 drug_a_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_a_name']), :]
