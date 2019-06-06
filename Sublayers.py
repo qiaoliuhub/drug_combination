@@ -114,7 +114,7 @@ class OutputFeedForward(nn.Module):
         x = self.linear_1(x)
         for i in range(self.n_layers-1):
             x = F.relu(x)
-            if low_dim:
+            if not low_dim:
                 x = self.norms[i](x)
             x = self.dropouts[i+1](x)
             x = self.linear_layers[i](x)

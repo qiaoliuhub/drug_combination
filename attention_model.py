@@ -311,6 +311,22 @@ class LastLSTM(nn.Module):
         output = self.out(attn_output, low_dim = True)
         return output
 
+class LastFC(nn.Module):
+
+    def __init__(self, d_model_list, dropout):
+
+        super(LastFC, self).__init__()
+        self.hidden_size = 100
+        self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type), setting.d_model, d_layers=setting.output_FF_layers, dropout=dropout)
+
+    def forward(self, input):
+
+        #cat_input = cat(tuple(input), dim=1)
+        bs = input.size(0)
+        attn_output = input.contiguous().view(bs, -1)
+        output = self.out(attn_output, low_dim = True)
+        return output
+
 def get_retrain_model():
 
     if not isinstance(setting.d_model, list):
@@ -318,7 +334,8 @@ def get_retrain_model():
     else:
         d_models = setting.d_model
 
-    model = LastLSTM(d_models, setting.attention_dropout)
+    #model = LastLSTM(d_models, setting.attention_dropout)
+    model = LastFC(d_models, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
