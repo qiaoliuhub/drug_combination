@@ -308,7 +308,7 @@ class LastLSTM(nn.Module):
             c_s = c_s.to(device2)
         rnn_output, hidden = self.rnn(input, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
-        output = self.out(attn_output)
+        output = self.out(attn_output, low_dim = True)
         return output
 
 def get_retrain_model():
