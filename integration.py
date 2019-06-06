@@ -78,37 +78,39 @@ if __name__ == "__main__":
                    'shuffle': False}
 
     logger.debug("Preparing datasets ... ")
-    for drug_combin in training_index:
-        cur_tensor_list = []
-        for fea_type in setting.catoutput_intput_type:
-            input_dir = os.path.join("train_" + str(fea_type) + "_datas", str(drug_combin) + ".pt")
-            try:
-                cur_tensor = torch.load(input_dir)
-                cur_tensor_list.append(cur_tensor)
-            except:
-                random_test.logger.error("Fail to get {}".format(drug_combin))
-                raise
-        save_path = "train_datas"
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
-        final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
-        save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
 
-    for drug_combin in test_index:
-        cur_tensor_list = []
-        for fea_type in setting.catoutput_intput_type:
-            input_dir = os.path.join("test_" + str(fea_type) + "_datas", str(drug_combin) + ".pt")
-            try:
-                cur_tensor = torch.load(input_dir)
-                cur_tensor_list.append(cur_tensor)
-            except:
-                random_test.logger.error("Fail to get {}".format(drug_combin))
-                raise
-        save_path = "test_datas"
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
-        final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
-        save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
+    if setting.update_features:
+        for drug_combin in training_index:
+            cur_tensor_list = []
+            for fea_type in setting.catoutput_intput_type:
+                input_dir = os.path.join("train_" + str(fea_type) + "_datas", str(drug_combin) + ".pt")
+                try:
+                    cur_tensor = torch.load(input_dir)
+                    cur_tensor_list.append(cur_tensor)
+                except:
+                    random_test.logger.error("Fail to get {}".format(drug_combin))
+                    raise
+            save_path = "train_datas"
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+            final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
+            save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
+
+        for drug_combin in test_index:
+            cur_tensor_list = []
+            for fea_type in setting.catoutput_intput_type:
+                input_dir = os.path.join("test_" + str(fea_type) + "_datas", str(drug_combin) + ".pt")
+                try:
+                    cur_tensor = torch.load(input_dir)
+                    cur_tensor_list.append(cur_tensor)
+                except:
+                    random_test.logger.error("Fail to get {}".format(drug_combin))
+                    raise
+            save_path = "test_datas"
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+            final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
+            save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
 
     training_set = my_data.MyDataset(partition['train'], y_labels, prefix="train")
     training_generator = data.DataLoader(training_set, **train_params)
