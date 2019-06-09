@@ -7,7 +7,7 @@ from Sublayers import Norm, OutputFeedForward
 import copy
 import setting
 from attention_main import use_cuda, device2
-
+from attention_main import logger
 
 def get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
@@ -48,9 +48,11 @@ class Transformer(nn.Module):
         self.decoder = Decoder(d_model, N, heads, dropout)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
+        logger.debug("Input length is: {!r}".format(src.size(1)))
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         # print("DECODER")
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
+        logger.debug("Output length is: {!r}".format(d_output.size(1)))
         flat_d_output = d_output.view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 

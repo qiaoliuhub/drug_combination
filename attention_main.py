@@ -118,6 +118,7 @@ if __name__ == "__main__":
 
         eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
+        logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': len(training_index_list),
                         'shuffle': False}
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
@@ -130,6 +131,7 @@ if __name__ == "__main__":
 
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
+        logger.debug("Test data length: {!r}".format(len(test_index_list)))
         test_params = {'batch_size': len(test_index)*2,
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
