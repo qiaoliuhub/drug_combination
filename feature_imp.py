@@ -58,6 +58,7 @@ class InputPerturbationRank(Ranking):
         fea_num = 0
         for fea in new_x:
             fea_num += int(fea.shape[2])
+        assert len(self.names) == fea_num, "names length is different from features numbers"
         impt = np.zeros(fea_num)
         fea_index = 0
         for fea_dfs in new_x:

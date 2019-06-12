@@ -44,7 +44,7 @@ class reorganize_tensor:
             cur_len = self.slice_indices[ls[0]]
             for i in ls:
                 assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
-            result_names.append([whole_list_names[i] for i in ls])
+            result_names.append([whole_list_names[ls[-1]]])
         if flatten:
             result_names = [x for sublist in result_names for x in sublist]
 
@@ -60,7 +60,7 @@ class reorganize_tensor:
             for i in ls:
                 assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
             result_names.append(
-                [whole_list_names[i] + '_' + str(j) for i in ls for j in range(self.slice_indices[i])])
+                [whole_list_names[ls[-1]] + '_' + str(j) for j in range(self.slice_indices[ls[-1]])])
         if flatten:
             result_names = [x for sublist in result_names for x in sublist]
 
