@@ -350,7 +350,7 @@ if __name__ == "__main__":
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices))
                 feature_names = reorder_tensor.get_features_names(flatten=True)
                 ranker = feature_imp.InputPerturbationRank(feature_names)
-                feature_ranks = ranker.rank(2, local_labels, drug_model, local_batch,
+                feature_ranks = ranker.rank(2, local_labels_on_cpu, drug_model, local_batch,
                                             drug_model=True, reorder_tensor=reorder_tensor, scaler=std_scaler)
                 feature_ranks_df = pd.DataFrame(feature_ranks)
                 feature_ranks_df.to_csv(setting.feature_importance_path, index=False)

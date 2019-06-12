@@ -52,37 +52,40 @@ class InputPerturbationRank(Ranking):
 
     def _rank_for_drug_model(self, rep, y, model, x, reorder_tensor, scaler):
 
+        reorder_tensor.load_raw_tensor(x)
+        new_x = reorder_tensor.get_reordered_narrow_tensor()
+
         fea_num = 0
-        for fea in x:
-            fea_num += int(fea.shape[1])
+        for fea in new_x:
+            fea_num += int(fea.shape[2])
         impt = np.zeros(fea_num)
         fea_index = 0
-        for i in range(x.shape[2]):
+        for fea_dfs in new_x:
+            for i in range(fea_dfs.shape[2]):
+                hold = fea_dfs[:,:,i].clone()
+                rand_index = [i for i in range(hold.size(0))]
+                for j in range(rep):
+                    np.random.shuffle(rand_index)
+                    fea_dfs[:,:,i] = fea_dfs[:,:,i][rand_index]
 
-            hold = x[:,:,i].clone()
-            rand_index = [i for i in range(hold.size(0))]
-            for j in range(rep):
-                np.random.shuffle(rand_index)
-                x[:,:,i] = x[:,:,1][rand_index]
-                reorder_tensor.load_raw_tensor(x)
-                new_x = reorder_tensor.get_reordered_narrow_tensor()
-                preds, _ = model(new_x, new_x)
-                preds = preds.contiguous().view(-1)
-                assert preds.size(-1) == y.size(-1)
-                prediction_on_cpu = preds.cpu().numpy().reshape(-1)
 
-                if setting.y_transform:
-                    local_labels_on_cpu, mean_prediction_on_cpu = \
-                        scaler.inverse_transform(y.reshape(-1, 1) / 100), \
-                        scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
-                rmse = metrics.mean_squared_error(y, prediction_on_cpu)
-                # spearman_correlation = spearmanr(y, pred)[0]
-                impt[fea_index] += (rmse - impt[fea_index]) / (j + 1)
+                    preds, _ = model(new_x, new_x)
+                    preds = preds.contiguous().view(-1)
+                    assert preds.size(-1) == len(y)
+                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
 
-            fea_index += 1
-            x[:, :, i] = hold
+                    if setting.y_transform:
+                        local_labels_on_cpu, mean_prediction_on_cpu = \
+                            scaler.inverse_transform(y.reshape(-1, 1) / 100), \
+                            scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
+                    rmse = metrics.mean_squared_error(y, prediction_on_cpu)
+                    # spearman_correlation = spearmanr(y, pred)[0]
+                    impt[fea_index] += (rmse - impt[fea_index]) / (j + 1)
 
-        return impt, fea_num
+                fea_index += 1
+                fea_dfs[:, :, i] = hold
+
+            return impt, fea_num
 
     def rank(self, rep, y, model, x, drug_model = False, reorder_tensor = None, scaler = None):
         if drug_model:
