@@ -35,6 +35,37 @@ class reorganize_tensor:
         else:
             return 1
 
+    def get_feature_list_names(self, flatten = False):
+
+        whole_list_names = [x+'_a' for x in setting.drug_features] + [x+'_b' for x in setting.drug_features] \
+                           + [x for x in setting.cellline_features]
+        result_names = []
+        for ls in self.arrangement:
+            cur_len = self.slice_indices[ls[0]]
+            for i in ls:
+                assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
+            result_names.append([whole_list_names[i] for i in ls])
+        if flatten:
+            result_names = [x for sublist in result_names for x in sublist]
+
+        return result_names
+
+    def get_features_names(self, flatten=False):
+
+        whole_list_names = [x + '_a' for x in setting.drug_features] + [x + '_b' for x in setting.drug_features] \
+                           + [x for x in setting.cellline_features]
+        result_names = []
+        for ls in self.arrangement:
+            cur_len = self.slice_indices[ls[0]]
+            for i in ls:
+                assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
+            result_names.append(
+                [whole_list_names[i] + '_' + str(j) for i in ls for j in range(self.slice_indices[i])])
+        if flatten:
+            result_names = [x for sublist in result_names for x in sublist]
+
+        return result_names
+
     def get_reordered_slice_indices(self):
 
         ### slice_indices: [2324, 400, 1200, 2324, 400, 1200, 2324]
@@ -76,7 +107,7 @@ class reorganize_tensor:
             cur_len = self.slice_indices[ls[0]]
             for index in ls:
                 assert self.slice_indices[index] == cur_len, "concatenated tensor has different dimensions"
-                cat_tensor_list.append(self.raw_tensor.narrow(dim=self.dimension, start=start_indices[index],
+                cat_tensor_list.append(self.raw_tensor.narrow_copy(dim=self.dimension, start=start_indices[index],
                                                               length=self.slice_indices[index]))
             catted_tensor = torch.cat(tuple(cat_tensor_list), dim=1)
             result_tensors.append(catted_tensor)
@@ -88,7 +119,7 @@ def narrowed_tensors(raw_tensor, slice_indexs, dimension):
     result_tensors = []
     current_index = 0
     for length in slice_indexs:
-        result_tensors.append(raw_tensor.narrow(dimension, current_index, length))
+        result_tensors.append(raw_tensor.narrow_copy(dimension, current_index, length))
         current_index += length
     assert current_index == list(raw_tensor.size())[dimension], "narrowed tensors didn't use all raw tensor data"
     return result_tensors

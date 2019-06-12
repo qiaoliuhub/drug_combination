@@ -107,3 +107,7 @@ d_model = 20
 attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
+
+
+get_feature_imp = True
+feature_importance_path = os.path.join(working_dir, 'all_features_importance.csv')

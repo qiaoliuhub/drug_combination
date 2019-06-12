@@ -21,6 +21,7 @@ from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import torch_visual
+import feature_imp
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -65,6 +66,7 @@ if __name__ == "__main__":
     logger.debug("Preparing models")
     slice_indices = drug_features_length + drug_features_length + cellline_features_length
     reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
+    logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices())
     drug_model.to(device2)
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
@@ -74,6 +76,7 @@ if __name__ == "__main__":
     # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
     test_generator = None
+    eval_train_generator = None
     test_index_list = None
     cv_pearson_scores = []
     cv_models = []
@@ -330,3 +333,26 @@ if __name__ == "__main__":
                 test_total_loss = 0
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), test_pearson))
+
+
+    if setting.get_feature_imp:
+
+        logger.debug("Getting features ranks")
+        with torch.set_grad_enabled(False):
+
+            drug_model.eval()
+            for local_batch, local_labels in eval_train_generator:
+                local_labels_on_cpu = np.array(local_labels).reshape(-1)
+                # sample_size = local_labels_on_cpu.shape[-1]
+                # local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+                # Transfer to GPU
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices))
+                feature_names = reorder_tensor.get_features_names(flatten=True)
+                ranker = feature_imp.InputPerturbationRank(feature_names)
+                feature_ranks = ranker.rank(2, local_labels, drug_model, local_batch,
+                                            drug_model=True, reorder_tensor=reorder_tensor, scaler=std_scaler)
+                feature_ranks_df = pd.DataFrame(feature_ranks)
+                feature_ranks_df.to_csv(setting.feature_importance_path, index=False)
+        logger.debug("Get features ranks successfully")
+
