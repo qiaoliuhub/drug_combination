@@ -119,8 +119,8 @@ if __name__ == "__main__":
                         'shuffle': True}
         training_generator = data.DataLoader(training_set, **train_params)
 
-        eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
-        training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
+        eval_train_set = my_data.MyDataset(partition['train'][:100], labels)
+        training_index_list = partition['train'][:100]
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': len(training_index_list),
                         'shuffle': False}
