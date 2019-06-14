@@ -201,6 +201,8 @@ if __name__ == "__main__":
             with torch.set_grad_enabled(False):
 
                 drug_model.eval()
+                all_preds = []
+                all_ys = []
                 for local_batch, local_labels in eval_train_generator:
                     val_train_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
@@ -229,16 +231,20 @@ if __name__ == "__main__":
                         local_labels_on_cpu, mean_prediction_on_cpu = \
                             std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
                             std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+                    all_preds.append(mean_prediction_on_cpu)
+                    all_ys.append(local_labels_on_cpu)
 
-                    loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-                    val_train_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                    val_train_total_loss += loss
+                all_preds = np.concatenate(all_preds)
+                all_ys = np.concatenate(all_ys)
+                loss = mean_squared_error(all_preds, all_ys)
+                val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_train_total_loss += loss
 
-                    n_iter = 1
-                    if val_train_i % n_iter == 0:
-                        avg_loss = val_train_total_loss / n_iter
-                        val_train_loss.append(avg_loss)
-                        val_train_total_loss = 0
+                    # n_iter = 1
+                    # if val_train_i % n_iter == 0:
+                avg_loss = val_train_total_loss #/ n_iter
+                val_train_loss.append(avg_loss)
+                val_train_total_loss = 0
 
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
@@ -297,6 +303,8 @@ if __name__ == "__main__":
     with torch.set_grad_enabled(False):
 
         best_drug_model.eval()
+        all_preds = []
+        all_ys = []
         for local_batch, local_labels in test_generator:
             # Transfer to GPU
             test_i += 1
@@ -322,15 +330,20 @@ if __name__ == "__main__":
                 local_labels_on_cpu, mean_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
                     std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
-            loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-            test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
-            test_total_loss += loss
+            all_preds.append(mean_prediction_on_cpu)
+            all_ys.append(local_labels_on_cpu)
 
-            n_iter = 1
-            if (test_i + 1) % n_iter == 0:
-                avg_loss = test_total_loss / n_iter
-                test_loss.append(avg_loss)
-                test_total_loss = 0
+        all_preds = np.concatenate(all_preds)
+        all_ys = np.concatenate(all_ys)
+        loss = mean_squared_error(all_preds, all_ys)
+        test_pearson = pearsonr(all_ys.reshape(-1), all_preds.reshape(-1))[0]
+        test_total_loss += loss
+
+            # n_iter = 1
+            # if (test_i + 1) % n_iter == 0:
+        avg_loss = test_total_loss #/ n_iter
+        test_loss.append(avg_loss)
+        test_total_loss = 0
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), test_pearson))
 
