@@ -78,6 +78,7 @@ if __name__ == "__main__":
     test_generator = None
     eval_train_generator = None
     test_index_list = None
+    test_params = None
     cv_pearson_scores = []
     cv_models = []
 
@@ -119,10 +120,10 @@ if __name__ == "__main__":
                         'shuffle': True}
         training_generator = data.DataLoader(training_set, **train_params)
 
-        eval_train_set = my_data.MyDataset(partition['train'][:100], labels)
-        training_index_list = partition['train'][:100]
+        eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+        training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
-        eval_train_params = {'batch_size': len(training_index_list),
+        eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
@@ -135,7 +136,7 @@ if __name__ == "__main__":
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
         logger.debug("Test data length: {!r}".format(len(test_index_list)))
-        test_params = {'batch_size': len(test_index)*2,
+        test_params = {'batch_size': setting.batch_size,
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
 
@@ -192,6 +193,7 @@ if __name__ == "__main__":
             val_train_total_loss = 0
             val_train_loss = []
             val_train_pearson = 0
+            save_data_num = 0
 
             val_i = 0
             val_total_loss = 0
@@ -214,13 +216,16 @@ if __name__ == "__main__":
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds, catoutput = drug_model(local_batch, local_batch)
                     if epoch == setting.n_epochs - 1:
-                        for i, train_combination in enumerate(training_index_list):
-                            # if setting.unit_test and i>=100:
-                            #     break
+                        cur_train_start_index = eval_train_params['batch_size'] * (val_train_i - 1)
+                        cur_train_stop_index = min(eval_train_params['batch_size'] * (val_train_i), len(training_index_list))
+                        for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
+
                             if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
                                 os.mkdir("train_" + setting.catoutput_output_type + "_datas")
                             save(catoutput.narrow_copy(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
+                            save_data_num += 1
+
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -234,8 +239,10 @@ if __name__ == "__main__":
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
 
+                logger.debug("saved {!r} data points".format(save_data_num))
                 all_preds = np.concatenate(all_preds)
                 all_ys = np.concatenate(all_ys)
+                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
                 loss = mean_squared_error(all_preds, all_ys)
                 val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
@@ -299,6 +306,7 @@ if __name__ == "__main__":
     test_total_loss = 0
     test_loss = []
     test_pearson = 0
+    save_data_num = 0
 
     with torch.set_grad_enabled(False):
 
@@ -309,7 +317,7 @@ if __name__ == "__main__":
             # Transfer to GPU
             test_i += 1
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
-            sample_size = local_labels_on_cpu.shape[-1] // 2
+            sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
@@ -317,26 +325,35 @@ if __name__ == "__main__":
             # Model computations
             preds, catoutput = drug_model(local_batch, local_batch)
             preds = preds.contiguous().view(-1)
-            for i, test_combination in enumerate(test_index_list):
+            cur_test_start_index = test_params['batch_size'] * (test_i-1)
+            cur_test_stop_index = min(test_params['batch_size'] * (test_i), len(test_index_list))
+            for i, test_combination in enumerate(test_index_list[cur_test_start_index: cur_test_stop_index]):
                 if not os.path.exists("test_" + setting.catoutput_output_type + "_datas"):
                     os.mkdir("test_" + setting.catoutput_output_type + "_datas")
                 save(catoutput.narrow_copy(0, i, 1), os.path.join("test_" + setting.catoutput_output_type + "_datas",
                                                              str(test_combination) + '.pt'))
+                save_data_num += 1
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
-            mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                                              prediction_on_cpu[:sample_size]], axis=0)
+
             if setting.y_transform:
                 local_labels_on_cpu, mean_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
-                    std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
-            all_preds.append(mean_prediction_on_cpu)
+                    std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
+            all_preds.append(prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
 
+        logger.debug("saved {!r} data for testing dataset".format(save_data_num))
         all_preds = np.concatenate(all_preds)
         all_ys = np.concatenate(all_ys)
-        loss = mean_squared_error(all_preds, all_ys)
-        test_pearson = pearsonr(all_ys.reshape(-1), all_preds.reshape(-1))[0]
+        assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+        sample_size = len(all_preds)
+        mean_prediction = np.mean([all_preds[:sample_size//2],
+                                          all_preds[:sample_size//2]], axis=0)
+        mean_y = np.mean([all_ys[:sample_size//2],
+                          all_ys[:sample_size//2]], axis=0)
+        loss = mean_squared_error(mean_prediction, mean_y)
+        test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
 
             # n_iter = 1
