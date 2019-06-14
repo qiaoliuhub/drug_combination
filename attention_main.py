@@ -79,6 +79,8 @@ if __name__ == "__main__":
     eval_train_generator = None
     test_index_list = None
     test_params = None
+    partition = None
+    labels = None
     cv_pearson_scores = []
     cv_models = []
 
@@ -368,6 +370,12 @@ if __name__ == "__main__":
     if setting.get_feature_imp:
 
         logger.debug("Getting features ranks")
+        test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
+        test_index_list = partition['test1'] + partition['test2']
+        logger.debug("Test data length: {!r}".format(len(test_index_list)))
+        test_params = {'batch_size': len(test_index_list),
+                       'shuffle': False}
+        test_generator = data.DataLoader(test_set, **test_params)
         with torch.set_grad_enabled(False):
 
             drug_model.eval()
