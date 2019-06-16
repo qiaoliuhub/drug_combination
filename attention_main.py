@@ -342,7 +342,7 @@ if __name__ == "__main__":
                 local_labels_on_cpu, mean_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
                     std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
-            all_preds.append(prediction_on_cpu)
+            all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
 
         logger.debug("saved {!r} data for testing dataset".format(save_data_num))
