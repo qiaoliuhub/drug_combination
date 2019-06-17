@@ -99,7 +99,7 @@ drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'dr
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
-single_response_feature = ['single_response']
+single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 arrangement = [[0,4,9]]
@@ -107,6 +107,8 @@ update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
+if 'single_response' not in single_response_feature:
+    single_repsonse_feature_length = 0
 d_model = 20
 attention_heads = 1
 attention_dropout = 0.2

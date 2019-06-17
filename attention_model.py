@@ -188,10 +188,12 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = True):
 
-        input_src_list = src_list[:-1]
-        input_trg_list = trg_list[:-1]
+        input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
+        input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
-        single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
+        single_response_feature_list = []
+        if setting.single_repsonse_feature_length != 0:
+            single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
         cat_output = cat(tuple(output_list + single_response_feature_list), dim=1)
         output = self.out(cat_output)
         return output, cat_output
