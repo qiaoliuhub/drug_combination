@@ -148,13 +148,19 @@ class TransposeMultiTransformers(nn.Module):
         assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
         src_list_linear = []
         trg_list_linear = []
-        for i in range(len(self.linear_layers)):
-            if low_dim:
-                src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
-                trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
-            else:
-                src_list_linear.append(F.relu(self.linear_layers[i](src_list[i])))
-                trg_list_linear.append(F.relu(self.linear_layers[i](trg_list[i])))
+        if not setting.apply_var_filter:
+            for i in range(len(self.linear_layers)):
+                if low_dim:
+                    src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
+                    trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
+                else:
+                    src_list_linear.append(F.relu(self.linear_layers[i](src_list[i])))
+                    trg_list_linear.append(F.relu(self.linear_layers[i](trg_list[i])))
+        else:
+            for i in range(len(src_list)):
+                src_list_linear.append(src_list[i].clone())
+                trg_list_linear.append(trg_list[i].clone())
+
         output_list = []
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
