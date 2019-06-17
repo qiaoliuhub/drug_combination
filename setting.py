@@ -99,6 +99,8 @@ drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'dr
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
+apply_var_filter = True
+
 single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
