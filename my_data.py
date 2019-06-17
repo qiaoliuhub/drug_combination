@@ -608,6 +608,29 @@ class PhysicochemDataLoader(CustomDataLoader):
         common_filter = drug_filter | cl_filter
         return common_filter
 
+
+class SingleResponseDataLoader(CustomDataLoader):
+
+    single_response = None
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.single_response is None:
+            cls.single_response = pd.read_csv(setting.single_response, index_col=0).drop(['sigma'], axis=1)
+            cls.single_response['drug'] = cls.single_response['drug'].str.upper()
+            cls.single_response.set_index(['cell_line', 'drug'], inplace = True)
+
+    @classmethod
+    def get_single_response(cls):
+
+        if cls.single_response is None:
+            cls.__dataloader_initializer()
+        return cls.single_response
+
 class RepresentationSamplesDataLoader(CustomDataLoader):
 
     F_drug = None
@@ -726,6 +749,8 @@ class SamplesDataLoader(CustomDataLoader):
     cl_physicochem = None
     F_drug = None
     F_cl = None
+    single_response = None
+    single_response_feature = None
 
     def __init__(self):
         super().__init__()
@@ -806,8 +831,16 @@ class SamplesDataLoader(CustomDataLoader):
         #####################
         cls.F_cl = pd.read_csv(setting.F_cl, header = None, index_col = 0)
 
+        ########################################################################################
+        ### cell_line  drug
+        ###                     efficacy1 ....  efficacy8      pIC50    Hill
+        ########################################################################################
+        cls.single_response = SingleResponseDataLoader.get_single_response()
+
         cls.__check_data_frames()
         cls.data_initialized = True
+
+
 
     @classmethod
     def __drug_features_prep(cls):
@@ -916,6 +949,24 @@ class SamplesDataLoader(CustomDataLoader):
         return cls.cellline_features
 
     @classmethod
+    def __single_response_feature_prep(cls):
+
+        if cls.single_response_feature is None:
+            cls.__dataloader_initializer()
+            cls.single_response_feature = []
+            if 'single_response' in setting.single_response_feature:
+
+                drug_a = cls.single_response.loc[zip(cls.synergy_score['cell_line'],
+                                                                               cls.synergy_score['drug_a_name'])]
+                drug_b = cls.single_response.loc[zip(cls.synergy_score['cell_line'],
+                                                                               cls.synergy_score['drug_b_name'])]
+                max_drug = np.maximum(drug_a.values, drug_b.values)
+                min_drug = np.minimum(drug_a.values, drug_b.values)
+                cls.single_response_feature.append(np.concatenate([max_drug, min_drug], axis = 1))
+
+        return cls.single_response_feature
+
+    @classmethod
     def __construct_whole_raw_X(cls):
 
         ### return dataframe
@@ -924,10 +975,13 @@ class SamplesDataLoader(CustomDataLoader):
         if cls.whole_df is None:
             two_drugs_features_list = cls.__drug_features_prep()
             cellline_features_list = cls.__cellline_features_prep()
+            single_response_feature = cls.__single_response_feature_prep()
             # first_half = pd.concat(two_drugs_features_list[0] + two_drugs_features_list[1] + cellline_features_list, axis=1)
             # second_half = pd.concat(two_drugs_features_list[1] + two_drugs_features_list[0] + cellline_features_list, axis=1)
-            first_half = np.concatenate(tuple(two_drugs_features_list[0] + two_drugs_features_list[1] + cellline_features_list), axis=1)
-            second_half = np.concatenate(tuple(two_drugs_features_list[1] + two_drugs_features_list[0] + cellline_features_list), axis=1)
+            first_half = np.concatenate(tuple(two_drugs_features_list[0] + two_drugs_features_list[1] +
+                                              cellline_features_list + single_response_feature), axis=1)
+            second_half = np.concatenate(tuple(two_drugs_features_list[1] + two_drugs_features_list[0] +
+                                               cellline_features_list + single_response_feature), axis=1)
             cls.whole_df = np.concatenate(tuple([first_half, second_half]), axis=0)#.reset_index(drop=True)
         return cls.whole_df
 

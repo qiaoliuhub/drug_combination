@@ -53,7 +53,7 @@ class reorganize_tensor:
     def get_features_names(self, flatten=False):
 
         whole_list_names = [x + '_a' for x in setting.drug_features] + [x + '_b' for x in setting.drug_features] \
-                           + [x for x in setting.cellline_features]
+                           + [x for x in setting.cellline_features] + [x for x in setting.single_response_feature]
         result_names = []
         for ls in self.arrangement:
             cur_len = self.slice_indices[ls[0]]
@@ -61,6 +61,7 @@ class reorganize_tensor:
                 assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
             result_names.append(
                 [whole_list_names[ls[-1]] + '_' + str(j) for j in range(self.slice_indices[ls[-1]])])
+        result_names.append([whole_list_names[-1] + '_' + str(j) for j in range(setting.single_repsonse_feature_length)])
         if flatten:
             result_names = [x for sublist in result_names for x in sublist]
 
@@ -112,6 +113,11 @@ class reorganize_tensor:
             catted_tensor = torch.cat(tuple(cat_tensor_list), dim=1)
             result_tensors.append(catted_tensor)
             cat_tensor_list = []
+        if setting.single_repsonse_feature_length != 0:
+            single_response_feature = self.raw_tensor.narrow_copy(dim = self.dimension,
+                                                                  start=start_indices[-1] + self.slice_indices[-1],
+                                                                  length=setting.single_repsonse_feature_length)
+            result_tensors.append(single_response_feature)
         return result_tensors
 
 def narrowed_tensors(raw_tensor, slice_indexs, dimension):

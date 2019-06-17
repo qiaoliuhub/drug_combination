@@ -160,7 +160,7 @@ if __name__ == "__main__":
                 i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices))
+                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
@@ -214,7 +214,7 @@ if __name__ == "__main__":
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds, catoutput = drug_model(local_batch, local_batch)
                     if epoch == setting.n_epochs - 1:
@@ -262,7 +262,7 @@ if __name__ == "__main__":
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds, _ = drug_model(local_batch, local_batch)
                     preds = preds.contiguous().view(-1)
@@ -322,7 +322,7 @@ if __name__ == "__main__":
             sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-            reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)))
+            reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
             preds, catoutput = drug_model(local_batch, local_batch)
@@ -384,7 +384,7 @@ if __name__ == "__main__":
                 # local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices))
+                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 feature_names = reorder_tensor.get_features_names(flatten=True)
                 ranker = feature_imp.InputPerturbationRank(feature_names)
                 feature_ranks = ranker.rank(2, local_labels_on_cpu, drug_model, local_batch,

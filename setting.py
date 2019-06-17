@@ -36,6 +36,7 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 F_drug = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
+single_response = os.path.join(working_dir, 'chemicals', 'single_response_features.csv')
 
 drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
 drug_physicochem = os.path.join(working_dir, 'chemicals', 'physicochemical_des.csv')
@@ -98,11 +99,14 @@ drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'dr
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
+single_response_feature = ['single_response']
+
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 arrangement = [[0,4,9]]
 update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3]
+single_repsonse_feature_length = 10 * 2
 d_model = 20
 attention_heads = 1
 attention_dropout = 0.2
