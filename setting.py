@@ -28,7 +28,8 @@ y_labels_file = os.path.join(working_dir, 'y_labels.p')
 catoutput_output_type = "ecfp"
 #["ecfp", "phy", "ge", "gd"]
 catoutput_intput_type = ["ecfp"]
-
+#{"ecfp": 2048, "phy": 960, "single": 20}
+dir_input_type = {"ecfp": 1226, "phy": 451, "single": 10}
 
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
@@ -94,12 +95,14 @@ y_transform = True
 ### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
 drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
 #drug_features = ['drug_F_repr']
+ecfp_phy_drug_filter_only = True
+save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
 #cellline_features = ['cl_F_repr']
 
-apply_var_filter = True
+apply_var_filter = False
 
 single_response_feature = []#['single_response']
 

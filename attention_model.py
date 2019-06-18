@@ -329,7 +329,8 @@ class LastFC(nn.Module):
 
         super(LastFC, self).__init__()
         self.hidden_size = 100
-        self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type), setting.d_model, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(setting.dir_input_type.values())),
+                                     1, d_layers=setting.output_FF_layers, dropout=dropout)
 
     def forward(self, input):
 

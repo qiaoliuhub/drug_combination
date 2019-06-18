@@ -93,6 +93,21 @@ if __name__ == "__main__":
             save_path = "train_datas"
             if not os.path.exists(save_path):
                 os.mkdir(save_path)
+            for fea_type in setting.dir_input_type:
+                drug_a, drug_b, cell_line, _ = drug_combin.split("_")
+                if fea_type == 'single':
+                    drug_a = "_".join([cell_line, drug_a])
+                    drug_b = "_".join([cell_line, drug_b])
+                input_dir_a = os.path.join(str(fea_type) + "_datas", str(drug_a) + ".pt")
+                input_dir_b = os.path.join(str(fea_type) + "_datas", str(drug_b) + ".pt")
+                try:
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1,-1)).float()
+                    cur_tensor_list.append(cur_tensor)
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float()
+                    cur_tensor_list.append(cur_tensor)
+                except:
+                    random_test.logger.error("Fail to get {}".format(drug_combin))
+                    raise
             final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
             save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
 
@@ -109,6 +124,21 @@ if __name__ == "__main__":
             save_path = "test_datas"
             if not os.path.exists(save_path):
                 os.mkdir(save_path)
+            for fea_type in setting.dir_input_type:
+                drug_a, drug_b, cell_line, _ = drug_combin.split("_")
+                if fea_type == 'single':
+                    drug_a = "_".join([cell_line, drug_a])
+                    drug_b = "_".join([cell_line, drug_b])
+                input_dir_a = os.path.join(str(fea_type) + "_datas", str(drug_a) + ".pt")
+                input_dir_b = os.path.join(str(fea_type) + "_datas", str(drug_b) + ".pt")
+                try:
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1, -1)).float()
+                    cur_tensor_list.append(cur_tensor)
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float()
+                    cur_tensor_list.append(cur_tensor)
+                except:
+                    random_test.logger.error("Fail to get {}".format(drug_combin))
+                    raise
             final_tensor = torch.cat(tuple(cur_tensor_list), dim=1)
             save(final_tensor.contiguous().view((final_tensor.size(1),-1)), os.path.join(save_path, str(drug_combin) + ".pt"))
 

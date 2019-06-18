@@ -337,7 +337,7 @@ if __name__ == "__main__":
                 save_data_num += 1
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
-
+            mean_prediction_on_cpu = prediction_on_cpu
             if setting.y_transform:
                 local_labels_on_cpu, mean_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \

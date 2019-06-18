@@ -9,6 +9,7 @@ import network_propagation
 import drug_drug
 import random
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from torch import save
 
 class CustomDataLoader:
     pass
@@ -534,7 +535,7 @@ class ECFPDataLoader(CustomDataLoader):
             cls.cl_ECFP = pd.read_csv(setting.cl_ECFP, index_col=0)
 
     @classmethod
-    def get_drug_ecfp_data(cls):
+    def get_drug_ecfp_data(cls, save_each_data_point = setting.save_each_ecfp_phy_data_point):
 
         if cls.drug_ECFP is None:
             cls.__dataloader_initializer()
@@ -543,7 +544,12 @@ class ECFPDataLoader(CustomDataLoader):
         cls.drug_ECFP = cls.drug_ECFP['ECFP_6'].apply(lambda i: pd.Series(list(i))).astype(int)
         cls.drug_ECFP.columns = cls.drug_ECFP.columns.astype(str)
         #cls.ECFP = cls.ECFP.loc[:,~((cls.drug_ECFP==0).all(axis = 0))]
-        cls.drug_ECFP = cls.drug_ECFP.loc[:, cls.__get_ecfp_filter()]
+        cls.drug_ECFP = cls.drug_ECFP.loc[:, cls.__get_ecfp_filter(drug_filter_only=setting.ecfp_phy_drug_filter_only)]
+        if save_each_data_point:
+            if not os.path.exists("ecfp_datas"):
+                os.mkdir("ecfp_datas")
+            for i, one_drug_ecfp in enumerate(cls.drug_ECFP.values):
+                save(one_drug_ecfp, os.path.join("ecfp_datas", cls.drug_ECFP.index[i] + '.pt'))
         return cls.drug_ECFP
 
     @classmethod
@@ -555,13 +561,15 @@ class ECFPDataLoader(CustomDataLoader):
         return cls.cl_ECFP
 
     @classmethod
-    def __get_ecfp_filter(cls):
+    def __get_ecfp_filter(cls, drug_filter_only = False):
 
         if cls.cl_ECFP is None or cls.drug_ECFP is None:
             cls.__dataloader_initializer()
         drug_filter = (~((cls.drug_ECFP==0).all(axis = 0)))
         cl_filter = (~((cls.cl_ECFP==0).all(axis = 0)))
         common_filter = (drug_filter & cl_filter)
+        if drug_filter_only:
+            return drug_filter
         return common_filter
 
 class PhysicochemDataLoader(CustomDataLoader):
@@ -581,13 +589,18 @@ class PhysicochemDataLoader(CustomDataLoader):
             cls.cl_physicochem = pd.read_csv(setting.cl_physicochem, index_col = 0)
 
     @classmethod
-    def get_drug_physicochem_property(cls):
+    def get_drug_physicochem_property(cls, save_each_data_point = setting.save_each_ecfp_phy_data_point):
 
         if cls.drug_physicochem is None:
             cls.__dataloader_initializer()
         cls.drug_physicochem.drop('SMILE', inplace=True, axis=1)
         #cls.physicochem = cls.physicochem.loc[:, ~((cls.physicochem == 0).all(axis=0))]
-        cls.drug_physicochem = cls.drug_physicochem.loc[:, cls.__get_physicochem_filter()]
+        cls.drug_physicochem = cls.drug_physicochem.loc[:, cls.__get_physicochem_filter(drug_filter_only=setting.ecfp_phy_drug_filter_only)]
+        if save_each_data_point:
+            if not os.path.exists("phy_datas"):
+                os.mkdir("phy_datas")
+            for i, one_drug_phy in enumerate(cls.drug_physicochem.values):
+                save(one_drug_phy, os.path.join("phy_datas", cls.drug_physicochem.index[i] + '.pt'))
         return cls.drug_physicochem
 
     @classmethod
@@ -599,13 +612,15 @@ class PhysicochemDataLoader(CustomDataLoader):
         return cls.cl_physicochem
 
     @classmethod
-    def __get_physicochem_filter(cls):
+    def __get_physicochem_filter(cls, drug_filter_only = False):
 
         if cls.drug_physicochem is None or cls.cl_physicochem is None:
             cls.__dataloader_initializer()
         drug_filter = ~((cls.drug_physicochem == 0).all(axis=0))
         cl_filter = ~((cls.cl_physicochem == 0).all(axis=0))
         common_filter = drug_filter | cl_filter
+        if drug_filter_only:
+            return drug_filter
         return common_filter
 
 
@@ -625,10 +640,15 @@ class SingleResponseDataLoader(CustomDataLoader):
             cls.single_response.set_index(['cell_line', 'drug'], inplace = True)
 
     @classmethod
-    def get_single_response(cls):
+    def get_single_response(cls, save_each_data_point = setting.save_each_ecfp_phy_data_point):
 
         if cls.single_response is None:
             cls.__dataloader_initializer()
+        if save_each_data_point:
+            if not os.path.exists("single_datas"):
+                os.mkdir("single_datas")
+            for i, one_drug_single in enumerate(cls.single_response.values):
+                save(one_drug_single, os.path.join("single_datas", "_".join(cls.single_response.index[i]) + '.pt'))
         return cls.single_response
 
 class RepresentationSamplesDataLoader(CustomDataLoader):
@@ -859,7 +879,8 @@ class SamplesDataLoader(CustomDataLoader):
                 if setting.apply_var_filter:
                     cls.simulated_drug_target = cls.simulated_drug_target.loc[:,cls.entrez_set]
                     cls.simulated_drug_target.fillna(0, inplace=True)
-                    cls.var_filter = cls.simulated_drug_target.var(axis=0) > 0.00000858
+                    cls.var_filter = cls.simulated_drug_target.var(axis=0) > 0.005
+                    print(sum(cls.var_filter))
                     cls.simulated_drug_target = cls.simulated_drug_target.loc[:, cls.var_filter]
                 drug_a_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
                 drug_a_target_feature = pd.DataFrame(drug_a_target_feature, columns=cls.entrez_set).reset_index(drop=True)
