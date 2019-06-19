@@ -101,9 +101,9 @@ if __name__ == "__main__":
                 input_dir_a = os.path.join(str(fea_type) + "_datas", str(drug_a) + ".pt")
                 input_dir_b = os.path.join(str(fea_type) + "_datas", str(drug_b) + ".pt")
                 try:
-                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1,-1)).float()
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1,-1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
-                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float()
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
                 except:
                     random_test.logger.error("Fail to get {}".format(drug_combin))
@@ -132,9 +132,9 @@ if __name__ == "__main__":
                 input_dir_a = os.path.join(str(fea_type) + "_datas", str(drug_a) + ".pt")
                 input_dir_b = os.path.join(str(fea_type) + "_datas", str(drug_b) + ".pt")
                 try:
-                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1, -1)).float()
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_a).reshape(1, -1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
-                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float()
+                    cur_tensor = torch.from_numpy(torch.load(input_dir_b).reshape(1, -1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
                 except:
                     random_test.logger.error("Fail to get {}".format(drug_combin))
