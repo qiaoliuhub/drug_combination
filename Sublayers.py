@@ -103,7 +103,7 @@ class OutputFeedForward(nn.Module):
         self.norm_1 = Norm(H*W)
         self.n_layers = len(self.d_layers)
         self.dropouts = nn.ModuleList(nn.Dropout(dropout) for _ in range(self.n_layers))
-        self.dropouts[0] = nn.Dropout(dropout=0.2)
+        self.dropouts[0] = nn.Dropout(p=0.2)
         self.linear_layers = nn.ModuleList(nn.Linear(d_layers[i-1], d_layers[i]) for i in range(1, self.n_layers))
         self.norms = nn.ModuleList(Norm(d_layers[i-1]) for i in range(1, self.n_layers))
 

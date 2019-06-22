@@ -999,7 +999,8 @@ class SamplesDataLoader(CustomDataLoader):
                                                                                cls.synergy_score['drug_b_name'])]
                 max_drug = np.maximum(drug_a.values, drug_b.values)
                 min_drug = np.minimum(drug_a.values, drug_b.values)
-                cls.single_response_feature.append(np.concatenate([max_drug, min_drug], axis = 1))
+                additive_drug = np.add(drug_a.values[:,:-2], drug_b.values[:, :-2])
+                cls.single_response_feature.append(np.concatenate((max_drug, min_drug,additive_drug), axis = 1))
 
         return cls.single_response_feature
 
