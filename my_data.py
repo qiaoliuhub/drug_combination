@@ -635,7 +635,7 @@ class SingleResponseDataLoader(CustomDataLoader):
     def __dataloader_initializer(cls):
 
         if cls.single_response is None:
-            cls.single_response = pd.read_csv(setting.single_response, index_col=0).drop(['sigma'], axis=1)
+            cls.single_response = pd.read_csv(setting.single_response, index_col=0).drop(['mean','sigma'], axis=1)
             cls.single_response['drug'] = cls.single_response['drug'].str.upper()
             cls.single_response.set_index(['cell_line', 'drug'], inplace = True)
 
