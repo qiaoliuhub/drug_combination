@@ -29,7 +29,7 @@ catoutput_output_type = "ecfp"
 #["ecfp", "phy", "ge", "gd"]
 catoutput_intput_type = ["ecfp"]
 #{"ecfp": 2048, "phy": 960, "single": 20}
-dir_input_type = {"ecfp": 1226, "phy": 451, "single": 10}
+dir_input_type = {"ecfp": 1226, "phy": 451, "single": 15}
 
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
