@@ -105,16 +105,17 @@ if __name__ == "__main__":
                 if fea_type == 'single':
                     max_array = np.maximum(drug_a_array, drug_b_array)
                     min_array = np.minimum(drug_a_array, drug_b_array)
+                    additive_drug = np.add(drug_a_array, drug_b_array)
                     drug_a_array = max_array
                     drug_b_array = min_array
-                    additive_drug = np.add(drug_a_array, drug_b_array)
                 try:
                     cur_tensor = torch.from_numpy(drug_a_array.reshape(1,-1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
                     cur_tensor = torch.from_numpy(drug_b_array.reshape(1, -1)).float().to(device2)
                     cur_tensor_list.append(cur_tensor)
-                    cur_tensor = torch.from_numpy(additive_drug.reshape(1, -1)).float().to(device2)
-                    cur_tensor_list.append(cur_tensor)
+                    if fea_type == 'single':
+                        cur_tensor = torch.from_numpy(additive_drug.reshape(1, -1)).float().to(device2)
+                        cur_tensor_list.append(cur_tensor)
                 except:
                     random_test.logger.error("Fail to get {}".format(drug_combin))
                     raise
