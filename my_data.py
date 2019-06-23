@@ -596,6 +596,10 @@ class PhysicochemDataLoader(CustomDataLoader):
         cls.drug_physicochem.drop('SMILE', inplace=True, axis=1)
         #cls.physicochem = cls.physicochem.loc[:, ~((cls.physicochem == 0).all(axis=0))]
         cls.drug_physicochem = cls.drug_physicochem.loc[:, cls.__get_physicochem_filter(drug_filter_only=setting.ecfp_phy_drug_filter_only)]
+        physicochem_scaler = StandardScaler(with_mean=False)
+        physicochem = physicochem_scaler.fit_transform(cls.drug_physicochem)
+        physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
+        cls.drug_physicochem = physicochem
         if save_each_data_point:
             if not os.path.exists("phy_datas"):
                 os.mkdir("phy_datas")
@@ -909,9 +913,7 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'drug_physiochemistry' in setting.drug_features:
 
-                physicochem_scaler = StandardScaler(with_mean=False)
-                physicochem = physicochem_scaler.fit_transform(cls.drug_physicochem)
-                physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
+                physicochem = cls.drug_physicochem
                 drug_a_physiochem_feature = physicochem.loc[list(cls.synergy_score['drug_a_name']), :]
                 cls.drug_a_features.append(drug_a_physiochem_feature.values)
                 cls.drug_features_lengths.append(drug_a_physiochem_feature.shape[1])
