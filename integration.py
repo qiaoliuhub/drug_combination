@@ -226,6 +226,7 @@ if __name__ == "__main__":
         val_train_total_loss = 0
         val_train_loss = []
         val_train_pearson = 0
+        val_train_spearman = 0
 
         val_i = 0
         val_total_loss = 0
@@ -298,7 +299,8 @@ if __name__ == "__main__":
             cv_models.append(drug_model)
 
         logger.debug(
-            "Training mse is {0}, Training pearson correlation is {1!r}".format(np.mean(val_train_loss), val_train_pearson))
+            "Training mse is {0}, Training pearson correlation is {1!r}, Training Spearman correlation is {2!r}".
+                format(np.mean(val_train_loss), val_train_pearson, val_train_spearman))
 
         logger.debug(
             "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
@@ -316,6 +318,7 @@ if __name__ == "__main__":
     test_total_loss = 0
     test_loss = []
     test_pearson = 0
+    test_spearman = 0
 
     with torch.set_grad_enabled(False):
 
@@ -349,4 +352,5 @@ if __name__ == "__main__":
                 test_loss.append(avg_loss)
                 test_total_loss = 0
 
-    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), test_pearson))
+    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {2!r}".
+                 format(np.mean(test_loss), test_pearson, test_spearman))
