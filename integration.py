@@ -232,6 +232,7 @@ if __name__ == "__main__":
         val_total_loss = 0
         val_loss = []
         val_pearson = 0
+        val_spearman = 0
 
         with torch.set_grad_enabled(False):
 
@@ -287,6 +288,7 @@ if __name__ == "__main__":
 
                 loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
                 val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                val_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                 val_total_loss += loss
 
                 n_iter = 1
@@ -303,7 +305,8 @@ if __name__ == "__main__":
                 format(np.mean(val_train_loss), val_train_pearson, val_train_spearman))
 
         logger.debug(
-            "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
+            "Validation mse is {0}, Validation pearson correlation is {1!r}, Validation Spearman correlation is {2!r}".
+                format(np.mean(val_loss), val_pearson, val_spearman))
 
         mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                  ytickmin=100, ytickmax=500)
