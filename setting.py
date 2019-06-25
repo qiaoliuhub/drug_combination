@@ -105,7 +105,7 @@ cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP
 
 apply_var_filter = False
 
-single_response_feature = ['single_response']
+single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 arrangement = [[1,5,11]]
