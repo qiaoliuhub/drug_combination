@@ -249,6 +249,9 @@ if __name__ == "__main__":
                 val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
+                if epoch == setting.n_epochs - 1 and setting.save_final_pred:
+                    save(np.concatenate(all_preds.reshape(-1,1), all_ys.reshape(-1,1)), "prediction/prediction_" + setting.catoutput_output_type)
+
 
                     # n_iter = 1
                     # if val_train_i % n_iter == 0:
@@ -359,6 +362,8 @@ if __name__ == "__main__":
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
+        save(np.concatenate(mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)),
+             "prediction/prediction_" + setting.catoutput_output_type)
 
             # n_iter = 1
             # if (test_i + 1) % n_iter == 0:

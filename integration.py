@@ -57,8 +57,14 @@ if __name__ == "__main__":
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
 
     logger.debug("Preparing Data")
-    training_index = [f[:-3] for f in os.listdir("train_" + setting.catoutput_intput_type[0] + "_datas")]
-    test_index = [f[:-3] for f in os.listdir("test_" + setting.catoutput_intput_type[0] + "_datas")]
+    if len(setting.catoutput_intput_type) and os.path.exists("train_" + setting.catoutput_intput_type[0] + "_datas"):
+        training_index = [f[:-3] for f in os.listdir("train_" + setting.catoutput_intput_type[0] + "_datas")]
+        test_index = [f[:-3] for f in os.listdir("test_" + setting.catoutput_intput_type[0] + "_datas")]
+        save(training_index, setting.train_index)
+        save(test_index, setting.test_index)
+    else:
+        training_index = load(setting.train_index)
+        test_index = load(setting.test_index)
     y_labels = load(setting.y_labels_file)
     std_scaler = StandardScaler()
     if setting.y_transform:
@@ -260,6 +266,9 @@ if __name__ == "__main__":
                 val_train_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                 val_train_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                 val_train_total_loss += loss
+                if epoch == setting.n_epochs - 1 and setting.save_final_pred:
+                    save(np.concatenate(mean_prediction_on_cpu.reshape(-1,1), local_labels_on_cpu.reshape(-1,1)),
+                         "prediction/prediction_" + setting.catoutput_output_type)
 
                 n_iter = 1
                 if val_train_i % n_iter == 0:
@@ -348,6 +357,8 @@ if __name__ == "__main__":
             test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_spearman = spearmanr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_total_loss += loss
+            save(np.concatenate(mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)),
+                 "prediction/prediction_" + setting.catoutput_output_type)
 
             n_iter = 1
             if (test_i + 1) % n_iter == 0:

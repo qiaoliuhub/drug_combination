@@ -26,10 +26,11 @@ data_folder = os.path.join(working_dir, 'datas')
 y_labels_file = os.path.join(working_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
 catoutput_output_type = "ecfp"
+save_final_pred = True
 #["ecfp", "phy", "ge", "gd"]
-catoutput_intput_type = ["ecfp"]
+catoutput_intput_type = []
 #{"ecfp": 2048, "phy": 960, "single": 20}
-dir_input_type = {"ecfp": 1226, "phy": 451, "single": 15}
+dir_input_type = {"single": 15}
 
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
@@ -104,10 +105,10 @@ cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP
 
 apply_var_filter = False
 
-single_response_feature = []#['single_response']
+single_response_feature = ['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
-arrangement = [[0,4,9]]
+arrangement = [[1,5,11]]
 update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3]
