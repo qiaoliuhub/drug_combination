@@ -18,7 +18,7 @@ import torch.nn as nn
 import attention_model
 import torch.nn.functional as F
 import torchsummary
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import torch_visual
@@ -256,6 +256,7 @@ if __name__ == "__main__":
 
                 loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
                 val_train_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                val_train_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
                 val_train_total_loss += loss
 
                 n_iter = 1
@@ -339,6 +340,7 @@ if __name__ == "__main__":
                     std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
             loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
             test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
+            test_spearman = spearmanr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_total_loss += loss
 
             n_iter = 1
