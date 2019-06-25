@@ -17,7 +17,7 @@ from torch.utils import data
 import attention_model
 import torch.nn.functional as F
 import torchsummary
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import torch_visual
@@ -247,6 +247,7 @@ if __name__ == "__main__":
                 assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
                 loss = mean_squared_error(all_preds, all_ys)
                 val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
 
                     # n_iter = 1
@@ -356,6 +357,7 @@ if __name__ == "__main__":
                           all_ys[:sample_size//2]], axis=0)
         loss = mean_squared_error(mean_prediction, mean_y)
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
+        test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
 
             # n_iter = 1
