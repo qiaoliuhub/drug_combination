@@ -280,7 +280,7 @@ class SynergyDataReader(CustomDataReader):
         cls.drugs_filtered = True
 
     @classmethod
-    def get_synergy_score(cls):
+    def get_synergy_score(cls, pro_filter = False):
 
         if cls.synergy_score is None:
             cls.__initialize_synergy_score()
@@ -288,6 +288,10 @@ class SynergyDataReader(CustomDataReader):
         if not filtered:
             cls.__filter_drugs()
         cls.synergy_score = cls.synergy_score.reset_index(drop=True)
+        if pro_filter:
+            proteomics_filter = ~cls.synergy_score['cell_line'].isin({'DLD1', 'OCUBM', 'A427'})
+            cls.synergy_score = cls.synergy_score[proteomics_filter]
+        #cls.synergy_score.to_csv("./synergy_score/filtered_data.csv", index = False)
         return cls.synergy_score
 
     @classmethod
@@ -305,10 +309,10 @@ class SynergyDataReader(CustomDataReader):
         return set(cls.synergy_score['drug_a_name']).union(set(cls.synergy_score['drug_b_name']))
 
     @classmethod
-    def get_final_index(cls):
+    def get_final_index(cls, pro_filter = False):
 
         if cls.final_index is None:
-            synergy_score = cls.get_synergy_score()
+            synergy_score = cls.get_synergy_score(pro_filter = pro_filter)
             final_index_1 = synergy_score.reset_index().apply(
                 lambda row: row['drug_a_name'] + '_' + row['drug_b_name'] + '_' +
                             row['cell_line'] + '_' + str(row['index']), axis=1)
@@ -655,6 +659,31 @@ class SingleResponseDataLoader(CustomDataLoader):
                 save(one_drug_single, os.path.join("single_datas", "_".join(cls.single_response.index[i]) + '.pt'))
         return cls.single_response
 
+class ProteomicsDataLoader(CustomDataLoader):
+
+    proteomics = None
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __dataloader_initializer(cls):
+
+        if cls.proteomics is None:
+            cls.proteomics = pd.read_csv(setting.ccle_pro, index_col=0)
+
+    @classmethod
+    def get_proteomics(cls, save_each_data_point = setting.save_each_ecfp_phy_data_point):
+
+        if cls.proteomics is None:
+            cls.__dataloader_initializer()
+        if save_each_data_point:
+            if not os.path.exists("proteomics_datas"):
+                os.mkdir("proteomics_datas")
+            for i, one_cl_pro in enumerate(cls.proteomics.values):
+                save(one_cl_pro, os.path.join("proteomics_datas", cls.proteomics.index[i]) + '.pt')
+        return cls.proteomics
+
 class RepresentationSamplesDataLoader(CustomDataLoader):
 
     F_drug = None
@@ -776,6 +805,7 @@ class SamplesDataLoader(CustomDataLoader):
     single_response = None
     single_response_feature = None
     var_filter = None
+    proteomics = None
 
     def __init__(self):
         super().__init__()
@@ -861,6 +891,13 @@ class SamplesDataLoader(CustomDataLoader):
         ###                     efficacy1 ....  efficacy8      pIC50    Hill
         ########################################################################################
         cls.single_response = SingleResponseDataLoader.get_single_response()
+
+        ############################################
+        ####              antibody1  antibody2 ....
+        #### cell_line
+        ####               0.0007     0.000677 ....
+        #### ########################################
+        cls.proteomics = ProteomicsDataLoader.get_proteomics()
 
         cls.__check_data_frames()
         cls.data_initialized = True

@@ -45,7 +45,7 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
 
-    final_index = my_data.SynergyDataReader.get_final_index()
+    final_index = set(my_data.SynergyDataReader.get_final_index(pro_filter=setting.pro_filter))
 
     logger.debug("Preparing models")
     drug_model = attention_model.get_retrain_model()
@@ -65,6 +65,8 @@ if __name__ == "__main__":
     else:
         training_index = load(setting.train_index)
         test_index = load(setting.test_index)
+    training_index = [x for x in training_index if x in final_index]
+    test_index = [x for x in test_index if x in final_index]
     y_labels = load(setting.y_labels_file)
     std_scaler = StandardScaler()
     if setting.y_transform:
@@ -101,6 +103,13 @@ if __name__ == "__main__":
                 os.mkdir(save_path)
             for fea_type in setting.dir_input_type:
                 drug_a, drug_b, cell_line, _ = drug_combin.split("_")
+                if fea_type == 'proteomics':
+                    input_dir = os.path.join(str(fea_type) + "_datas", str(cell_line) + ".pt")
+                    pro_array = torch.load(input_dir)
+                    cur_tensor = torch.from_numpy(pro_array.reshape(1,-1)).float().to(device2)
+                    cur_tensor_list.append(cur_tensor)
+                    continue
+
                 if fea_type == 'single':
                     drug_a = "_".join([cell_line, drug_a])
                     drug_b = "_".join([cell_line, drug_b])
@@ -143,6 +152,12 @@ if __name__ == "__main__":
                 os.mkdir(save_path)
             for fea_type in setting.dir_input_type:
                 drug_a, drug_b, cell_line, _ = drug_combin.split("_")
+                if fea_type == 'proteomics':
+                    input_dir = os.path.join(str(fea_type) + "_datas", str(cell_line) + ".pt")
+                    pro_array = torch.load(input_dir)
+                    cur_tensor = torch.from_numpy(pro_array.reshape(1,-1)).float().to(device2)
+                    cur_tensor_list.append(cur_tensor)
+                    continue
                 if fea_type == 'single':
                     drug_a = "_".join([cell_line, drug_a])
                     drug_b = "_".join([cell_line, drug_b])
@@ -357,7 +372,7 @@ if __name__ == "__main__":
             test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_spearman = spearmanr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_total_loss += loss
-            save(np.concatenate((np.array(test_index).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
+            save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
                  "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
             n_iter = 1

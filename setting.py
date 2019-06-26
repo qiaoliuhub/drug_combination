@@ -29,10 +29,12 @@ catoutput_output_type = "ecfp"
 save_final_pred = True
 #["ecfp", "phy", "ge", "gd"]
 catoutput_intput_type = []
-#{"ecfp": 2048, "phy": 960, "single": 20}
-dir_input_type = {"single": 15}
+#{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
+dir_input_type = {"single": 15, "proteomics": 107}
 
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
+ccle_pro = os.path.join(working_dir, 'proteomics', 'ccle_pro.csv')
+pro_filter = True
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
