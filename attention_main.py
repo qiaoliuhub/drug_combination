@@ -250,7 +250,7 @@ if __name__ == "__main__":
                 val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type)
+                    save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type)
 
 
                     # n_iter = 1
@@ -294,7 +294,8 @@ if __name__ == "__main__":
                 cv_models.append(drug_model)
 
             logger.debug(
-                "Training mse is {0}, Training pearson correlation is {1!r}".format(np.mean(val_train_loss), val_train_pearson))
+                "Training mse is {0}, Training pearson correlation is {1!r}, Training spearman correlation is {2!r}"
+                    .format(np.mean(val_train_loss), val_train_pearson, val_train_spearman))
 
             logger.debug(
                 "Validation mse is {0}, Validation pearson correlation is {1!r}".format(np.mean(val_loss), val_pearson))
@@ -362,7 +363,7 @@ if __name__ == "__main__":
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
-        save(np.concatenate((mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
+        save(np.concatenate((np.array(test_index_list[:sample_size//2]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type)
 
             # n_iter = 1
@@ -371,7 +372,7 @@ if __name__ == "__main__":
         test_loss.append(avg_loss)
         test_total_loss = 0
 
-    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}".format(np.mean(test_loss), test_pearson))
+    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {1!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
 
     if setting.get_feature_imp:
