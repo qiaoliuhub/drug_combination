@@ -250,7 +250,7 @@ if __name__ == "__main__":
                 val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type)
+                    save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
 
                     # n_iter = 1
@@ -364,7 +364,7 @@ if __name__ == "__main__":
         test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
         save(np.concatenate((np.array(test_index_list[:sample_size//2]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
-             "prediction/prediction_" + setting.catoutput_output_type)
+             "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
             # n_iter = 1
             # if (test_i + 1) % n_iter == 0:
