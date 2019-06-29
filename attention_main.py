@@ -46,6 +46,7 @@ logger.setLevel(logging.DEBUG)
 if __name__ == "__main__":
 
     final_index = my_data.SynergyDataReader.get_final_index()
+    entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
 
     # print(simulated_drug_target, simulated_drug_target.shape)
     # print("synergy_score filtered data amount %s" %str(len(synergy_score)))
@@ -67,7 +68,9 @@ if __name__ == "__main__":
     slice_indices = drug_features_length + drug_features_length + cellline_features_length
     reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
-    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices())
+    #mask = torch.rand(2324, 20).ge(0.5)
+    mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=mask)
     drug_model.to(device2)
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,

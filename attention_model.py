@@ -7,7 +7,7 @@ from Sublayers import Norm, OutputFeedForward
 import copy
 import setting
 from attention_main import use_cuda, device2
-from attention_main import logger
+from CustomizedLinear import CustomizedLinear
 
 def get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
@@ -123,7 +123,7 @@ class MultiTransformers(nn.Module):
 
 class TransposeMultiTransformers(nn.Module):
 
-    def __init__(self,  d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+    def __init__(self,  d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks = None):
         super().__init__()
 
         assert len(d_input_list) == len(n_feature_type_list) and len(d_input_list) == len(d_model_list),\
@@ -132,7 +132,11 @@ class TransposeMultiTransformers(nn.Module):
         self.norms = nn.ModuleList()
         self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
-            self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+            if masks:
+                #assert masks[i].shape[0] ==
+                self.linear_layers.append(CustomizedLinear(masks[i]))
+            else:
+                self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
             self.norms.append(Norm(d_model_list[i]))
             self.dropouts.append(nn.Dropout(dropout))
         self.transformer_list = nn.ModuleList()
@@ -185,9 +189,9 @@ class MultiTransformersPlusLinear(MultiTransformers):
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
-    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout):
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None):
 
-        super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout)
+        super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks)
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))]) \
                            + setting.single_repsonse_feature_length
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
@@ -372,7 +376,7 @@ def get_model(inputs_lengths):
 
     return model
 
-def get_multi_models(inputs_lengths):
+def get_multi_models(inputs_lengths, input_masks = None):
 
     if not isinstance(setting.d_model, list):
         d_models = [setting.d_model] * len(inputs_lengths)
@@ -388,6 +392,11 @@ def get_multi_models(inputs_lengths):
         assert d_model % setting.attention_heads == 0
     assert setting.attention_dropout < 1
 
+    if not isinstance(input_masks, list):
+        input_masks = [input_masks] * len(inputs_lengths)
+    else:
+        input_masks = input_masks
+
     final_inputs_lengths = [inputs_lengths[i]//n_feature_types[i] for i in range(len(inputs_lengths))]
     #model = FlexibleTransformer(final_inputs_lengths, setting.d_model, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransformerPlusLinear(final_inputs_lengths, d_models, setting.n_feature_type, setting.n_layers, setting.attention_heads, setting.attention_dropout)
@@ -395,7 +404,7 @@ def get_multi_models(inputs_lengths):
     #model = MultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks)
 
     for p in model.parameters():
         if p.dim() > 1:

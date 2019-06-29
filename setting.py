@@ -35,6 +35,7 @@ dir_input_type = {"single": 15, "proteomics": 107}
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 ccle_pro = os.path.join(working_dir, 'proteomics', 'ccle_pro.csv')
 pro_filter = True
+pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
@@ -110,7 +111,7 @@ apply_var_filter = False
 single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
-arrangement = [[1,5,11]]
+arrangement = [[0,4,8]]
 update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3]
@@ -123,5 +124,5 @@ attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
 
-get_feature_imp = True
+get_feature_imp = False
 feature_importance_path = os.path.join(working_dir, 'all_features_importance.csv')
