@@ -240,5 +240,5 @@ def transfer_df_to_mask(df, target_set):
     mask = pd.DataFrame(columns = list(target_set))
     for i in range(len(df)):
         mask.loc[i] = pd.Series({x: 1 for x in df.loc[i, 'entrezs']})
-    mask.fillna(0)
+    mask.fillna(0, inplace=True)
     return mask
