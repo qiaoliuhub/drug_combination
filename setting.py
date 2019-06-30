@@ -107,6 +107,7 @@ cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP
 #cellline_features = ['cl_F_repr']
 
 apply_var_filter = False
+seperate_drug_cellline =  True
 
 single_response_feature = []#['single_response']
 

@@ -132,13 +132,21 @@ class TransposeMultiTransformers(nn.Module):
         self.norms = nn.ModuleList()
         self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
-            if masks:
+            if masks[i] is not None:
+                if setting.seperate_drug_cellline:
+                    for j in range(setting.n_feature_type[i]):
+                        self.linear_layers.append(CustomizedLinear(masks[i]))
+                        self.norms.append(Norm(d_model_list[i]))
+                        self.dropouts.append(nn.Dropout(dropout))
                 #assert masks[i].shape[0] ==
-                self.linear_layers.append(CustomizedLinear(masks[i]))
+                else:
+                    self.linear_layers.append(CustomizedLinear(masks[i]))
+                    self.norms.append(Norm(d_model_list[i]))
+                    self.dropouts.append(nn.Dropout(dropout))
             else:
                 self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
-            self.norms.append(Norm(d_model_list[i]))
-            self.dropouts.append(nn.Dropout(dropout))
+                self.norms.append(Norm(d_model_list[i]))
+                self.dropouts.append(nn.Dropout(dropout))
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
@@ -153,8 +161,20 @@ class TransposeMultiTransformers(nn.Module):
         src_list_linear = []
         trg_list_linear = []
         if not setting.apply_var_filter:
-            for i in range(len(self.linear_layers)):
-                if low_dim:
+            cur_linear = 0
+            for i in range(len(self.transformer_list)):
+                if setting.seperate_drug_cellline:
+                    src_list_dim = []
+                    trg_list_dim = []
+                    for j in range(src_list[i].size(1)):
+                        cur_src_dim = src_list[i].narrow_copy(1,j,1)
+                        cur_trg_dim = trg_list[i].narrow_copy(1,j,1)
+                        src_list_dim.append(self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim))))
+                        trg_list_dim.append(self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_trg_dim))))
+                        cur_linear += 1
+                    src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
+                    trg_list_linear.append(cat(tuple(trg_list_dim), dim = 1))
+                elif low_dim:
                     src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
                     trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
                 else:
