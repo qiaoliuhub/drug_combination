@@ -137,7 +137,7 @@ class TransposeMultiTransformers(nn.Module):
                     for j in range(setting.n_feature_type[i]):
                         self.linear_layers.append(CustomizedLinear(masks[i]))
                         self.norms.append(Norm(d_model_list[i]))
-                        self.dropouts.append(nn.Dropout(dropout))
+                        self.dropouts.append(nn.Dropout(p=0))
                 #assert masks[i].shape[0] ==
                 else:
                     self.linear_layers.append(CustomizedLinear(masks[i]))
