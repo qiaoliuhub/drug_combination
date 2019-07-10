@@ -70,7 +70,7 @@ if __name__ == "__main__":
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
     #mask = torch.rand(2324, 20).ge(0.5)
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
-    final_mask = pd.concat([mask for _ in range(3)], axis=1).values
+    final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     #final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
     drug_model.to(device2)

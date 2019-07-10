@@ -119,7 +119,9 @@ n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
-d_model = 74 * 3
+d_model_i = 3
+d_model_j = 74
+d_model = d_model_i * d_model_j
 attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1

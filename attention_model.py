@@ -150,7 +150,7 @@ class TransposeMultiTransformers(nn.Module):
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
-            self.transformer_list.append(Transformer(n_feature_type_list[i], N, heads, dropout))
+            self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout))
 
     def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False):
 
@@ -169,8 +169,10 @@ class TransposeMultiTransformers(nn.Module):
                     for j in range(src_list[i].size(1)):
                         cur_src_dim = src_list[i].narrow_copy(1,j,1)
                         cur_trg_dim = trg_list[i].narrow_copy(1,j,1)
-                        src_list_dim.append(self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim))))
-                        trg_list_dim.append(self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_trg_dim))))
+                        cur_src_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim)))
+                        cur_trg_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_trg_dim)))
+                        src_list_dim.append(cur_src_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
+                        trg_list_dim.append(cur_trg_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
                         cur_linear += 1
                     src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
                     trg_list_linear.append(cat(tuple(trg_list_dim), dim = 1))
