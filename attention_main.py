@@ -22,6 +22,9 @@ from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import torch_visual
 import feature_imp
+import shap
+import drug_drug
+import pickle
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -73,6 +76,9 @@ if __name__ == "__main__":
     final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     #final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
+    for n, m in drug_model.named_modules():
+        if n == "out":
+            m.register_forward_hook(drug_drug.input_hook)
     drug_model.to(device2)
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
@@ -130,7 +136,7 @@ if __name__ == "__main__":
         eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
-        eval_train_params = {'batch_size': setting.batch_size,
+        eval_train_params = {'batch_size': len(eval_train_set),
                         'shuffle': False}
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
@@ -169,13 +175,13 @@ if __name__ == "__main__":
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
-                preds, _ = drug_model(local_batch, local_batch)
+                preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
                 assert preds.size(-1) == ys.size(-1)
                 loss = F.mse_loss(preds, ys)
-                loss.backward()
+                loss.backward(retain_graph=True)
                 optimizer.step()
 
                 train_total_loss += loss.item()
@@ -221,10 +227,13 @@ if __name__ == "__main__":
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    preds, catoutput = drug_model(local_batch, local_batch)
+                    preds = drug_model(*local_batch)
                     if epoch == setting.n_epochs - 1:
                         cur_train_start_index = eval_train_params['batch_size'] * (val_train_i - 1)
                         cur_train_stop_index = min(eval_train_params['batch_size'] * (val_train_i), len(training_index_list))
+                        for n, m in drug_model.named_modules():
+                            if n == "out":
+                                catoutput = m._value_hook[0]
                         for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
 
                             if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
@@ -273,7 +282,7 @@ if __name__ == "__main__":
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    preds, _ = drug_model(local_batch, local_batch)
+                    preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -335,10 +344,13 @@ if __name__ == "__main__":
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
-            preds, catoutput = drug_model(local_batch, local_batch)
+            preds = drug_model(*local_batch)
             preds = preds.contiguous().view(-1)
             cur_test_start_index = test_params['batch_size'] * (test_i-1)
             cur_test_stop_index = min(test_params['batch_size'] * (test_i), len(test_index_list))
+            for n, m in drug_model.named_modules():
+                if n == "out":
+                    catoutput = m._value_hook[0]
             for i, test_combination in enumerate(test_index_list[cur_test_start_index: cur_test_stop_index]):
                 if not os.path.exists("test_" + setting.catoutput_output_type + "_datas"):
                     os.mkdir("test_" + setting.catoutput_output_type + "_datas")
@@ -379,6 +391,36 @@ if __name__ == "__main__":
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {1!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
+    for local_batch, local_labels in eval_train_generator:
+        # Transfer to GPU
+        local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+        local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
+        reorder_tensor.load_raw_tensor(local_batch)
+        local_batch = reorder_tensor.get_reordered_narrow_tensor()
+        if setting.save_feature_imp_model:
+            save(best_drug_model, setting.best_model_path)
+        # Model computations
+        if setting.save_easy_input_only:
+            e = shap.GradientExplainer(best_drug_model, data=list(local_batch))
+            input_shap_values = e.shap_values(list(local_batch))
+            pickle.dump(input_shap_values, open(setting.input_importance_path, 'wb+'))
+        else:
+            input_importance = []
+            for layer in best_drug_model.linear_layers:
+                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
+                cur_input_importance = cur_e.shap_values(list(local_batch))
+                input_importance.append(cur_input_importance)
+            pickle.dump(input_importance, open(setting.input_importance_path, 'wb+'))
+        e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(local_batch))
+        out_input_shap_value = e1.shap_values(list(local_batch))
+        pickle.dump(out_input_shap_value, open(setting.out_input_importance_path, 'wb+'))
+        if setting.save_inter_imp:
+            transform_input_importance = []
+            for layer in best_drug_model.dropouts:
+                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
+                cur_transform_input_shap_value = cur_e.shap_values(list(local_batch))
+                transform_input_importance.append(cur_transform_input_shap_value)
+            pickle.dump(transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))
 
     if setting.get_feature_imp:
 

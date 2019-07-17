@@ -167,8 +167,8 @@ class TransposeMultiTransformers(nn.Module):
                     src_list_dim = []
                     trg_list_dim = []
                     for j in range(src_list[i].size(1)):
-                        cur_src_dim = src_list[i].narrow_copy(1,j,1)
-                        cur_trg_dim = trg_list[i].narrow_copy(1,j,1)
+                        cur_src_dim = src_list[i][:,j:j+1,:]
+                        cur_trg_dim = trg_list[i][:,j:j+1,:]
                         cur_src_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim)))
                         cur_trg_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_trg_dim)))
                         src_list_dim.append(cur_src_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
@@ -207,7 +207,7 @@ class MultiTransformersPlusLinear(MultiTransformers):
         output_list = super().forward(src_list, trg_list)
         cat_output = cat(tuple(output_list), dim=1)
         output = self.out(cat_output)
-        return output, cat_output
+        return output
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
@@ -218,8 +218,10 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
                            + setting.single_repsonse_feature_length
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
 
-    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = True):
+    def forward(self, *src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
 
+        if trg_list is None:
+            trg_list = src_list
         input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
         input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
@@ -228,7 +230,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
         cat_output = cat(tuple(output_list + single_response_feature_list), dim=1)
         output = self.out(cat_output)
-        return output, cat_output
+        return output
 
 class MultiTransformersPlusSDPAttention(MultiTransformers):
 
@@ -250,7 +252,7 @@ class MultiTransformersPlusSDPAttention(MultiTransformers):
         attn_output = self.output_attn(output_list[-1], cat_output)
         attn_output = attn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
-        return output, cat_output
+        return output
 
 class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
 
@@ -276,7 +278,7 @@ class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
         rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output, low_dim = low_dim)
-        return output, cat_output
+        return output
 
 
 class MultiTransformersPlusRNN(MultiTransformers):
@@ -303,7 +305,7 @@ class MultiTransformersPlusRNN(MultiTransformers):
         rnn_output, hidden = self.rnn(cat_output, (h_s, c_s))
         attn_output = rnn_output.contiguous().view(bs, -1)
         output = self.out(attn_output)
-        return output, cat_output
+        return output
 
 class MultiTransformersPlusMulAttention(MultiTransformers):
 
@@ -325,7 +327,7 @@ class MultiTransformersPlusMulAttention(MultiTransformers):
         cat_output = self.linear(cat_output)
         mul_output = torch.matmul(cat_output.contiguous().view(bs,-1,1), output_list[-1].contiguous().view(bs,1,-1))
         output = self.out(mul_output.contiguous().view(bs, -1))
-        return output, cat_output
+        return output
 
 class LastLSTM(nn.Module):
 
