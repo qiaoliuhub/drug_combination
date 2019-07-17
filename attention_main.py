@@ -136,7 +136,7 @@ if __name__ == "__main__":
         eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
         training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
-        eval_train_params = {'batch_size': len(eval_train_set),
+        eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
@@ -391,7 +391,7 @@ if __name__ == "__main__":
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {1!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
-    for local_batch, local_labels in eval_train_generator:
+    for local_batch, local_labels in test_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
         local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
