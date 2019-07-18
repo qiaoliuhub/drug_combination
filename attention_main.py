@@ -149,7 +149,7 @@ if __name__ == "__main__":
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
         logger.debug("Test data length: {!r}".format(len(test_index_list)))
-        test_params = {'batch_size': len(test_index),
+        test_params = {'batch_size': len(test_index) * 2,
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
 
@@ -391,6 +391,9 @@ if __name__ == "__main__":
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {1!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
+    batch_input_importance = []
+    batch_out_input_importance = []
+    batch_transform_input_importance = []
     for local_batch, local_labels in test_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
@@ -402,25 +405,37 @@ if __name__ == "__main__":
         # Model computations
         if setting.save_easy_input_only:
             e = shap.GradientExplainer(best_drug_model, data=list(local_batch))
-            input_shap_values = e.shap_values(list(local_batch))
-            pickle.dump(input_shap_values, open(setting.input_importance_path, 'wb+'))
+            input_importance = e.shap_values(list(local_batch))
+            #pickle.dump(input_shap_values, open(setting.input_importance_path, 'wb+'))
         else:
             input_importance = []
             for layer in best_drug_model.linear_layers:
                 cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
                 cur_input_importance = cur_e.shap_values(list(local_batch))
                 input_importance.append(cur_input_importance)
-            pickle.dump(input_importance, open(setting.input_importance_path, 'wb+'))
+            input_importance = np.concatenate(tuple(input_importance), axis=1)
+        batch_input_importance.append(input_importance)
+
         e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(local_batch))
         out_input_shap_value = e1.shap_values(list(local_batch))
-        pickle.dump(out_input_shap_value, open(setting.out_input_importance_path, 'wb+'))
+        batch_out_input_importance.append(out_input_shap_value)
+
         if setting.save_inter_imp:
             transform_input_importance = []
             for layer in best_drug_model.dropouts:
                 cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
                 cur_transform_input_shap_value = cur_e.shap_values(list(local_batch))
                 transform_input_importance.append(cur_transform_input_shap_value)
-            pickle.dump(transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))
+            transform_input_importance = np.concatenate(tuple(transform_input_importance), axis=1)
+
+            batch_transform_input_importance.append(transform_input_importance)
+    batch_input_importance = np.concatenate(tuple(batch_input_importance), axis=0)
+    batch_out_input_importance = np.concatenate(tuple(batch_out_input_importance), axis=0)
+    pickle.dump(batch_input_importance, open(setting.input_importance_path, 'wb+'))
+    pickle.dump(batch_out_input_importance, open(setting.out_input_importance_path, 'wb+'))
+    if setting.save_inter_imp:
+        batch_transform_input_importance = np.concatenate(tuple(batch_transform_input_importance), axis=0)
+        pickle.dump(batch_transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))
 
     if setting.get_feature_imp:
 
