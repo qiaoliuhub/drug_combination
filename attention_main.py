@@ -142,14 +142,14 @@ if __name__ == "__main__":
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
         validation_set = my_data.MyDataset(partition['test1'], labels)
-        eval_params = {'batch_size': len(test_index),
+        eval_params = {'batch_size': setting.batch_size,
                        'shuffle': False}
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
         logger.debug("Test data length: {!r}".format(len(test_index_list)))
-        test_params = {'batch_size': setting.batch_size,
+        test_params = {'batch_size': len(test_index),
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
 
