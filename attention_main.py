@@ -149,7 +149,7 @@ if __name__ == "__main__":
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
         logger.debug("Test data length: {!r}".format(len(test_index_list)))
-        test_params = {'batch_size': len(test_index) * 2,
+        test_params = {'batch_size': len(test_index_list)//4,
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
 
@@ -415,10 +415,12 @@ if __name__ == "__main__":
                 input_importance.append(cur_input_importance)
             input_importance = np.concatenate(tuple(input_importance), axis=1)
         batch_input_importance.append(input_importance)
+        logger.debug("Finished one batch of input importance analysis")
 
         e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(local_batch))
         out_input_shap_value = e1.shap_values(list(local_batch))
         batch_out_input_importance.append(out_input_shap_value)
+        logger.debug("Finished one batch of out input importance analysis")
 
         if setting.save_inter_imp:
             transform_input_importance = []
@@ -429,6 +431,7 @@ if __name__ == "__main__":
             transform_input_importance = np.concatenate(tuple(transform_input_importance), axis=1)
 
             batch_transform_input_importance.append(transform_input_importance)
+        logger.debug("Finished one batch of importance analysis")
     batch_input_importance = np.concatenate(tuple(batch_input_importance), axis=0)
     batch_out_input_importance = np.concatenate(tuple(batch_out_input_importance), axis=0)
     pickle.dump(batch_input_importance, open(setting.input_importance_path, 'wb+'))
