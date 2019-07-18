@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
         validation_set = my_data.MyDataset(partition['test1'], labels)
-        eval_params = {'batch_size': setting.batch_size,
+        eval_params = {'batch_size': len(test_index),
                        'shuffle': False}
         validation_generator = data.DataLoader(validation_set, **eval_params)
 
