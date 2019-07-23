@@ -153,7 +153,7 @@ class TransposeMultiTransformers(nn.Module):
         for i in range(len(d_input_list)):
             self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout))
 
-    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = False, linear_only = False):
+    def forward(self, src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = False):
 
         # x = F.relu(self.linear_1(x))
         # x = x if low_dim else self.norm(x)
@@ -164,7 +164,15 @@ class TransposeMultiTransformers(nn.Module):
         if not setting.apply_var_filter:
             cur_linear = 0
             for i in range(len(self.transformer_list)):
-                if setting.seperate_drug_cellline:
+                if self.linear_only:
+                    src_list_dim = []
+                    for j in range(src_list[i].size(1)):
+                        cur_src_dim = src_list[i][:,j:j+1,:]
+                        cur_src_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim)))
+                        src_list_dim.append(cur_src_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
+                        cur_linear += 1
+                    src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
+                elif setting.seperate_drug_cellline:
                     src_list_dim = []
                     trg_list_dim = []
                     for j in range(src_list[i].size(1)):
@@ -191,11 +199,11 @@ class TransposeMultiTransformers(nn.Module):
         output_list = []
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
-            trg_list_linear[i] = torch.transpose(trg_list_linear[i], -1, -2)
             if self.linear_only:
                 batch_size = src_list_linear[i].size(0)
                 output_list.append(src_list_linear[i].contiguous().view(batch_size, -1))
             else:
+                trg_list_linear[i] = torch.transpose(trg_list_linear[i], -1, -2)
                 output_list.append(self.transformer_list[i](src_list_linear[i], trg_list_linear[i], low_dim=low_dim))
         return output_list
 
@@ -222,14 +230,18 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))]) \
                            + setting.single_repsonse_feature_length
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.linear_only = linear_only
 
     def forward(self, *src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
 
-        if trg_list is None:
-            trg_list = src_list
         input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
-        input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
-        output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
+        if self.linear_only:
+            output_list = super().forward(input_src_list, low_dim=low_dim)
+        else:
+            if trg_list is None:
+                trg_list = src_list
+            input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
+            output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
         single_response_feature_list = []
         if setting.single_repsonse_feature_length != 0:
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
@@ -272,7 +284,7 @@ class TransposeMultiTransformersPlusRNN(TransposeMultiTransformers):
         self.rnn = nn.LSTM(input_size=d_model_list[0], hidden_size=self.hidden_size, num_layers=1, batch_first=True)
         self.out = OutputFeedForward(sum(self.n_feature_type_list), self.hidden_size, d_layers=setting.output_FF_layers, dropout=dropout)
 
-    def forward(self, src_list, trg_list, src_mask=None, trg_mask=None, low_dim = True):
+    def forward(self, src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
         output_list = super().forward(src_list, trg_list, low_dim=low_dim)
         bs = output_list[0].size(0)
         for i, output_tensor in enumerate(output_list):
@@ -399,7 +411,8 @@ def get_model(inputs_lengths):
     assert setting.attention_dropout < 1
 
     #model = TransformerPlusLinear(setting.d_input, setting.d_model, setting.n_layers, setting.attention_heads, setting.attention_dropout)
-    model = FlexibleTransformer(inputs_lengths, setting.d_model, setting.n_layers, setting.attention_heads, setting.attention_dropout)
+    model = FlexibleTransformer(inputs_lengths, setting.d_model, setting.n_layers,
+                                setting.attention_heads, setting.attention_dropout)
 
     for p in model.parameters():
         if p.dim() > 1:
