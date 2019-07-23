@@ -236,7 +236,9 @@ def __ml_train(X, y, train_index, test_index):
         h2o.h2o.cluster().shutdown()
 
 
-def transfer_df_to_mask(df, target_set):
+def transfer_df_to_mask(df, target_set, delete_gene = None):
+    if delete_gene is not None:
+        df['Entrezs'].apply(lambda x: x.discard(delete_gene))
     mask = pd.DataFrame(columns = list(target_set))
     for i in range(len(df)):
         mask.loc[i] = pd.Series({int(x): 1 for x in df.loc[i, 'entrezs']})

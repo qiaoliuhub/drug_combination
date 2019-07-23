@@ -88,6 +88,7 @@ if __name__ == "__main__":
     #     my_data.DataPreprocessor.reg_train_eval_test_split()
     test_generator = None
     eval_train_generator = None
+    eval_train_1_generator = None
     test_index_list = None
     test_params = None
     partition = None
@@ -138,6 +139,9 @@ if __name__ == "__main__":
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
+        eval_train_params1 = {'batch_size': len(training_index_list),
+                        'shuffle': False}
+        eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
         #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
@@ -149,6 +153,7 @@ if __name__ == "__main__":
         test_set = my_data.MyDataset(partition['test1'] + partition['test2'], labels)
         test_index_list = partition['test1'] + partition['test2']
         logger.debug("Test data length: {!r}".format(len(test_index_list)))
+        pickle.dump(test_index_list, open("test_index_list", "wb+"))
         test_params = {'batch_size': len(test_index_list)//4,
                        'shuffle': False}
         test_generator = data.DataLoader(test_set, **test_params)
@@ -394,6 +399,11 @@ if __name__ == "__main__":
     batch_input_importance = []
     batch_out_input_importance = []
     batch_transform_input_importance = []
+    total_data, _ = next(iter(eval_train_1_generator))
+    total_data = total_data.float().to(device2)
+    total_data = total_data.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
+    reorder_tensor.load_raw_tensor(total_data)
+    total_data = reorder_tensor.get_reordered_narrow_tensor()
     for local_batch, local_labels in test_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
@@ -404,20 +414,20 @@ if __name__ == "__main__":
             save(best_drug_model, setting.best_model_path)
         # Model computations
         if setting.save_easy_input_only:
-            e = shap.GradientExplainer(best_drug_model, data=list(local_batch))
+            e = shap.GradientExplainer(best_drug_model, data=list(total_data))
             input_importance = e.shap_values(list(local_batch))
             #pickle.dump(input_shap_values, open(setting.input_importance_path, 'wb+'))
         else:
             input_importance = []
             for layer in best_drug_model.linear_layers:
-                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
+                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(total_data))
                 cur_input_importance = cur_e.shap_values(list(local_batch))
                 input_importance.append(cur_input_importance)
             input_importance = np.concatenate(tuple(input_importance), axis=1)
         batch_input_importance.append(input_importance)
         logger.debug("Finished one batch of input importance analysis")
 
-        e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(local_batch))
+        e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(total_data))
         out_input_shap_value = e1.shap_values(list(local_batch))
         batch_out_input_importance.append(out_input_shap_value)
         logger.debug("Finished one batch of out input importance analysis")
@@ -425,7 +435,7 @@ if __name__ == "__main__":
         if setting.save_inter_imp:
             transform_input_importance = []
             for layer in best_drug_model.dropouts:
-                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(local_batch))
+                cur_e = shap.GradientExplainer((best_drug_model, layer), data=list(total_data))
                 cur_transform_input_shap_value = cur_e.shap_values(list(local_batch))
                 transform_input_importance.append(cur_transform_input_shap_value)
             transform_input_importance = np.concatenate(tuple(transform_input_importance), axis=1)
