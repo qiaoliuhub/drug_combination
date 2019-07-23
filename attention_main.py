@@ -139,7 +139,7 @@ if __name__ == "__main__":
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
-        eval_train_params1 = {'batch_size': len(training_index_list),
+        eval_train_params1 = {'batch_size': len(partition['train'])//2,
                         'shuffle': False}
         eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
