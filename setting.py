@@ -112,6 +112,7 @@ seperate_drug_cellline = True
 single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
+expression_dependencies_interaction = True
 arrangement = [[0,4,8], [0,4,9]]
 update_features = True
 output_FF_layers = [400, 1]

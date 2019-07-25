@@ -973,6 +973,7 @@ class SamplesDataLoader(CustomDataLoader):
         if cls.cellline_features is None:
             cls.__dataloader_initializer()
             cls.cellline_features = []
+            dp_features = None
             ### generate cell lines features
             if 'gene_dependence' in setting.cellline_features:
 
@@ -998,6 +999,10 @@ class SamplesDataLoader(CustomDataLoader):
                 gene_expression_features.fillna(0, inplace=True)
                 if setting.apply_var_filter:
                     gene_expression_features = gene_expression_features.loc[:, cls.var_filter]
+                if setting.expression_dependencies_interaction and dp_features is not None:
+                    gene_expression_features = pd.DataFrame(np.multiply(gene_expression_features.values, dp_features.values),
+                                                            index=gene_expression_features.index,
+                                                            columns=gene_expression_features.columns)
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])
 
