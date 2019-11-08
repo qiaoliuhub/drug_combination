@@ -853,7 +853,7 @@ class SamplesDataLoader(CustomDataLoader):
             cls.sel_dp = GeneDependenciesDataReader.get_gene_dp()
 
         ### Prepare gene expression data information
-        if 'gene_expression' in setting.cellline_features or 'gene_expression_raw' in setting.cellline_features:
+        if ('gene_expression' in setting.cellline_features) or ('gene_expression_raw' in setting.cellline_features):
             cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.entrez_set),
                                                                             celllines=list(cls.cellline_set))
 
