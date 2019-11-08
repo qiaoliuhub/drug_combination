@@ -784,6 +784,7 @@ class RepresentationSamplesDataLoader(CustomDataLoader):
 class SamplesDataLoader(CustomDataLoader):
 
     entrez_set = None
+    cellline_set = None
     network = None
     simulated_drug_target = None
     synergy_score = None
@@ -841,6 +842,7 @@ class SamplesDataLoader(CustomDataLoader):
         ### 5-FU_ABT-888_A2058,5-FU,ABT-888,A2058,7.6935301658
         ### 5-FU_ABT-888_A2780,5-FU,ABT-888,A2780,7.7780530601
         cls.synergy_score = SynergyDataReader.get_synergy_score()
+        cls.cellline_set = SynergyDataReader.get_synergy_data_cell_lines()
 
         ### Processing gene dependencies map
         ###     "X127399","X1321N1","X143B",
@@ -852,8 +854,8 @@ class SamplesDataLoader(CustomDataLoader):
 
         ### Prepare gene expression data information
         if 'gene_expression' in setting.cellline_features:
-            cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.sel_dp.index),
-                                                                            celllines=list(cls.sel_dp.columns))
+            cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.entrez_set),
+                                                                            celllines=list(cls.cellline_set))
 
         ### Prepare ECFP_6 features
         ###         1     2    ....
