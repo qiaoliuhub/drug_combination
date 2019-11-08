@@ -1020,6 +1020,10 @@ class SamplesDataLoader(CustomDataLoader):
                                                             columns=gene_expression_features.columns)
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])
+            if 'gene_express_raw' in setting.cellline_features:
+                cellline_express_features = cls.expression_df.T.loc[list(cls.synergy_score['cell_line']), :]
+                cls.cellline_features.append(cellline_express_features.values)
+                cls.cellline_features_lengths.append(cellline_express_features.shape[1])
 
             if 'cl_F_repr' in setting.cellline_features:
                 cellline_repr_features = cls.F_cl.loc[list(cls.synergy_score['cell_line']), :].reset_index(drop=True)
