@@ -141,7 +141,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         return drug_profile
 
     @classmethod
-    def get_drug_target_profiles(cls):
+    def __get_drug_target_profiles(cls):
 
         ### return data frame
         ###         5-FU  ABT-888  AZD1775  BEZ-235  BORTEZOMIB  CARBOPLATIN
@@ -165,7 +165,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
     def check_unfound_genes_in_drug_target(cls):
 
         if cls.drug_target is None:
-            cls.get_drug_target_profiles()
+            cls.__get_drug_target_profiles()
         ### Make sure that drug target genes and gene dependencies genes are in selected ~2300 genes
         random_test.logger.info("merged_drug_targets: %s" % str(cls.drug_target.head()))
         unfound_genes = set(cls.drug_target.index) - set(cls.entrez_set)
@@ -182,7 +182,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         if cls.network is None:
             cls.network = NetworkDataReader.get_network()
         if cls.drug_target is None:
-            cls.get_drug_target_profiles()
+            cls.__get_drug_target_profiles()
 
         random_test.logger.debug("Network propagation (methods: {}) ... ".format(setting.propagation_method))
         if setting.propagation_method == 'target_as_1':
@@ -239,7 +239,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
 
         exp_drugs = cls.get_sel_drugs_set()
         if cls.drug_target is None:
-            cls.get_drug_target_profiles()
+            cls.__get_drug_target_profiles()
         ### Make sure drugs are all in drug_target dataframe
         unfound_drugs = exp_drugs - set(cls.drug_target.columns)
         if len(unfound_drugs) == 0:
@@ -250,7 +250,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
 class SynergyDataReader(CustomDataReader):
 
     synergy_score = None
-    sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set()
+    sel_drugs = None
     drugs_filtered = False
     final_index = None
 
@@ -275,6 +275,8 @@ class SynergyDataReader(CustomDataReader):
             return
         if setting.feature_type == 'F_representation':
             cls.sel_drugs = set(list(pd.read_csv(setting.F_drug, header = None, index_col=0).index))
+        else:
+            cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set()
         filter1 = (cls.synergy_score['drug_a_name'].isin(cls.sel_drugs)) & (cls.synergy_score['drug_b_name'].isin(cls.sel_drugs))
         cls.synergy_score = cls.synergy_score[filter1]
         random_test.logger.debug("Post filteration, synergy score has {!r} data points".format(len(cls.synergy_score)))
@@ -445,7 +447,7 @@ class ExpressionDataLoader(CustomDataLoader):
         super().__init__()
 
     @classmethod
-    def initialize_gene_expression(cls):
+    def __initialize_gene_expression(cls):
         ### make sure only one gene expression data frame is instantiated in this class
         ### return: gene expression data frame
 
@@ -456,7 +458,7 @@ class ExpressionDataLoader(CustomDataLoader):
         return cls.gene_expression
 
     @classmethod
-    def initialize_backup_expression(cls):
+    def __initialize_backup_expression(cls):
         ### make sure only one backup expression data frame is instantiated in this class
         ### data will firstly searched in CCLE database and then in GDSC database
         ### return: gene expression data frame
@@ -496,7 +498,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         if len(unfound):
             ### use the back up expression dataframe data
-            cls.initialize_backup_expression()
+            cls.__initialize_backup_expression()
             backup_celllines_repo = set(cls.backup_expression.columns)
             if len(unfound.intersection(backup_celllines_repo)):
                 more_cellline_df = cls.__filter_celllines(cls.backup_expression, list(unfound))
@@ -513,7 +515,7 @@ class ExpressionDataLoader(CustomDataLoader):
         ###   1003(entrez)
         ###    ...
 
-        cls.initialize_gene_expression()
+        cls.__initialize_gene_expression()
 
         result_df = cls.__filter_celllines(cls.gene_expression, celllines)
         result_df = cls.__filter_genes(result_df, entrezIDs)
@@ -783,7 +785,6 @@ class SamplesDataLoader(CustomDataLoader):
 
     entrez_set = None
     network = None
-    drug_target = None
     simulated_drug_target = None
     synergy_score = None
     sel_dp = None
@@ -833,7 +834,6 @@ class SamplesDataLoader(CustomDataLoader):
         ### BORTEZOMIB         1        1        1        1           0            1
         ### CARBOPLATIN        0        0        0        0           1            0
         if 'drug_target_profile' in setting.drug_features:
-            cls.drug_target = DrugTargetProfileDataLoader.get_drug_target_profiles()
             cls.simulated_drug_target = DrugTargetProfileDataLoader.get_filtered_simulated_drug_target_matrix()
 
         ### Reading synergy score data ###
