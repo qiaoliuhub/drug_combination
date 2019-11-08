@@ -1005,7 +1005,7 @@ class SamplesDataLoader(CustomDataLoader):
 
                 gene_expression_features = \
                     network_propagation.gene_expression_network_propagation(cls.network, cls.expression_df,
-                                                                            cls.entrez_set, cls.drug_target,
+                                                                            cls.entrez_set, cls.simulated_drug_target,
                                                                             cls.synergy_score,
                                                                             setting.gene_expression_simulated_result_matrix)
                 gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set).reset_index(drop=True)
