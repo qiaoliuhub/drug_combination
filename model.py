@@ -1,4 +1,3 @@
-from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Activation, Dropout
 import setting
 from keras.optimizers import Adam
@@ -16,6 +15,7 @@ class DrugsCombModel():
 
     def __mlp_model(self, nodes_nums, input_len):
 
+        from keras.models import Sequential
         model = Sequential()
 
         for i in range(len(nodes_nums)):

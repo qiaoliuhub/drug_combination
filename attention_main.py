@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 import network_propagation
 import setting
-import os
+from os import path, mkdir
 import drug_drug
 import my_data
 from time import time
@@ -48,7 +48,10 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
 
-    final_index = my_data.SynergyDataReader.get_final_index()
+    if not setting.update_final_index and path.exists(setting.final_index):
+        final_index = pd.read_csv(setting.final_index, header=None)[0]
+    else:
+        final_index = my_data.SynergyDataReader.get_final_index()
     entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
 
     # print(simulated_drug_target, simulated_drug_target.shape)
@@ -61,9 +64,22 @@ if __name__ == "__main__":
     # X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
     #     my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
 
-    X, drug_features_length, cellline_features_length = \
+    if not setting.update_xy and path.exists(setting.old_x) and path.exists(setting.old_y):
+        X = np.load(setting.old_x)
+        with open(setting.old_x_lengths, 'rb') as old_x_lengths:
+            drug_features_length, cellline_features_length = pickle.load(old_x_lengths)
+        with open(setting.old_y, 'rb') as old_y:
+            Y = pickle.load(old_y)
+    else:
+        X, drug_features_length, cellline_features_length = \
             my_data.SamplesDataLoader.Raw_X_features_prep(methods='flexible_attn')
-    Y = my_data.SamplesDataLoader.Y_features_prep()
+        np.save(setting.old_x, X)
+        with open(setting.old_x_lengths, 'wb+') as old_x_lengths:
+            pickle.dump((drug_features_length,cellline_features_length), old_x_lengths)
+
+        Y = my_data.SamplesDataLoader.Y_features_prep()
+        with open(setting.old_y, 'wb+') as old_y:
+            pickle.dump(Y, old_y)
 
     logger.debug("Spliting data ...")
 
@@ -73,8 +89,8 @@ if __name__ == "__main__":
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
     #mask = torch.rand(2324, 20).ge(0.5)
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
-    final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
-    #final_mask = None
+    #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
+    final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
     for n, m in drug_model.named_modules():
         if n == "out":
@@ -100,6 +116,8 @@ if __name__ == "__main__":
 
     for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func():
 
+
+
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
 
@@ -110,11 +128,11 @@ if __name__ == "__main__":
 
         for i, combin_drug_feature_array in enumerate(local_X):
             if setting.unit_test:
-                if i<=501:# and not os.path.exists(os.path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, os.path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
+                if i<=501:# and not path.exists(path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                    save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
             else:
-                if setting.update_features or not os.path.exists(os.path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, os.path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
+                if setting.update_features or not path.exists(path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt')):
+                    save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
 
         partition = {'train': list(final_index.iloc[train_index]),
                      'test1': list(final_index.iloc[test_index]), 'test2': list(final_index.iloc[test_index_2]),
@@ -242,9 +260,9 @@ if __name__ == "__main__":
                                 catoutput = m._value_hook[0]
                         for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
 
-                            if not os.path.exists("train_" + setting.catoutput_output_type + "_datas"):
-                                os.mkdir("train_" + setting.catoutput_output_type + "_datas")
-                            save(catoutput.narrow_copy(0,i,1), os.path.join("train_" + setting.catoutput_output_type + "_datas",
+                            if not path.exists("train_" + setting.catoutput_output_type + "_datas"):
+                                mkdir("train_" + setting.catoutput_output_type + "_datas")
+                            save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
 
@@ -360,9 +378,9 @@ if __name__ == "__main__":
                 if n == "out":
                     catoutput = m._value_hook[0]
             for i, test_combination in enumerate(test_index_list[cur_test_start_index: cur_test_stop_index]):
-                if not os.path.exists("test_" + setting.catoutput_output_type + "_datas"):
-                    os.mkdir("test_" + setting.catoutput_output_type + "_datas")
-                save(catoutput.narrow_copy(0, i, 1), os.path.join("test_" + setting.catoutput_output_type + "_datas",
+                if not path.exists("test_" + setting.catoutput_output_type + "_datas"):
+                    mkdir("test_" + setting.catoutput_output_type + "_datas")
+                save(catoutput.narrow_copy(0, i, 1), path.join("test_" + setting.catoutput_output_type + "_datas",
                                                              str(test_combination) + '.pt'))
                 save_data_num += 1
             assert preds.size(-1) == local_labels.size(-1)
@@ -416,6 +434,7 @@ if __name__ == "__main__":
         if setting.save_feature_imp_model:
             save(best_drug_model, setting.best_model_path)
         # Model computations
+        logger.debug("Start feature importances analysis")
         if setting.save_easy_input_only:
             e = shap.GradientExplainer(best_drug_model, data=list(total_data))
             input_importance = e.shap_values(list(local_batch))
@@ -453,29 +472,29 @@ if __name__ == "__main__":
         batch_transform_input_importance = np.concatenate(tuple(batch_transform_input_importance), axis=0)
         pickle.dump(batch_transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))
 
-    if setting.get_feature_imp:
-
-        logger.debug("Getting features ranks")
-        test_set = my_data.MyDataset(partition['test1'], labels)
-        test_index_list = partition['test1']
-        test_params = {'batch_size': len(test_index_list),
-                       'shuffle': False}
-        test_generator = data.DataLoader(test_set, **test_params)
-        with torch.set_grad_enabled(False):
-
-            drug_model.eval()
-            for local_batch, local_labels in test_generator:
-                local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                # sample_size = local_labels_on_cpu.shape[-1]
-                # local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-                # Transfer to GPU
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
-                feature_names = reorder_tensor.get_features_names(flatten=True)
-                ranker = feature_imp.InputPerturbationRank(feature_names)
-                feature_ranks = ranker.rank(2, local_labels_on_cpu, drug_model, local_batch,
-                                            drug_model=True, reorder_tensor=reorder_tensor, scaler=std_scaler)
-                feature_ranks_df = pd.DataFrame(feature_ranks)
-                feature_ranks_df.to_csv(setting.feature_importance_path, index=False)
-        logger.debug("Get features ranks successfully")
+    # if setting.get_feature_imp:
+    #
+    #     logger.debug("Getting features ranks")
+    #     test_set = my_data.MyDataset(partition['test1'], labels)
+    #     test_index_list = partition['test1']
+    #     test_params = {'batch_size': len(test_index_list),
+    #                    'shuffle': False}
+    #     test_generator = data.DataLoader(test_set, **test_params)
+    #     with torch.set_grad_enabled(False):
+    #
+    #         drug_model.eval()
+    #         for local_batch, local_labels in test_generator:
+    #             local_labels_on_cpu = np.array(local_labels).reshape(-1)
+    #             # sample_size = local_labels_on_cpu.shape[-1]
+    #             # local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+    #             # Transfer to GPU
+    #             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+    #             local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
+    #             feature_names = reorder_tensor.get_features_names(flatten=True)
+    #             ranker = feature_imp.InputPerturbationRank(feature_names)
+    #             feature_ranks = ranker.rank(2, local_labels_on_cpu, drug_model, local_batch,
+    #                                         drug_model=True, reorder_tensor=reorder_tensor, scaler=std_scaler)
+    #             feature_ranks_df = pd.DataFrame(feature_ranks)
+    #             feature_ranks_df.to_csv(setting.feature_importance_path, index=False)
+    #     logger.debug("Get features ranks successfully")
 

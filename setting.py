@@ -23,6 +23,13 @@ logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
 data_folder = os.path.join(working_dir, 'datas')
 
+update_final_index = False
+final_index = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/final_index.csv"
+update_xy = False
+old_x = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/x.npy"
+old_x_lengths = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/old_x_lengths.pkl"
+old_y = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/y.pkl"
+
 y_labels_file = os.path.join(working_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
 catoutput_output_type = "ecfp"
@@ -97,31 +104,31 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 y_transform = True
 
 ### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
-drug_features = ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
+drug_features = ['drug_ECFP']
 #drug_features = ['drug_F_repr']
 ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
-cellline_features = ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
+cellline_features = ['cl_ECFP']
 #cellline_features = ['cl_F_repr']
 
 apply_var_filter = False
-seperate_drug_cellline = True
+seperate_drug_cellline = False
 
 single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = True
-arrangement = [[0,4,8], [0,4,9]]
+arrangement = [[0,1,2],[0,1,2]]
 update_features = True
 output_FF_layers = [400, 1]
-n_feature_type = [3, 3]
+n_feature_type = [3,3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
-d_model_i = 3
-d_model_j = 74
+d_model_i = 1
+d_model_j = 200
 d_model = d_model_i * d_model_j
 attention_heads = 1
 attention_dropout = 0.2

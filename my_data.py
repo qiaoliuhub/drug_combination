@@ -1,7 +1,7 @@
 import setting
 import pandas as pd
 import random_test
-import os
+from os import path, mkdir
 import numpy as np
 import torch
 from torch.utils import data
@@ -10,6 +10,7 @@ import drug_drug
 import random
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from torch import save
+import random_test
 
 class CustomDataLoader:
     pass
@@ -150,7 +151,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         ### 24533     1        1        1        1           0            1
         ### 222       0        0        0        0           1            0
         if cls.drug_target is None:
-            if not setting.drug_profiles_renew and os.path.exists(setting.drug_profiles):
+            if not setting.drug_profiles_renew and path.exists(setting.drug_profiles):
                 cls.drug_target = pd.read_csv(setting.drug_profiles, index_col=0)
                 cls.drug_target.index = cls.drug_target.index.astype(int)
                 assert set(cls.drug_target.index).issubset(cls.entrez_set), "Drug Profile index is not correct"
@@ -516,7 +517,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         result_df = cls.__filter_celllines(cls.gene_expression, celllines)
         result_df = cls.__filter_genes(result_df, entrezIDs)
-        if setting.expression_data_renew or not os.path.exists(setting.processed_expression):
+        if setting.expression_data_renew or not path.exists(setting.processed_expression):
             random_test.logger.debug("Persist gene expression data frame")
             result_df.to_csv(setting.processed_expression, index = False)
 
@@ -550,10 +551,10 @@ class ECFPDataLoader(CustomDataLoader):
         #cls.ECFP = cls.ECFP.loc[:,~((cls.drug_ECFP==0).all(axis = 0))]
         cls.drug_ECFP = cls.drug_ECFP.loc[:, cls.__get_ecfp_filter(drug_filter_only=setting.ecfp_phy_drug_filter_only)]
         if save_each_data_point:
-            if not os.path.exists("ecfp_datas"):
-                os.mkdir("ecfp_datas")
+            if not path.exists("ecfp_datas"):
+                mkdir("ecfp_datas")
             for i, one_drug_ecfp in enumerate(cls.drug_ECFP.values):
-                save(one_drug_ecfp, os.path.join("ecfp_datas", cls.drug_ECFP.index[i] + '.pt'))
+                save(one_drug_ecfp, path.join("ecfp_datas", cls.drug_ECFP.index[i] + '.pt'))
         return cls.drug_ECFP
 
     @classmethod
@@ -605,10 +606,10 @@ class PhysicochemDataLoader(CustomDataLoader):
         physicochem = pd.DataFrame(physicochem, index=cls.drug_physicochem.index, columns=cls.drug_physicochem.columns)
         cls.drug_physicochem = physicochem
         if save_each_data_point:
-            if not os.path.exists("phy_datas"):
-                os.mkdir("phy_datas")
+            if not path.exists("phy_datas"):
+                mkdir("phy_datas")
             for i, one_drug_phy in enumerate(cls.drug_physicochem.values):
-                save(one_drug_phy, os.path.join("phy_datas", cls.drug_physicochem.index[i] + '.pt'))
+                save(one_drug_phy, path.join("phy_datas", cls.drug_physicochem.index[i] + '.pt'))
         return cls.drug_physicochem
 
     @classmethod
@@ -653,10 +654,10 @@ class SingleResponseDataLoader(CustomDataLoader):
         if cls.single_response is None:
             cls.__dataloader_initializer()
         if save_each_data_point:
-            if not os.path.exists("single_datas"):
-                os.mkdir("single_datas")
+            if not path.exists("single_datas"):
+                mkdir("single_datas")
             for i, one_drug_single in enumerate(cls.single_response.values):
-                save(one_drug_single, os.path.join("single_datas", "_".join(cls.single_response.index[i]) + '.pt'))
+                save(one_drug_single, path.join("single_datas", "_".join(cls.single_response.index[i]) + '.pt'))
         return cls.single_response
 
 class ProteomicsDataLoader(CustomDataLoader):
@@ -678,10 +679,10 @@ class ProteomicsDataLoader(CustomDataLoader):
         if cls.proteomics is None:
             cls.__dataloader_initializer()
         if save_each_data_point:
-            if not os.path.exists("proteomics_datas"):
-                os.mkdir("proteomics_datas")
+            if not path.exists("proteomics_datas"):
+                mkdir("proteomics_datas")
             for i, one_cl_pro in enumerate(cls.proteomics.values):
-                save(one_cl_pro, os.path.join("proteomics_datas", cls.proteomics.index[i]) + '.pt')
+                save(one_cl_pro, path.join("proteomics_datas", cls.proteomics.index[i]) + '.pt')
         return cls.proteomics
 
 class RepresentationSamplesDataLoader(CustomDataLoader):
@@ -806,6 +807,7 @@ class SamplesDataLoader(CustomDataLoader):
     single_response_feature = None
     var_filter = None
     proteomics = None
+    raw_x = None
 
     def __init__(self):
         super().__init__()
@@ -830,8 +832,9 @@ class SamplesDataLoader(CustomDataLoader):
         ### AZD1775            0        1        1        0           1            0
         ### BORTEZOMIB         1        1        1        1           0            1
         ### CARBOPLATIN        0        0        0        0           1            0
-        cls.drug_target = DrugTargetProfileDataLoader.get_drug_target_profiles()
-        cls.simulated_drug_target = DrugTargetProfileDataLoader.get_filtered_simulated_drug_target_matrix()
+        if 'drug_target_profile' in setting.drug_features:
+            cls.drug_target = DrugTargetProfileDataLoader.get_drug_target_profiles()
+            cls.simulated_drug_target = DrugTargetProfileDataLoader.get_filtered_simulated_drug_target_matrix()
 
         ### Reading synergy score data ###
         ### Unnamed: 0,drug_a_name,drug_b_name,cell_line,synergy
@@ -844,60 +847,70 @@ class SamplesDataLoader(CustomDataLoader):
         ### entrez
         ### 1001
         ### 10001
-        cls.sel_dp = GeneDependenciesDataReader.get_gene_dp()
+        if 'gene_dependence' in setting.cellline_features:
+            cls.sel_dp = GeneDependenciesDataReader.get_gene_dp()
 
         ### Prepare gene expression data information
-        cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.sel_dp.index),
+        if 'gene_expression' in setting.cellline_features:
+            cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.sel_dp.index),
                                                                             celllines=list(cls.sel_dp.columns))
 
         ### Prepare ECFP_6 features
         ###         1     2    ....
         ### Name
         ### 5-FU    0     1    ....
-        cls.drug_ECFP = ECFPDataLoader.get_drug_ecfp_data()
+        if 'drug_ECFP' in setting.drug_features:
+            cls.drug_ECFP = ECFPDataLoader.get_drug_ecfp_data()
 
         ### Prepare ECFP RF feature from cellline
         ###         1         2        ....
         ### Name
         ### 5-FU    0.003     0.002    ....
 
-        cls.cl_ECFP = ECFPDataLoader.get_cl_ecfp_data()
+        if 'cl_ECFP' in setting.cellline_features:
+            cls.cl_ECFP = ECFPDataLoader.get_cl_ecfp_data()
 
         ### Prepare drug physicochemiscal properties
         ###         ATSp8     Chi5ch ...
         ### Name
         ### 5-FU    1.150	   0.221 ...
-        cls.drug_physicochem = PhysicochemDataLoader.get_drug_physicochem_property()
+        if 'drug_physiochemistry' in setting.drug_features:
+            cls.drug_physicochem = PhysicochemDataLoader.get_drug_physicochem_property()
 
         ### Prepare cellline features using random forest and drugs physicochemiscal properties
         ###         ATSp8     Chi5ch ...
         ### Name
         ### 5-FU    0.150	   0.221 ...
 
-        cls.cl_physicochem = PhysicochemDataLoader.get_cl_physiochem_property()
+        if 'cl_drug_physiochemistry' in setting.cellline_features:
+            cls.cl_physicochem = PhysicochemDataLoader.get_cl_physiochem_property()
 
         ######################
         ### 5-FU ....
         #####################
-        cls.F_drug = pd.read_csv(setting.F_drug, header = None, index_col = 0)
+        if 'drug_F_repr' in setting.drug_features:
+            cls.F_drug = pd.read_csv(setting.F_drug, header = None, index_col = 0)
 
         ######################
         ### A2058 ......
         #####################
-        cls.F_cl = pd.read_csv(setting.F_cl, header = None, index_col = 0)
+        if 'cl_F_repr' in setting.cellline_features:
+            cls.F_cl = pd.read_csv(setting.F_cl, header = None, index_col = 0)
 
         ########################################################################################
         ### cell_line  drug
         ###                     efficacy1 ....  efficacy8      pIC50    Hill
         ########################################################################################
-        cls.single_response = SingleResponseDataLoader.get_single_response()
+        if 'single_response' in setting.single_response_feature or 'single' in setting.dir_input_type:
+            cls.single_response = SingleResponseDataLoader.get_single_response()
 
         ############################################
         ####              antibody1  antibody2 ....
         #### cell_line
         ####               0.0007     0.000677 ....
         #### ########################################
-        cls.proteomics = ProteomicsDataLoader.get_proteomics()
+        if 'proteomics' in setting.dir_input_type:
+            cls.proteomics = ProteomicsDataLoader.get_proteomics()
 
         cls.__check_data_frames()
         cls.data_initialized = True
@@ -1103,7 +1116,9 @@ class SamplesDataLoader(CustomDataLoader):
     def Y_features_prep(cls):
 
         ### Generate final y features in ndarray (-1, 1)
-        cls.__dataloader_initializer()
+        #cls.__dataloader_initializer()
+        if cls.synergy_score is None:
+            cls.synergy_score = SynergyDataReader.get_synergy_score()
         Y_labels = cls.synergy_score.loc[:, 'synergy']
         Y_half = Y_labels.values.reshape(-1, 1)
         Y = np.concatenate((Y_half, Y_half), axis=0)
@@ -1213,7 +1228,7 @@ class MyDataset(data.Dataset):
         # Select sample
         ID = self.list_IDs[index]
         if self.prefix is None:
-            drug_combine_file = os.path.join(setting.data_folder, ID + '.pt')
+            drug_combine_file = path.join(setting.data_folder, ID + '.pt')
         else:
             drug_combine_file = self.prefix + '_datas/' + ID + '.pt'
         # Load data and get label

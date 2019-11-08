@@ -12,7 +12,6 @@ from CustomizedLinear import CustomizedLinear
 def get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
-
 class Encoder(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
@@ -26,7 +25,6 @@ class Encoder(nn.Module):
             x = self.layers[i](x, mask, low_dim=low_dim)
         return x if low_dim else self.norm(x)
 
-
 class Decoder(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
@@ -39,7 +37,6 @@ class Decoder(nn.Module):
         for i in range(self.N):
             x = self.layers[i](x, e_outputs, src_mask, trg_mask, low_dim=low_dim)
         return x if low_dim else self.norm(x)
-
 
 class Transformer(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
@@ -449,7 +446,7 @@ def get_multi_models(inputs_lengths, input_masks = None):
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks)
-    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks, linear_only=True)
+    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks, linear_only=False)
 
 
     for p in model.parameters():
