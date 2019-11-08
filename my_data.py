@@ -1128,16 +1128,20 @@ class SamplesDataLoader(CustomDataLoader):
 
     @classmethod
     def __check_data_frames(cls):
-        random_test.logger.debug("check_unfound_genes_in_drug_target ...")
-        DrugTargetProfileDataLoader.check_unfound_genes_in_drug_target()
-        random_test.logger.debug("check_unfound_genes_in_gene_dp ... ")
-        GeneDependenciesDataReader.check_unfound_genes_in_gene_dp()
-        random_test.logger.debug("check_drugs_in_drug_target ... ")
-        DrugTargetProfileDataLoader.check_drugs_in_drug_target()
+
+        if 'drug_target_profile' in setting.drug_features:
+            random_test.logger.debug("check_unfound_genes_in_drug_target ...")
+            DrugTargetProfileDataLoader.check_unfound_genes_in_drug_target()
+            random_test.logger.debug("check_drugs_in_drug_target ... ")
+            DrugTargetProfileDataLoader.check_drugs_in_drug_target()
+        if 'gene_dependence' in setting.cellline_features:
+            random_test.logger.debug("check_unfound_genes_in_gene_dp ... ")
+            GeneDependenciesDataReader.check_unfound_genes_in_gene_dp()
+            random_test.logger.debug("check_celllines_in_gene_dp...")
+            GeneDependenciesDataReader.check_celllines_in_gene_dp()
         random_test.logger.debug("check_genes_in_network ...")
         NetworkDataReader.check_genes_in_network()
-        random_test.logger.debug("check_celllines_in_gene_dp...")
-        GeneDependenciesDataReader.check_celllines_in_gene_dp()
+
 
         ### select only the drugs with features
         ### select only the drug targets in genes
