@@ -92,10 +92,15 @@ if __name__ == "__main__":
     #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
+    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
+    for best_n, best_m in best_drug_model.named_modules():
+        if best_n == "out":
+            best_m.register_forward_hook(drug_drug.input_hook)
     drug_model.to(device2)
+    best_drug_model.to(device2)
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
@@ -109,8 +114,7 @@ if __name__ == "__main__":
     test_params = None
     partition = None
     labels = None
-    cv_pearson_scores = []
-    cv_models = []
+    best_cv_pearson_score = 0
 
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
 
@@ -251,11 +255,11 @@ if __name__ == "__main__":
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    preds = drug_model(*local_batch)
                     if epoch == setting.n_epochs - 1:
+                        preds = best_drug_model(*local_batch)
                         cur_train_start_index = eval_train_params['batch_size'] * (val_train_i - 1)
                         cur_train_stop_index = min(eval_train_params['batch_size'] * (val_train_i), len(training_index_list))
-                        for n, m in drug_model.named_modules():
+                        for n, m in best_drug_model.named_modules():
                             if n == "out":
                                 catoutput = m._value_hook[0]
                         for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
@@ -265,7 +269,7 @@ if __name__ == "__main__":
                             save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
-
+                    preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -329,8 +333,9 @@ if __name__ == "__main__":
                         val_loss.append(avg_loss)
                         val_total_loss = 0
 
-                cv_pearson_scores.append(val_pearson)
-                cv_models.append(drug_model)
+                if best_cv_pearson_score < val_pearson:
+                    best_cv_pearson_score = val_pearson
+                    best_drug_model.load_state_dict(drug_model.state_dict())
 
             logger.debug(
                 "Training mse is {0}, Training pearson correlation is {1!r}, Training spearman correlation is {2!r}"
@@ -343,10 +348,6 @@ if __name__ == "__main__":
             mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                      ytickmin=100, ytickmax=500)
             pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
-
-
-    best_index = np.argmax(cv_pearson_scores)
-    best_drug_model = cv_models[int(best_index)]
 
     ### Testing
     test_i = 0
@@ -370,11 +371,11 @@ if __name__ == "__main__":
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
-            preds = drug_model(*local_batch)
+            preds = best_drug_model(*local_batch)
             preds = preds.contiguous().view(-1)
             cur_test_start_index = test_params['batch_size'] * (test_i-1)
             cur_test_stop_index = min(test_params['batch_size'] * (test_i), len(test_index_list))
-            for n, m in drug_model.named_modules():
+            for n, m in best_drug_model.named_modules():
                 if n == "out":
                     catoutput = m._value_hook[0]
             for i, test_combination in enumerate(test_index_list[cur_test_start_index: cur_test_stop_index]):
