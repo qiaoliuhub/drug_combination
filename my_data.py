@@ -804,6 +804,7 @@ class SamplesDataLoader(CustomDataLoader):
     cl_ECFP = None
     cl_physicochem = None
     F_drug = None
+    F_drug_2 = None
     F_cl = None
     single_response = None
     single_response_feature = None
@@ -892,6 +893,8 @@ class SamplesDataLoader(CustomDataLoader):
         #####################
         if 'drug_F_repr' in setting.drug_features:
             cls.F_drug = pd.read_csv(setting.F_drug, header = None, index_col = 0)
+        if 'drug_F_repr_2' in setting.drug_features:
+            cls.F_drug_2 = pd.read_csv(setting.F_drug_2, header = None, index_col = 0)
 
         ######################
         ### A2058 ......
@@ -982,7 +985,7 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'drug_F_repr_2' in setting.drug_features:
 
-                drug_a_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_a_name']), :]
+                drug_a_F_feature = cls.F_drug_2.loc[list(cls.synergy_score['drug_a_name']), :]
                 cls.drug_a_features.append(drug_a_F_feature.values)
                 cls.drug_features_lengths.append(drug_a_F_feature.shape[1])
                 drug_b_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_b_name']), :]
