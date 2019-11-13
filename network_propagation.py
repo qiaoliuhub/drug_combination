@@ -251,6 +251,7 @@ def pyNBS_random_walk():
     logger.debug("Got network propagation kernel. Start propagate ...")
     print("Got network propagation kernel. Start propagate ...")
     subnetwork = subnetwork.subgraph(list(drug_target.index))
+    assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
     propagated_drug_target = NBS_propagation.network_kernel_propagation(network=subnetwork, network_kernel=kernel,
                                                          binary_matrix=drug_target.T)
     logger.debug("Propagation finished")
