@@ -231,7 +231,7 @@ def pyNBS_random_walk():
 
 
     from pyNBS import network_propagation as NBS_propagation
-    from setting import network, drug_profiles, random_walk_simulated_result_matrix
+    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path
     import networkx as nx
 
     # build the matrix from gene gene interaction network, so far
@@ -253,7 +253,7 @@ def pyNBS_random_walk():
     subnetwork = subnetwork.subgraph(list(drug_target.index))
     assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
     propagated_drug_target = NBS_propagation.network_kernel_propagation(network=subnetwork, network_kernel=kernel,
-                                                         binary_matrix=drug_target.T)
+                                                         binary_matrix=drug_target.T, outdir = network_path)
     logger.debug("Propagation finished")
     print("Propagation finished")
     propagated_drug_target.to_csv(random_walk_simulated_result_matrix)
