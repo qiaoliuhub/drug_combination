@@ -985,11 +985,11 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'drug_F_repr_2' in setting.drug_features:
 
-                drug_a_F_feature = cls.F_drug_2.loc[list(cls.synergy_score['drug_a_name']), :]
-                cls.drug_a_features.append(drug_a_F_feature.values)
-                cls.drug_features_lengths.append(drug_a_F_feature.shape[1])
-                drug_b_F_feature = cls.F_drug.loc[list(cls.synergy_score['drug_b_name']), :]
-                cls.drug_b_features.append(drug_b_F_feature.values)
+                drug_a_F_feature_2 = cls.F_drug_2.loc[list(cls.synergy_score['drug_a_name']), :]
+                cls.drug_a_features.append(drug_a_F_feature_2.values)
+                cls.drug_features_lengths.append(drug_a_F_feature_2.shape[1])
+                drug_b_F_feature_2 = cls.F_drug_2.loc[list(cls.synergy_score['drug_b_name']), :]
+                cls.drug_b_features.append(drug_b_F_feature_2.values)
 
         return [cls.drug_a_features, cls.drug_b_features]
 
