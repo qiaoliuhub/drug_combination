@@ -239,19 +239,19 @@ def pyNBS_random_walk():
     network = nx.read_edgelist(network, delimiter='\t', nodetype=int,
                                data=(('weight', float),))
     drug_target = pd.read_csv(drug_profiles, index_col=0)
-    #subnetwork = network.subgraph(list(drug_target.index))
-    subnetwork = network
+    subnetwork = network.subgraph(list(drug_target.index))
+    #subnetwork = network
 
     ### Compute precoputed kernel to speed up random walk
     subnetwork_nodes = subnetwork.nodes()
     I = pd.DataFrame(np.identity(len(subnetwork_nodes)), index=subnetwork_nodes, columns=subnetwork_nodes)
     logger.debug("Preparing network propagation kernel")
     print("Preparing network propagation kernel")
-    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.5, symmetric_norm=False, verbose=True)
+    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.8, symmetric_norm=False, verbose=True)
     logger.debug("Got network propagation kernel. Start propagate ...")
     print("Got network propagation kernel. Start propagate ...")
-    subnetwork = subnetwork.subgraph(list(drug_target.index))
-    assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
+    #subnetwork = subnetwork.subgraph(list(drug_target.index))
+    #assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
     propagated_drug_target = NBS_propagation.network_kernel_propagation(network=subnetwork, network_kernel=kernel,
                                                          binary_matrix=drug_target.T, outdir = network_path)
     logger.debug("Propagation finished")
