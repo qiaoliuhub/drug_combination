@@ -18,7 +18,7 @@ import attention_model
 import torch.nn.functional as F
 import torchsummary
 from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.preprocessing import StandardScaler
 import torch_visual
 import feature_imp
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     test_params = None
     partition = None
     labels = None
-    best_cv_pearson_score = 0
+    best_auc = 0
 
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
 
@@ -129,9 +129,6 @@ if __name__ == "__main__":
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
 
         ori_Y = Y
-        std_scaler.fit(Y[train_index])
-        if setting.y_transform:
-            Y = std_scaler.transform(Y) * 100
 
         for i, combin_drug_feature_array in enumerate(local_X):
             if setting.unit_test:
@@ -206,11 +203,11 @@ if __name__ == "__main__":
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
                 preds = drug_model(*local_batch)
-                preds = preds.contiguous().view(-1)
-                ys = local_labels.contiguous().view(-1)
+                preds = preds.contiguous()
+                ys = local_labels.contiguous().view(-1).long()
                 optimizer.zero_grad()
-                assert preds.size(-1) == ys.size(-1)
-                loss = F.mse_loss(preds, ys)
+                assert preds.size(0) == ys.size(0)
+                loss = F.nll_loss(preds, ys)
                 loss.backward(retain_graph=True)
                 optimizer.step()
 
@@ -221,8 +218,6 @@ if __name__ == "__main__":
                     sample_size = len(train_index) + 2* len(evaluation_index)
                     p = int(100 * i * setting.batch_size/sample_size)
                     avg_loss = train_total_loss / n_iter
-                    if setting.y_transform:
-                        avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
                     random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
                           ((time() - start) // 60, epoch, "".join('#' * (p // 5)),
                            "".join(' ' * (20 - (p // 5))), p, avg_loss))
@@ -235,14 +230,9 @@ if __name__ == "__main__":
             val_train_i = 0
             val_train_total_loss = 0
             val_train_loss = []
-            val_train_pearson = 0
+            val_train_roc_auc = 0
+            val_train_pr_auc = 0
             save_data_num = 0
-
-            val_i = 0
-            val_total_loss = 0
-            val_loss = []
-            val_pearson = 0
-            val_spearman = 0
 
             with torch.set_grad_enabled(False):
 
@@ -273,62 +263,48 @@ if __name__ == "__main__":
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
                     preds = drug_model(*local_batch)
-                    preds = preds.contiguous().view(-1)
-                    assert preds.size(-1) == local_labels.size(-1)
-                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                    preds = preds.contiguous()
+                    assert preds.size(0) == local_labels.size(0)
+                    prediction_on_cpu = preds.cpu().numpy()[:,1]
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                     #                                   prediction_on_cpu[sample_size:]], axis=0)
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                    if setting.y_transform:
-                        local_labels_on_cpu, mean_prediction_on_cpu = \
-                            std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
-                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
 
                 logger.debug("saved {!r} data points".format(save_data_num))
                 all_preds = np.concatenate(all_preds)
-                all_ys = np.concatenate(all_ys)
+                all_ys = np.concatenate(all_ys).astype(int)
                 assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-                loss = mean_squared_error(all_preds, all_ys)
-                val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                val_train_total_loss += loss
+                val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+                val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
                     save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
-
-                    # n_iter = 1
-                    # if val_train_i % n_iter == 0:
-                avg_loss = val_train_total_loss #/ n_iter
-                val_train_loss.append(avg_loss)
-                val_train_total_loss = 0
+                val_i = 0
+                val_total_loss = 0
+                val_loss = []
+                val_roc_auc = 0
+                val_pr_auc = 0
 
                 for local_batch, local_labels in validation_generator:
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
                     sample_size = local_labels_on_cpu.shape[-1]
-                    local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+                    local_labels_on_cpu = local_labels_on_cpu[:sample_size].astype(int)
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds = drug_model(*local_batch)
-                    preds = preds.contiguous().view(-1)
-                    assert preds.size(-1) == local_labels.size(-1)
-                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                    preds = preds.contiguous()
+                    assert preds.size(0) == local_labels.size(0)
+                    prediction_on_cpu = preds.cpu().numpy()[:,1]
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                     #                                   prediction_on_cpu[sample_size:]], axis=0)
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                    if setting.y_transform:
-                        local_labels_on_cpu, mean_prediction_on_cpu = \
-                            std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1) / 100), \
-                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
-
-                    loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-                    val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                    val_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                    val_total_loss += loss
+                    val_roc_auc = roc_auc_score(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))
+                    val_pr_auc = average_precision_score(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))
 
                     n_iter = 1
                     if val_i % n_iter == 0:
@@ -336,27 +312,28 @@ if __name__ == "__main__":
                         val_loss.append(avg_loss)
                         val_total_loss = 0
 
-                if best_cv_pearson_score < val_pearson:
-                    best_cv_pearson_score = val_pearson
+                if best_auc < val_roc_auc:
+                    best_cv_pearson_score = val_roc_auc
                     best_drug_model.load_state_dict(drug_model.state_dict())
 
             logger.debug(
-                "Training mse is {0}, Training pearson correlation is {1!r}, Training spearman correlation is {2!r}"
-                    .format(np.mean(val_train_loss), val_train_pearson, val_train_spearman))
+                "Training mse is {0}, Training roc_suc is {1!r}, Training pr_auc is {2!r}"
+                    .format(np.mean(val_train_loss), val_train_roc_auc, val_train_pr_auc))
 
             logger.debug(
                 "Validation mse is {0}, Validation pearson correlation is {1!r}, Spearman correlation is {2!r}"
-                    .format(np.mean(val_loss), val_pearson, val_spearman))
+                    .format(np.mean(val_loss), val_roc_auc, val_pr_auc))
 
             mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                      ytickmin=100, ytickmax=500)
-            pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+            pearson_visualizer.plot_loss(epoch, val_train_pr_auc, val_pr_auc, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
     ### Testing
     test_i = 0
     test_total_loss = 0
     test_loss = []
-    test_pearson = 0
+    test_roc_auc = 0
+    test_pr_auc = 0
     save_data_num = 0
 
     with torch.set_grad_enabled(False):
@@ -375,7 +352,6 @@ if __name__ == "__main__":
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
             preds = best_drug_model(*local_batch)
-            preds = preds.contiguous().view(-1)
             cur_test_start_index = test_params['batch_size'] * (test_i-1)
             cur_test_stop_index = min(test_params['batch_size'] * (test_i), len(test_index_list))
             for n, m in best_drug_model.named_modules():
@@ -387,30 +363,19 @@ if __name__ == "__main__":
                 save(catoutput.narrow_copy(0, i, 1), path.join("test_" + setting.catoutput_output_type + "_datas",
                                                              str(test_combination) + '.pt'))
                 save_data_num += 1
-            assert preds.size(-1) == local_labels.size(-1)
-            prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+            assert preds.size(0) == local_labels.size(0)
+            prediction_on_cpu = preds.cpu().numpy()[:, 1]
             mean_prediction_on_cpu = prediction_on_cpu
-            if setting.y_transform:
-                local_labels_on_cpu, mean_prediction_on_cpu = \
-                    std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
-                    std_scaler.inverse_transform(prediction_on_cpu.reshape(-1, 1) / 100)
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
 
         logger.debug("saved {!r} data for testing dataset".format(save_data_num))
         all_preds = np.concatenate(all_preds)
-        all_ys = np.concatenate(all_ys)
+        all_ys = np.concatenate(all_ys).astype(int)
         assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-        sample_size = len(all_preds)
-        mean_prediction = np.mean([all_preds[:sample_size//2],
-                                          all_preds[:sample_size//2]], axis=0)
-        mean_y = np.mean([all_ys[:sample_size//2],
-                          all_ys[:sample_size//2]], axis=0)
-        loss = mean_squared_error(mean_prediction, mean_y)
-        test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
-        test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
-        test_total_loss += loss
-        save(np.concatenate((np.array(test_index_list[:sample_size//2]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
+        test_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+        test_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
+        save(np.concatenate((np.array(test_index_list).reshape(-1,1), all_preds.reshape(-1, 1), all_ys.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
             # n_iter = 1
@@ -419,7 +384,7 @@ if __name__ == "__main__":
         test_loss.append(avg_loss)
         test_total_loss = 0
 
-    logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {1!r}".format(np.mean(test_loss), test_pearson, test_spearman))
+    logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {1!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
 
     batch_input_importance = []
     batch_out_input_importance = []

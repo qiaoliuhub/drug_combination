@@ -221,13 +221,14 @@ class MultiTransformersPlusLinear(MultiTransformers):
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
-    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False):
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, classifier = False):
 
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks, linear_only = linear_only)
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))]) \
                            + setting.single_repsonse_feature_length
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
+        self.classifier = classifier
 
     def forward(self, *src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
 
@@ -244,6 +245,9 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
         cat_output = cat(tuple(output_list + single_response_feature_list), dim=1)
         output = self.out(cat_output)
+        if self.classifier:
+            # output = F.log_softmax(output, dim = -1)
+            output = F.softmax(output, dim = -1)
         return output
 
 
@@ -446,7 +450,8 @@ def get_multi_models(inputs_lengths, input_masks = None):
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks)
-    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks, linear_only=False)
+    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads,
+                                                 setting.attention_dropout, input_masks, linear_only=False, classifier=True)
 
 
     for p in model.parameters():
