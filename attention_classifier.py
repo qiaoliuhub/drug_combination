@@ -197,14 +197,14 @@ if __name__ == "__main__":
             for local_batch, local_labels in training_generator:
                 i += 1
                 # Transfer to GPU
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
                 preds = drug_model(*local_batch)
                 preds = preds.contiguous()
-                ys = local_labels.contiguous().view(-1).long()
+                ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
                 assert preds.size(0) == ys.size(0)
                 loss = F.nll_loss(preds, ys)
@@ -317,11 +317,11 @@ if __name__ == "__main__":
                     best_drug_model.load_state_dict(drug_model.state_dict())
 
             logger.debug(
-                "Training mse is {0}, Training roc_suc is {1!r}, Training pr_auc is {2!r}"
+                "Training mse is {0}, Training roc_auc is {1!r}, Training pr_auc is {2!r}"
                     .format(np.mean(val_train_loss), val_train_roc_auc, val_train_pr_auc))
 
             logger.debug(
-                "Validation mse is {0}, Validation pearson correlation is {1!r}, Spearman correlation is {2!r}"
+                "Validation mse is {0}, Validation roc_auc is {1!r}, pr_auc is {2!r}"
                     .format(np.mean(val_loss), val_roc_auc, val_pr_auc))
 
             mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
@@ -347,7 +347,7 @@ if __name__ == "__main__":
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
             sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
