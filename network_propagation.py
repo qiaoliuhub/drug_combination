@@ -241,6 +241,7 @@ def pyNBS_random_walk():
     drug_target = pd.read_csv(drug_profiles, index_col=0)
     genes = set(pd.read_csv(genes,
                             dtype={'entrez': np.int})['entrez'])
+    drug_target = drug_target.loc[list(genes), :]
     subnetwork = network.subgraph(list(genes))
     #subnetwork = network
 
