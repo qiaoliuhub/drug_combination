@@ -28,7 +28,7 @@ class GenesDataReader(CustomDataReader):
     def __genes_initializer(cls):
 
         if cls.genes is None:
-            cls.genes = pd.read_csv("../drug_drug/Genes/combin_genes.csv",
+            cls.genes = pd.read_csv(setting.genes,
                                     dtype={'entrez': np.int})
         assert {'symbol','entrez'}.issubset(set(cls.genes.columns)), \
             "Genes data frame columns name should have symbol and entrez"
@@ -1012,7 +1012,7 @@ class SamplesDataLoader(CustomDataLoader):
                     dp_features = dp_features.loc[:, cls.var_filter]
                 cls.cellline_features.append(dp_features.values)
                 cls.cellline_features_lengths.append(dp_features.shape[1])
-            if 'gene_expression' in setting.cellline_features:
+            if 'combine_drugs_for_cl' in setting.cellline_features:
 
                 gene_expression_features = \
                     network_propagation.gene_expression_network_propagation(cls.network, cls.expression_df,
@@ -1031,7 +1031,7 @@ class SamplesDataLoader(CustomDataLoader):
                                                             columns=gene_expression_features.columns)
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])
-            if 'gene_expression_raw' in setting.cellline_features:
+            if 'gene_expression' in setting.cellline_features:
                 cellline_express_features = cls.expression_df.T.loc[list(cls.synergy_score['cell_line']), :]
                 cls.cellline_features.append(cellline_express_features.values)
                 cls.cellline_features_lengths.append(cellline_express_features.shape[1])

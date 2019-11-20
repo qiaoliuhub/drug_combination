@@ -23,9 +23,9 @@ logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
 data_folder = os.path.join(working_dir, 'datas')
 
-update_final_index = False
+update_final_index = True
 final_index = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/final_index.csv"
-update_xy = False
+update_xy = True
 old_x = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/x.npy"
 old_x_lengths = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/old_x_lengths.pkl"
 old_y = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/y.pkl"
@@ -39,6 +39,8 @@ catoutput_intput_type = []
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {"single": 15, "proteomics": 107}
 
+
+genes = os.path.join(working_dir, 'Genes', 'combin_genes.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 ccle_pro = os.path.join(working_dir, 'proteomics', 'ccle_pro.csv')
 pro_filter = True
@@ -56,6 +58,7 @@ cl_ECFP = os.path.join(working_dir, 'RF_features', 'features_importance_df.csv')
 cl_physicochem = os.path.join(working_dir, 'RF_features', 'features_importance_df_phychem.csv')
 
 # networks: string_network, all_tissues_top
+network_path = os.path.join(working_dir, 'network')
 network = os.path.join(working_dir, 'network', 'string_network')
 network_matrix = os.path.join(working_dir, 'network', 'string_network_matrix.csv')
 split_random_seed = 3
@@ -72,7 +75,7 @@ if feature_type == 'F_representation':
     gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_for_F_repr.csv')
 else:
     gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_1')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -104,13 +107,13 @@ python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 y_transform = True
 
 ### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
-drug_features = ['drug_ECFP']
+drug_features = ['drug_target_profile']
 #drug_features = ['drug_F_repr']
 ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
-### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry']
-cellline_features = ['cl_ECFP']
+### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
+cellline_features = ['cl_F_repr', 'gene_expression_raw']
 #cellline_features = ['cl_F_repr']
 
 apply_var_filter = False
@@ -120,10 +123,10 @@ single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = True
-arrangement = [[0,1,2],[0,1,2]]
+arrangement = [[0,1,3]]
 update_features = True
 output_FF_layers = [400, 1]
-n_feature_type = [3,3]
+n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
@@ -136,7 +139,7 @@ n_layers = 1 # This has to be 1
 
 
 get_feature_imp = False
-save_feature_imp_model = False
+save_feature_imp_model = True
 save_easy_input_only = (len(n_feature_type) == 1)
 save_inter_imp = False
 best_model_path = os.path.join(working_dir, "best_model")

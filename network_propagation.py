@@ -231,7 +231,7 @@ def pyNBS_random_walk():
 
 
     from pyNBS import network_propagation as NBS_propagation
-    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path
+    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes
     import networkx as nx
 
     # build the matrix from gene gene interaction network, so far
@@ -239,7 +239,9 @@ def pyNBS_random_walk():
     network = nx.read_edgelist(network, delimiter='\t', nodetype=int,
                                data=(('weight', float),))
     drug_target = pd.read_csv(drug_profiles, index_col=0)
-    subnetwork = network.subgraph(list(drug_target.index))
+    genes = set(pd.read_csv(genes,
+                            dtype={'entrez': np.int})['entrez'])
+    subnetwork = network.subgraph(list(genes))
     #subnetwork = network
 
     ### Compute precoputed kernel to speed up random walk
