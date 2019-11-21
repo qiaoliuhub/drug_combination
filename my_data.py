@@ -1032,6 +1032,9 @@ class SamplesDataLoader(CustomDataLoader):
                     gene_expression_features = pd.DataFrame(np.multiply(gene_expression_features.values, dp_features.values),
                                                             index=gene_expression_features.index,
                                                             columns=gene_expression_features.columns)
+                gene_expression_features.index = [x.rsplit('_', 1)[0] for x in list(gene_expression_features.index)]
+                filter_index = [x.rsplit('_', 1)[0] for x in list(SynergyDataReader.get_final_index())]
+                gene_expression_features = gene_expression_features.loc[filter_index, :]
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])
             if 'gene_expression' in setting.cellline_features:
