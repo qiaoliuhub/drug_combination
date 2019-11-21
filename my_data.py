@@ -275,8 +275,11 @@ class SynergyDataReader(CustomDataReader):
             return
         if setting.feature_type == 'F_representation':
             cls.sel_drugs = set(list(pd.read_csv(setting.F_drug, header = None, index_col=0).index))
+        elif setting.feature_type == 'others':
+            cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set() & set(list(pd.read_csv(setting.F_drug, header = None, index_col=0).index))
         else:
             cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set()
+
         filter1 = (cls.synergy_score['drug_a_name'].isin(cls.sel_drugs)) & (cls.synergy_score['drug_b_name'].isin(cls.sel_drugs))
         cls.synergy_score = cls.synergy_score[filter1]
         random_test.logger.debug("Post filteration, synergy score has {!r} data points".format(len(cls.synergy_score)))
@@ -519,9 +522,9 @@ class ExpressionDataLoader(CustomDataLoader):
 
         result_df = cls.__filter_celllines(cls.gene_expression, celllines)
         result_df = cls.__filter_genes(result_df, entrezIDs)
-        if setting.expression_data_renew or not path.exists(setting.processed_expression):
-            random_test.logger.debug("Persist gene expression data frame")
-            result_df.to_csv(setting.processed_expression, index = False)
+        # if setting.expression_data_renew or not path.exists(setting.processed_expression):
+        #     random_test.logger.debug("Persist gene expression data frame")
+        #     result_df.to_csv(setting.processed_expression, index = False)
 
         return result_df
 
