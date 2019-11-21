@@ -150,7 +150,7 @@ def get_matrix_from_network(network, entrez_set):
     # gene-gene self interaction weight is 0
     # output: network_matrix: columns: genes entrezids, index: genes entrezids
 
-    if os.path.exists(setting.network_matrix):
+    if not setting.network_update and os.path.exists(setting.network_matrix):
         network_matrix = pd.read_csv(setting.network_matrix, index_col=0)
         network_matrix.index = network_matrix.index.astype(int)
         network_matrix.columns = network_matrix.columns.astype(int)
@@ -231,7 +231,7 @@ def pyNBS_random_walk():
 
 
     from pyNBS import network_propagation as NBS_propagation
-    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes
+    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes, network_prop_normalized
     import networkx as nx
 
     # build the matrix from gene gene interaction network, so far
@@ -257,6 +257,7 @@ def pyNBS_random_walk():
     #assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
     propagated_drug_target = NBS_propagation.network_kernel_propagation(network=subnetwork, network_kernel=kernel,
                                                          binary_matrix=drug_target.T, outdir = network_path)
+
     logger.debug("Propagation finished")
     print("Propagation finished")
     propagated_drug_target.to_csv(random_walk_simulated_result_matrix)
