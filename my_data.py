@@ -1022,7 +1022,7 @@ class SamplesDataLoader(CustomDataLoader):
                                                                             cls.entrez_set, cls.simulated_drug_target,
                                                                             cls.synergy_score,
                                                                             setting.gene_expression_simulated_result_matrix)
-                gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set) #.reset_index(drop=True)
+                gene_expression_features = pd.DataFrame(gene_expression_features, columns=cls.entrez_set).reset_index(drop=True)
                 # gene_expression_features_filter = ~gene_expression_features.isnull().all(axis=0)
                 # gene_expression_features = gene_expression_features.loc[:, gene_expression_features_filter]
                 gene_expression_features.fillna(0, inplace=True)
@@ -1032,9 +1032,9 @@ class SamplesDataLoader(CustomDataLoader):
                     gene_expression_features = pd.DataFrame(np.multiply(gene_expression_features.values, dp_features.values),
                                                             index=gene_expression_features.index,
                                                             columns=gene_expression_features.columns)
-                gene_expression_features.index = [str(x).rsplit('_', 1)[0] for x in list(gene_expression_features.index)]
-                filter_index = [str(x).rsplit('_', 1)[0] for x in list(SynergyDataReader.get_final_index())]
-                gene_expression_features = gene_expression_features.loc[filter_index, :]
+                # gene_expression_features.index = [str(x).rsplit('_', 1)[0] for x in list(gene_expression_features.index)]
+                # filter_index = [str(x).rsplit('_', 1)[0] for x in list(SynergyDataReader.get_final_index())]
+                # gene_expression_features = gene_expression_features.loc[filter_index, :]
                 cls.cellline_features.append(gene_expression_features.values)
                 cls.cellline_features_lengths.append(gene_expression_features.shape[1])
             if 'gene_expression' in setting.cellline_features:
