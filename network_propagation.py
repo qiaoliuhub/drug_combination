@@ -40,7 +40,7 @@ def combin_drug_target_probabilities_matrix(drug_pairs, drug_target):
     return combine_drug_target_matrix
 
 
-def gene_expression_network_propagation(network, gene_expression_df, entrez_set, drug_target, synergy_df, result_matrix_file):
+def drug_combine_multiplication_gene_expression_network_propagation(network, gene_expression_df, entrez_set, drug_target, synergy_df, result_matrix_file):
 
     ### network: gene-gene network
     ### gene_expression_df: index = genes, columns = cell lines

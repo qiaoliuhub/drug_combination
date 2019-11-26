@@ -54,15 +54,8 @@ if __name__ == "__main__":
         final_index = my_data.SynergyDataReader.get_final_index()
     entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
 
-    # print(simulated_drug_target, simulated_drug_target.shape)
-    # print("synergy_score filtered data amount %s" %str(len(synergy_score)))
-    # print(simulated_drug_target.shape, sel_dp.shape)
-    # print(sel_dp)
-    # print(sel_dp.shape)
     std_scaler = StandardScaler()
     logger.debug("Getting features and synergy scores ...")
-    # X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
-    #     my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
 
     if not setting.update_xy and path.exists(setting.old_x) and path.exists(setting.old_y):
         X = np.load(setting.old_x)
@@ -81,9 +74,6 @@ if __name__ == "__main__":
         with open(setting.old_y, 'wb+') as old_y:
             pickle.dump(Y, old_y)
 
-    if setting.output_FF_layers != 1:
-        Y = (Y>30).astype(int)
-
     logger.debug("Spliting data ...")
 
     logger.debug("Preparing models")
@@ -92,7 +82,6 @@ if __name__ == "__main__":
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
     #mask = torch.rand(2324, 20).ge(0.5)
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
-    #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
     best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
@@ -108,8 +97,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min = 1e-7)
-    # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
-    #     my_data.DataPreprocessor.reg_train_eval_test_split()
+
     test_generator = None
     eval_train_generator = None
     eval_train_1_generator = None
@@ -297,10 +285,7 @@ if __name__ == "__main__":
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
                     save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
-
-                    # n_iter = 1
-                    # if val_train_i % n_iter == 0:
-                avg_loss = val_train_total_loss #/ n_iter
+                avg_loss = val_train_total_loss
                 val_train_loss.append(avg_loss)
                 val_train_total_loss = 0
 
@@ -413,9 +398,7 @@ if __name__ == "__main__":
         save(np.concatenate((np.array(test_index_list[:sample_size//2]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
-            # n_iter = 1
-            # if (test_i + 1) % n_iter == 0:
-        avg_loss = test_total_loss #/ n_iter
+        avg_loss = test_total_loss
         test_loss.append(avg_loss)
         test_total_loss = 0
 

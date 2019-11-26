@@ -130,21 +130,28 @@ class TransposeMultiTransformers(nn.Module):
         self.norms = nn.ModuleList()
         self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
-            if masks[i] is not None:
-                if setting.seperate_drug_cellline:
-                    for j in range(setting.n_feature_type[i]):
-                        self.linear_layers.append(CustomizedLinear(masks[i]))
-                        self.norms.append(Norm(d_model_list[i]))
-                        self.dropouts.append(nn.Dropout(p=0))
-                #assert masks[i].shape[0] ==
-                else:
-                    self.linear_layers.append(CustomizedLinear(masks[i]))
-                    self.norms.append(Norm(d_model_list[i]))
-                    self.dropouts.append(nn.Dropout(dropout))
-            else:
-                self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+
+            num_of_linear_module = setting.n_feature_type[i] if setting.one_linear_per_dim else 1
+
+            for j in range(num_of_linear_module):
+                self.linear_layers.append(CustomizedLinear(masks[i])) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
                 self.norms.append(Norm(d_model_list[i]))
-                self.dropouts.append(nn.Dropout(dropout))
+                self.dropouts.append(nn.Dropout(p=dropout))
+
+            # if masks[i] is not None:
+            #     if setting.seperate_drug_cellline:
+            #         for j in range(setting.n_feature_type[i]):
+            #             self.linear_layers.append(CustomizedLinear(masks[i]))
+            #             self.norms.append(Norm(d_model_list[i]))
+            #             self.dropouts.append(nn.Dropout(p=0))
+            #     else:
+            #         self.linear_layers.append(CustomizedLinear(masks[i]))
+            #         self.norms.append(Norm(d_model_list[i]))
+            #         self.dropouts.append(nn.Dropout(dropout))
+            # else:
+            #     self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+            #     self.norms.append(Norm(d_model_list[i]))
+            #     self.dropouts.append(nn.Dropout(dropout))
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
@@ -158,10 +165,12 @@ class TransposeMultiTransformers(nn.Module):
         assert len(src_list) == len(self.transformer_list), "inputs length is not same with input length for model"
         src_list_linear = []
         trg_list_linear = []
-        if not setting.apply_var_filter:
-            cur_linear = 0
-            for i in range(len(self.transformer_list)):
-                if self.linear_only:
+        cur_linear = 0
+        for i in range(len(self.transformer_list)):
+
+            if setting.one_linear_per_dim:
+
+                if trg_list is None:
                     src_list_dim = []
                     for j in range(src_list[i].size(1)):
                         cur_src_dim = src_list[i][:,j:j+1,:]
@@ -169,7 +178,7 @@ class TransposeMultiTransformers(nn.Module):
                         src_list_dim.append(cur_src_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
                         cur_linear += 1
                     src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
-                elif setting.seperate_drug_cellline:
+                else:
                     src_list_dim = []
                     trg_list_dim = []
                     for j in range(src_list[i].size(1)):
@@ -182,16 +191,10 @@ class TransposeMultiTransformers(nn.Module):
                         cur_linear += 1
                     src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
                     trg_list_linear.append(cat(tuple(trg_list_dim), dim = 1))
-                elif low_dim:
-                    src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
-                    trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
-                else:
-                    src_list_linear.append(F.relu(self.linear_layers[i](src_list[i])))
-                    trg_list_linear.append(F.relu(self.linear_layers[i](trg_list[i])))
-        else:
-            for i in range(len(src_list)):
-                src_list_linear.append(src_list[i].clone())
-                trg_list_linear.append(trg_list[i].clone())
+            else:
+                src_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](src_list[i]))))
+                trg_list_linear.append(self.dropouts[i](F.relu(self.linear_layers[i](trg_list[i]))))
+
 
         output_list = []
         for i in range(len(self.transformer_list)):
@@ -233,13 +236,13 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
     def forward(self, *src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
 
         input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
-        if self.linear_only:
-            output_list = super().forward(input_src_list, low_dim=low_dim)
-        else:
-            if trg_list is None:
-                trg_list = src_list
-            input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
-            output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
+        # if self.linear_only:
+        #     output_list = super().forward(input_src_list, low_dim=low_dim)
+        # else:
+        if trg_list is None:
+            trg_list = src_list
+        input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
+        output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
         single_response_feature_list = []
         if setting.single_repsonse_feature_length != 0:
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
@@ -421,7 +424,7 @@ def get_model(inputs_lengths):
 
     return model
 
-def get_multi_models(inputs_lengths, input_masks = None):
+def get_multi_models(inputs_lengths, input_masks = None, classifier = False):
 
     if not isinstance(setting.d_model, list):
         d_models = [setting.d_model] * len(inputs_lengths)
@@ -451,7 +454,7 @@ def get_multi_models(inputs_lengths, input_masks = None):
     #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks)
     model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads,
-                                                 setting.attention_dropout, input_masks, linear_only=False, classifier=True)
+                                                 setting.attention_dropout, input_masks, linear_only=False, classifier=classifier)
 
 
     for p in model.parameters():

@@ -94,8 +94,8 @@ if __name__ == "__main__":
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
     #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
-    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
-    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier = True)
+    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier=True)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
