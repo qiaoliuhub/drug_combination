@@ -88,6 +88,9 @@ combine_gene_expression_renew = False
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
 
+raw_expression_data_renew = False
+processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
+
 combine_drug_target_renew = False
 combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_drug_target_matrix.csv')
 

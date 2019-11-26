@@ -507,9 +507,9 @@ class ExpressionDataLoader(CustomDataLoader):
 
         result_df = cls.__filter_celllines(cls.gene_expression, celllines)
         result_df = cls.__filter_genes(result_df, entrezIDs)
-        # if setting.expression_data_renew or not path.exists(setting.processed_expression):
-        #     random_test.logger.debug("Persist gene expression data frame")
-        #     result_df.to_csv(setting.processed_expression, index = False)
+        if setting.raw_expression_data_renew or not path.exists(setting.processed_expression_raw):
+            random_test.logger.debug("Persist gene expression data frame")
+            result_df.to_csv(setting.processed_expression_raw, index = False)
 
         return result_df
 
