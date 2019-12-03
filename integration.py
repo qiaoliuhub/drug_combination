@@ -45,10 +45,14 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
 
-    final_index = set(my_data.SynergyDataReader.get_final_index(pro_filter=setting.pro_filter))
+    if not setting.update_final_index and os.path.exists(setting.final_index):
+        final_index = pd.read_csv(setting.final_index, header=None)[0]
+    else:
+        final_index = my_data.SynergyDataReader.get_final_index()
 
     logger.debug("Preparing models")
     drug_model = attention_model.get_retrain_model()
+    best_drug_model = attention_model.get_retrain_model()
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
@@ -65,16 +69,16 @@ if __name__ == "__main__":
     else:
         training_index = load(setting.train_index)
         test_index = load(setting.test_index)
-    training_index = [x for x in training_index if x in final_index]
-    test_index = [x for x in test_index if x in final_index]
+    training_index = [x for x in training_index if x in set(final_index)]
+    test_index = [x for x in test_index if x in set(final_index)]
+    logger.debug("Training data length: {!r}".format(len(training_index)))
+    logger.debug("Testing data length: {!r}".format(len(test_index)))
     y_labels = load(setting.y_labels_file)
     std_scaler = StandardScaler()
     if setting.y_transform:
         std_scaler.fit(np.array(list(y_labels.values())).reshape(-1, 1))
         for key in y_labels.keys():
             y_labels[key] = std_scaler.transform([[y_labels[key]]])[0,0]
-    cv_pearson_scores = []
-    cv_models = []
 
     partition = {'train': training_index, 'test': test_index}
 
@@ -202,6 +206,7 @@ if __name__ == "__main__":
     # Loop over epochs
     mse_visualizer = torch_visual.VisTorch(env_name='MSE')
     pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
+    best_cv_pearson_score = 0
 
     for epoch in range(setting.n_epochs):
 
@@ -321,8 +326,9 @@ if __name__ == "__main__":
                     val_loss.append(avg_loss)
                     val_total_loss = 0
 
-            cv_pearson_scores.append(val_pearson)
-            cv_models.append(drug_model)
+            if best_cv_pearson_score < val_pearson:
+                best_cv_pearson_score = val_pearson
+                best_drug_model.load_state_dict(drug_model.state_dict())
 
         logger.debug(
             "Training mse is {0}, Training pearson correlation is {1!r}, Training Spearman correlation is {2!r}".
@@ -335,10 +341,6 @@ if __name__ == "__main__":
         mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                  ytickmin=100, ytickmax=500)
         pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
-
-
-    best_index = np.argmax(cv_pearson_scores)
-    best_drug_model = cv_models[int(best_index)]
 
     ### Testing
     test_i = 0
@@ -358,7 +360,7 @@ if __name__ == "__main__":
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
             # Model computations
-            preds = drug_model(local_batch)
+            preds = best_drug_model(local_batch)
             preds = preds.contiguous().view(-1)
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)

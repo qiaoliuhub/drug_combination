@@ -32,17 +32,16 @@ old_y = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/y.pkl"
 
 y_labels_file = os.path.join(working_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
-catoutput_output_type = "ecfp"
+catoutput_output_type = "ge_dt"
 save_final_pred = True
 #["ecfp", "phy", "ge", "gd"]
-catoutput_intput_type = ["ge", "gd"]
+catoutput_intput_type = ["ge_dt"]
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 
 genes = os.path.join(working_dir, 'Genes', 'combin_genes.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
-pro_filter = True
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 #genes_network = '../genes_network/genes_network.csv'
@@ -109,7 +108,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['gene_expression', 'combine_drugs_for_cl']
+cellline_features = ['gene_expression']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -118,7 +117,7 @@ single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
-arrangement = [[0,1,3]]
+arrangement = [[0,1,2]]
 update_features = True
 output_FF_layers = [400, 1]
 n_feature_type = [3]
