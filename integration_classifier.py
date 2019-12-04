@@ -221,7 +221,7 @@ if __name__ == "__main__":
         for local_batch, local_labels in training_generator:
             i += 1
             # Transfer to GPU
-            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
             preds = drug_model(local_batch)
             preds = preds.contiguous()
             ys = local_labels.contiguous().view(-1)
@@ -267,7 +267,7 @@ if __name__ == "__main__":
                 sample_size = local_labels_on_cpu.shape[-1]
                 local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                 # Transfer to GPU
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                 preds = drug_model(local_batch)
                 preds = preds.contiguous()
                 assert preds.size(0) == local_labels.size(0)
@@ -314,7 +314,7 @@ if __name__ == "__main__":
                 sample_size = local_labels_on_cpu.shape[-1]
                 local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                 # Transfer to GPU
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                 preds = drug_model(local_batch)
                 preds = preds.contiguous()
                 assert preds.size(0) == local_labels.size(0)
@@ -376,7 +376,7 @@ if __name__ == "__main__":
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
             sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-            local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+            local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
             # Model computations
             preds = best_drug_model(local_batch)
             preds = preds.contiguous()
