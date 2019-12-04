@@ -223,7 +223,7 @@ if __name__ == "__main__":
             # Transfer to GPU
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
             preds = drug_model(local_batch)
-            preds = preds.contiguous().view(-1)
+            preds = preds.contiguous()
             ys = local_labels.contiguous().view(-1)
             optimizer.zero_grad()
             assert preds.size(0) == ys.size(0)
@@ -269,9 +269,9 @@ if __name__ == "__main__":
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                 preds = drug_model(local_batch)
-                preds = preds.contiguous().view(-1)
-                assert preds.size(-1) == local_labels.size(-1)
-                prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                preds = preds.contiguous()
+                assert preds.size(0) == local_labels.size(0)
+                prediction_on_cpu = preds.cpu().numpy()[:,1]
                 # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                 #                                   prediction_on_cpu[sample_size:]], axis=0)
                 mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
@@ -316,9 +316,9 @@ if __name__ == "__main__":
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                 preds = drug_model(local_batch)
-                preds = preds.contiguous().view(-1)
-                assert preds.size(-1) == local_labels.size(-1)
-                prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                preds = preds.contiguous()
+                assert preds.size(0) == local_labels.size(0)
+                prediction_on_cpu = preds.cpu().numpy()[:,1]
                 # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                 #                                   prediction_on_cpu[sample_size:]], axis=0)
                 mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
@@ -379,9 +379,9 @@ if __name__ == "__main__":
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
             # Model computations
             preds = best_drug_model(local_batch)
-            preds = preds.contiguous().view(-1)
-            assert preds.size(-1) == local_labels.size(-1)
-            prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+            preds = preds.contiguous()
+            assert preds.size(0) == local_labels.size(0)
+            prediction_on_cpu = preds.cpu().numpy()[:,1]
             mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                                               prediction_on_cpu[:sample_size]], axis=0)
             if setting.y_transform:
