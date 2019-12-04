@@ -86,6 +86,7 @@ tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time())
 combine_gene_expression_renew = False
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
+netexpress_df = ""
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
@@ -118,8 +119,8 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = True
-output_FF_layers = [400, 1]
+update_features = False
+output_FF_layers = [400, 2]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:

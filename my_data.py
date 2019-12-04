@@ -513,6 +513,52 @@ class ExpressionDataLoader(CustomDataLoader):
 
         return result_df
 
+class NetExpressDataLoader(CustomDataLoader):
+
+    netexpress_df = None
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def __initialize_gene_expression(cls):
+        ### make sure only one gene expression data frame is instantiated in this class
+        ### return: gene expression data frame
+
+        if cls.netexpress_df is None:
+            cls.netexpress_df = pd.read_csv(setting.netexpress_df, sep='\t')
+            random_test.logger.debug("Read in netexpress data successfully")
+        return cls.netexpress_df
+
+    @classmethod
+    def __filter_genes(cls, df, entrezIDs):
+
+        ### genes: interested genes
+        ### return data frame: Select only the genes interested in the data frame
+
+        result_df = df.loc[entrezIDs, :]
+        repo_genes, interested_genes = set(df.index), set(entrezIDs)
+        if not repo_genes.issuperset(interested_genes):
+            unfound = interested_genes - repo_genes
+            random_test.logger.debug("{!r} are not found!".format(unfound))
+
+        result_df.fillna(0, inplace=True)
+        return result_df
+
+    @classmethod
+    def prepare_netexpress_df(cls, entrezIDs):
+
+        ### entrezIDs, celllines: selection criterials
+        ### return data frame: data frame that have interested cell lines and genes
+        ###              A375   ..... (celllines)
+        ###   1003(entrez)
+        ###    ...
+
+        cls.__initialize_gene_expression()
+        result_df = cls.__filter_genes(cls.netexpress_df, entrezIDs)
+
+        return result_df
+
+
 class ECFPDataLoader(CustomDataLoader):
 
     drug_ECFP = None
@@ -777,6 +823,7 @@ class SamplesDataLoader(CustomDataLoader):
     synergy_score = None
     sel_dp = None
     expression_df = None
+    netexpress_df = None
     drug_a_features = None
     drug_b_features = None
     cellline_features = None
@@ -837,6 +884,9 @@ class SamplesDataLoader(CustomDataLoader):
         ### Prepare gene expression data information
         cls.expression_df = ExpressionDataLoader.prepare_expresstion_df(entrezIDs=list(cls.entrez_set),
                                                                             celllines=list(cls.cellline_set))
+
+        if 'netexpress' in setting.cellline_features:
+            cls.netexpress_df = NetExpressDataLoader.prepare_netexpress_df(entrezIDs=list(cls.entrez_set))
 
         ######################
         ### 5-FU ....
@@ -932,6 +982,11 @@ class SamplesDataLoader(CustomDataLoader):
                 cellline_express_features = cls.expression_df.T.loc[list(cls.synergy_score['cell_line']), :]
                 cls.cellline_features.append(cellline_express_features.values)
                 cls.cellline_features_lengths.append(cellline_express_features.shape[1])
+
+            if 'netexpress' in setting.cellline_features:
+                netexpress_feature = cls.netexpress_df.T.loc[list(cls.synergy_score['cell_line']), :]
+                cls.cellline_features.append(netexpress_feature.values)
+                cls.cellline_features_lengths.append(netexpress_feature.shape[1])
 
 
 
