@@ -288,6 +288,8 @@ if __name__ == "__main__":
                 val_pr_auc = 0
 
                 for local_batch, local_labels in validation_generator:
+                    all_preds = []
+                    all_ys = []
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
                     sample_size = local_labels_on_cpu.shape[-1]
@@ -303,8 +305,15 @@ if __name__ == "__main__":
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                     #                                   prediction_on_cpu[sample_size:]], axis=0)
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                    val_roc_auc = roc_auc_score(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))
-                    val_pr_auc = average_precision_score(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))
+                    all_preds.append(mean_prediction_on_cpu)
+                    all_ys.append(local_labels_on_cpu)
+                    all_preds = np.concatenate(all_preds)
+                    all_ys = np.concatenate(all_ys)
+
+                    assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+                    val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+                    val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
                     n_iter = 1
                     if val_i % n_iter == 0:

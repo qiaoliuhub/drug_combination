@@ -263,6 +263,8 @@ if __name__ == "__main__":
         with torch.set_grad_enabled(False):
 
             drug_model.eval()
+            all_preds = []
+            all_ys = []
             for local_batch, local_labels in eval_train_generator:
                 val_train_i += 1
                 local_labels_on_cpu = np.array(local_labels).reshape(-1)
@@ -281,13 +283,18 @@ if __name__ == "__main__":
                     local_labels_on_cpu, mean_prediction_on_cpu = \
                         std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+                all_preds.append(mean_prediction_on_cpu)
+                all_ys.append(local_labels_on_cpu)
+                all_preds = np.concatenate(all_preds)
+                all_ys = np.concatenate(all_ys)
+                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-                loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-                val_train_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                val_train_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                loss = mean_squared_error(all_preds, all_ys)
+                val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_train_total_loss += loss
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((np.array(training_index).reshape(-1,1), mean_prediction_on_cpu.reshape(-1,1), local_labels_on_cpu.reshape(-1,1)), axis=1),
+                    save(np.concatenate((np.array(training_index).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1),
                          "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
                 n_iter = 1
@@ -297,6 +304,9 @@ if __name__ == "__main__":
                     val_train_total_loss = 0
 
             for local_batch, local_labels in validation_generator:
+
+                all_preds = []
+                all_ys = []
                 val_i += 1
                 local_labels_on_cpu = np.array(local_labels).reshape(-1)
                 sample_size = local_labels_on_cpu.shape[-1]
@@ -314,10 +324,15 @@ if __name__ == "__main__":
                     local_labels_on_cpu, mean_prediction_on_cpu = \
                         std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1) / 100), \
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
+                all_preds.append(mean_prediction_on_cpu)
+                all_ys.append(local_labels_on_cpu)
+                all_preds = np.concatenate(all_preds)
+                all_ys = np.concatenate(all_ys)
+                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-                loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-                val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                val_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                loss = mean_squared_error(all_preds, all_ys)
+                val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                 val_total_loss += loss
 
                 n_iter = 1
@@ -352,11 +367,13 @@ if __name__ == "__main__":
     with torch.set_grad_enabled(False):
 
         best_drug_model.eval()
+        all_preds = []
+        all_ys = []
         for local_batch, local_labels in test_generator:
             # Transfer to GPU
             test_i += 1
             local_labels_on_cpu = np.array(local_labels).reshape(-1)
-            sample_size = local_labels_on_cpu.shape[-1] // 2
+            sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
             # Model computations
@@ -370,6 +387,18 @@ if __name__ == "__main__":
                 local_labels_on_cpu, mean_prediction_on_cpu = \
                     std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
                     std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+            all_preds.append(mean_prediction_on_cpu)
+            all_ys.append(local_labels_on_cpu)
+            all_preds = np.concatenate(all_preds)
+            all_ys = np.concatenate(all_ys)
+            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+            sample_size = len(all_preds)
+            mean_prediction = np.mean([all_preds[:sample_size],
+                                       all_preds[:sample_size]], axis=0)
+            mean_y = np.mean([all_ys[:sample_size],
+                              all_ys[:sample_size]], axis=0)
+
             loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
             test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
             test_spearman = spearmanr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]

@@ -314,6 +314,8 @@ if __name__ == "__main__":
                             std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
+                    all_preds = np.concatenate(all_preds)
+                    all_ys = np.concatenate(all_ys)
 
                     assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
                     loss = mean_squared_error(all_preds, all_ys)
@@ -388,20 +390,22 @@ if __name__ == "__main__":
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
 
+
         logger.debug("saved {!r} data for testing dataset".format(save_data_num))
         all_preds = np.concatenate(all_preds)
         all_ys = np.concatenate(all_ys)
         assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
         sample_size = len(all_preds)
-        mean_prediction = np.mean([all_preds[:sample_size//2],
-                                          all_preds[:sample_size//2]], axis=0)
-        mean_y = np.mean([all_ys[:sample_size//2],
-                          all_ys[:sample_size//2]], axis=0)
+        mean_prediction = np.mean([all_preds[:sample_size],
+                                          all_preds[:sample_size]], axis=0)
+        mean_y = np.mean([all_ys[:sample_size],
+                          all_ys[:sample_size]], axis=0)
+
         loss = mean_squared_error(mean_prediction, mean_y)
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_total_loss += loss
-        save(np.concatenate((np.array(test_index_list[:sample_size//2]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
+        save(np.concatenate((np.array(test_index_list[:sample_size]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
         avg_loss = test_total_loss
