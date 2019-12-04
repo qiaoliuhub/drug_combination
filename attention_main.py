@@ -290,6 +290,9 @@ if __name__ == "__main__":
                 val_train_total_loss = 0
 
                 for local_batch, local_labels in validation_generator:
+
+                    all_preds = []
+                    all_ys = []
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
                     sample_size = local_labels_on_cpu.shape[-1]
@@ -309,10 +312,13 @@ if __name__ == "__main__":
                         local_labels_on_cpu, mean_prediction_on_cpu = \
                             std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1,1) / 100), \
                             std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
+                    all_preds.append(mean_prediction_on_cpu)
+                    all_ys.append(local_labels_on_cpu)
 
-                    loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-                    val_pearson = pearsonr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
-                    val_spearman = spearmanr(mean_prediction_on_cpu.reshape(-1), local_labels_on_cpu.reshape(-1))[0]
+                    assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+                    loss = mean_squared_error(all_preds, all_ys)
+                    val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                    val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
                     val_total_loss += loss
 
                     n_iter = 1
