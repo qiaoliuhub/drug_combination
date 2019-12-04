@@ -985,7 +985,7 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'netexpress' in setting.cellline_features:
                 netexpress_feature = cls.netexpress_df.T.loc[list(cls.synergy_score['cell_line']), :]
-                cls.cellline_features.append(netexpress_feature.values)
+                cls.cellline_features.append(netexpress_feature.values/np.absolute(netexpress_feature.values).max())
                 cls.cellline_features_lengths.append(netexpress_feature.shape[1])
 
 
