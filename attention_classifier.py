@@ -82,7 +82,7 @@ if __name__ == "__main__":
             pickle.dump(Y, old_y)
 
     if setting.output_FF_layers != 1:
-        Y = (Y>30).astype(int)
+        Y = (Y>=30).astype(int)
 
     logger.debug("Spliting data ...")
 
@@ -325,9 +325,7 @@ if __name__ == "__main__":
                     best_cv_pearson_score = val_roc_auc
                     best_drug_model.load_state_dict(drug_model.state_dict())
 
-            logger.debug(
-                "Training mse is {0}, Training roc_auc is {1!r}, Training pr_auc is {2!r}"
-                    .format(np.mean(val_train_loss), val_train_roc_auc, val_train_pr_auc))
+            logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
 
             logger.debug(
                 "Validation mse is {0}, Validation roc_auc is {1!r}, pr_auc is {2!r}"
