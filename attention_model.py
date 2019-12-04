@@ -376,12 +376,13 @@ class LastLSTM(nn.Module):
 
 class LastFC(nn.Module):
 
-    def __init__(self, d_model_list, dropout):
+    def __init__(self, d_model_list, dropout, classifier = False):
 
         super(LastFC, self).__init__()
         self.hidden_size = 100
         self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(setting.dir_input_type.values())),
                                      1, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.classifier = classifier
 
     def forward(self, input):
 
@@ -389,9 +390,12 @@ class LastFC(nn.Module):
         bs = input.size(0)
         attn_output = input.contiguous().view(bs, -1)
         output = self.out(attn_output, low_dim = True)
+        if self.classifier:
+            # output = F.log_softmax(output, dim = -1)
+            output = F.softmax(output, dim = -1)
         return output
 
-def get_retrain_model():
+def get_retrain_model(classifier = False):
 
     if not isinstance(setting.d_model, list):
         d_models = [setting.d_model] * 3 * len(setting.catoutput_intput_type)
