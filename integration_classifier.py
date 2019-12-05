@@ -51,8 +51,8 @@ if __name__ == "__main__":
         final_index = my_data.SynergyDataReader.get_final_index()
 
     logger.debug("Preparing models")
-    drug_model = attention_model.get_retrain_model(classifier=True)
-    best_drug_model = attention_model.get_retrain_model(classifier=True)
+    drug_model = attention_model.get_retrain_model(classifier=False)
+    best_drug_model = attention_model.get_retrain_model(classifier=False)
     # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
@@ -227,7 +227,10 @@ if __name__ == "__main__":
             ys = local_labels.contiguous().view(-1)
             optimizer.zero_grad()
             assert preds.size(0) == ys.size(0)
-            loss = F.nll_loss(preds, ys)
+            # loss = F.nll_loss(preds, ys)
+            criterion = torch.nn.CrossEntropyLoss(reduce=False)
+            loss = criterion(preds, ys)
+            loss.backward(retain_graph=True)
             loss.backward()
             optimizer.step()
 
