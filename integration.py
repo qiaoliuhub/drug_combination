@@ -327,9 +327,16 @@ if __name__ == "__main__":
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
+            sample_size = len(all_preds)
+            all_preds = np.mean([all_preds[:sample_size // 2],
+                                       all_preds[:sample_size // 2]], axis=0)
+            all_ys = np.mean([all_ys[:sample_size // 2],
+                              all_ys[:sample_size // 2]], axis=0)
+
             val_loss = mean_squared_error(all_preds, all_ys)
             val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
             val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+
 
             if best_cv_pearson_score < val_pearson:
                 best_cv_pearson_score = val_pearson
@@ -386,10 +393,10 @@ if __name__ == "__main__":
         assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
         sample_size = len(all_preds)
-        mean_prediction = np.mean([all_preds[:sample_size],
-                                   all_preds[:sample_size]], axis=0)
-        mean_y = np.mean([all_ys[:sample_size],
-                          all_ys[:sample_size]], axis=0)
+        mean_prediction = np.mean([all_preds[:sample_size//2],
+                                   all_preds[:sample_size//2]], axis=0)
+        mean_y = np.mean([all_ys[:sample_size//2],
+                          all_ys[:sample_size//2]], axis=0)
 
         test_loss = mean_squared_error(mean_y, mean_prediction)
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
