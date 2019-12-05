@@ -291,10 +291,8 @@ if __name__ == "__main__":
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-            loss = log_loss(all_ys, all_preds)
             val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
             val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
-            val_train_total_loss += loss
             if epoch == setting.n_epochs - 1 and setting.save_final_pred:
                 save(np.concatenate((np.array(training_index).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1),
                      "prediction/prediction_" + setting.catoutput_output_type + "_training")
@@ -341,11 +339,8 @@ if __name__ == "__main__":
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-            loss = log_loss(all_ys, all_preds)
             val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
             val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
-            val_total_loss += loss
-
 
 
             if best_cv_pearson_score < val_roc_auc:
@@ -410,10 +405,8 @@ if __name__ == "__main__":
                                    all_preds[:sample_size]], axis=0)
         mean_y = np.mean([all_ys[:sample_size],
                           all_ys[:sample_size]], axis=0)
-        loss = log_loss(mean_y, mean_prediction)
         test_roc_auc = roc_auc_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
         test_pr_auc = average_precision_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
-        test_total_loss += loss
         save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
