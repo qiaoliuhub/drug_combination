@@ -392,7 +392,8 @@ class LastFC(nn.Module):
         output = self.out(attn_output, low_dim = True)
         if self.classifier:
             # output = F.log_softmax(output, dim = -1)
-            output = F.softmax(output, dim = -1)
+            # output = F.softmax(output, dim = -1)
+            output = F.relu(output)
         return output
 
 def get_retrain_model(classifier = False):
