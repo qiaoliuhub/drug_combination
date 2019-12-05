@@ -285,20 +285,14 @@ if __name__ == "__main__":
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
-                n_iter = 1
-                if val_train_i % n_iter == 0:
-                    avg_loss = val_train_total_loss / n_iter
-                    val_train_loss.append(avg_loss)
-                    val_train_total_loss = 0
 
             all_preds = np.concatenate(all_preds)
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-            loss = mean_squared_error(all_preds, all_ys)
+            val_total_loss = mean_squared_error(all_preds, all_ys)
             val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
             val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-            val_train_total_loss += loss
             if epoch == setting.n_epochs - 1 and setting.save_final_pred:
                 save(np.concatenate((np.array(training_index).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1),
                      "prediction/prediction_" + setting.catoutput_output_type + "_training")
@@ -329,22 +323,13 @@ if __name__ == "__main__":
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
 
-                n_iter = 1
-                if val_i % n_iter == 0:
-                    avg_loss = val_total_loss / n_iter
-                    val_loss.append(avg_loss)
-                    val_total_loss = 0
-
             all_preds = np.concatenate(all_preds)
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-            loss = mean_squared_error(all_preds, all_ys)
+            val_loss = mean_squared_error(all_preds, all_ys)
             val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
             val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-            val_total_loss += loss
-
-
 
             if best_cv_pearson_score < val_pearson:
                 best_cv_pearson_score = val_pearson
@@ -395,12 +380,6 @@ if __name__ == "__main__":
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
 
-            n_iter = 1
-            if (test_i + 1) % n_iter == 0:
-                avg_loss = test_total_loss / n_iter
-                test_loss.append(avg_loss)
-                test_total_loss = 0
-
 
         all_preds = np.concatenate(all_preds)
         all_ys = np.concatenate(all_ys)
@@ -412,13 +391,11 @@ if __name__ == "__main__":
         mean_y = np.mean([all_ys[:sample_size],
                           all_ys[:sample_size]], axis=0)
 
-        loss = mean_squared_error(local_labels_on_cpu, mean_prediction_on_cpu)
-        test_pearson = pearsonr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
-        test_spearman = spearmanr(local_labels_on_cpu.reshape(-1), mean_prediction_on_cpu.reshape(-1))[0]
-        test_total_loss += loss
-        save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
+        test_loss = mean_squared_error(mean_y, mean_prediction)
+        test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
+        test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
+        save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
-
 
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {2!r}".
