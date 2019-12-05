@@ -314,20 +314,21 @@ if __name__ == "__main__":
                             std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
-                    all_preds = np.concatenate(all_preds)
-                    all_ys = np.concatenate(all_ys)
-
-                    assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-                    loss = mean_squared_error(all_preds, all_ys)
-                    val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                    val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                    val_total_loss += loss
 
                     n_iter = 1
                     if val_i % n_iter == 0:
                         avg_loss = val_total_loss / n_iter
                         val_loss.append(avg_loss)
                         val_total_loss = 0
+
+                all_preds = np.concatenate(all_preds)
+                all_ys = np.concatenate(all_ys)
+
+                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+                loss = mean_squared_error(all_preds, all_ys)
+                val_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                val_total_loss += loss
 
                 if best_cv_pearson_score < val_pearson:
                     best_cv_pearson_score = val_pearson

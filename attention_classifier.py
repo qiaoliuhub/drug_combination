@@ -307,19 +307,20 @@ if __name__ == "__main__":
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
-                    all_preds = np.concatenate(all_preds)
-                    all_ys = np.concatenate(all_ys)
-
-                    assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-
-                    val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                    val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
                     n_iter = 1
                     if val_i % n_iter == 0:
                         avg_loss = val_total_loss / n_iter
                         val_loss.append(avg_loss)
                         val_total_loss = 0
+
+                all_preds = np.concatenate(all_preds)
+                all_ys = np.concatenate(all_ys)
+
+                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+                val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+                val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
                 if best_auc < val_roc_auc:
                     best_cv_pearson_score = val_roc_auc

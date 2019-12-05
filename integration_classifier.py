@@ -281,23 +281,25 @@ if __name__ == "__main__":
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
-                all_preds = np.concatenate(all_preds)
-                all_ys = np.concatenate(all_ys)
-                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-
-                loss = log_loss(all_ys, all_preds)
-                val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                val_train_total_loss += loss
-                if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((np.array(training_index).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1),
-                         "prediction/prediction_" + setting.catoutput_output_type + "_training")
-
                 n_iter = 1
                 if val_train_i % n_iter == 0:
                     avg_loss = val_train_total_loss / n_iter
                     val_train_loss.append(avg_loss)
                     val_train_total_loss = 0
+
+            all_preds = np.concatenate(all_preds)
+            all_ys = np.concatenate(all_ys)
+            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+            loss = log_loss(all_ys, all_preds)
+            val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            val_train_total_loss += loss
+            if epoch == setting.n_epochs - 1 and setting.save_final_pred:
+                save(np.concatenate((np.array(training_index).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1),
+                     "prediction/prediction_" + setting.catoutput_output_type + "_training")
+
+
 
             val_i = 0
             val_total_loss = 0
@@ -328,20 +330,23 @@ if __name__ == "__main__":
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
-                all_preds = np.concatenate(all_preds)
-                all_ys = np.concatenate(all_ys)
-                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-
-                loss = log_loss(all_ys, all_preds)
-                val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                val_total_loss += loss
-
                 n_iter = 1
                 if val_i % n_iter == 0:
                     avg_loss = val_total_loss / n_iter
                     val_loss.append(avg_loss)
                     val_total_loss = 0
+
+
+            all_preds = np.concatenate(all_preds)
+            all_ys = np.concatenate(all_ys)
+            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+            loss = log_loss(all_ys, all_preds)
+            val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            val_total_loss += loss
+
+
 
             if best_cv_pearson_score < val_roc_auc:
                 best_cv_pearson_score = val_roc_auc
@@ -390,26 +395,28 @@ if __name__ == "__main__":
                     std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
-            all_preds = np.concatenate(all_preds)
-            all_ys = np.concatenate(all_ys)
-            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-
-            sample_size = len(all_preds)
-            mean_prediction = np.mean([all_preds[:sample_size],
-                                       all_preds[:sample_size]], axis=0)
-            mean_y = np.mean([all_ys[:sample_size],
-                              all_ys[:sample_size]], axis=0)
-            loss = log_loss(mean_y, mean_prediction)
-            test_roc_auc = roc_auc_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
-            test_pr_auc = average_precision_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
-            test_total_loss += loss
-            save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
-                 "prediction/prediction_" + setting.catoutput_output_type + "_testing")
-
             n_iter = 1
             if (test_i + 1) % n_iter == 0:
                 avg_loss = test_total_loss / n_iter
                 test_loss.append(avg_loss)
                 test_total_loss = 0
+
+        all_preds = np.concatenate(all_preds)
+        all_ys = np.concatenate(all_ys)
+        assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+
+        sample_size = len(all_preds)
+        mean_prediction = np.mean([all_preds[:sample_size],
+                                   all_preds[:sample_size]], axis=0)
+        mean_y = np.mean([all_ys[:sample_size],
+                          all_ys[:sample_size]], axis=0)
+        loss = log_loss(mean_y, mean_prediction)
+        test_roc_auc = roc_auc_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
+        test_pr_auc = average_precision_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
+        test_total_loss += loss
+        save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
+             "prediction/prediction_" + setting.catoutput_output_type + "_testing")
+
+
 
     logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {1!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
