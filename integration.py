@@ -290,7 +290,7 @@ if __name__ == "__main__":
             all_ys = np.concatenate(all_ys)
             assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
 
-            val_total_loss = mean_squared_error(all_preds, all_ys)
+            val_train_loss = mean_squared_error(all_preds, all_ys)
             val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
             val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
             if epoch == setting.n_epochs - 1 and setting.save_final_pred:

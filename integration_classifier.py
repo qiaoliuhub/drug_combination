@@ -281,11 +281,6 @@ if __name__ == "__main__":
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
-                n_iter = 1
-                if val_train_i % n_iter == 0:
-                    avg_loss = val_train_total_loss / n_iter
-                    val_train_loss.append(avg_loss)
-                    val_train_total_loss = 0
 
             all_preds = np.concatenate(all_preds)
             all_ys = np.concatenate(all_ys)
@@ -328,11 +323,6 @@ if __name__ == "__main__":
                         std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1,1) / 100)
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
-                n_iter = 1
-                if val_i % n_iter == 0:
-                    avg_loss = val_total_loss / n_iter
-                    val_loss.append(avg_loss)
-                    val_total_loss = 0
 
 
             all_preds = np.concatenate(all_preds)
@@ -342,7 +332,6 @@ if __name__ == "__main__":
             val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
             val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
-
             if best_cv_pearson_score < val_roc_auc:
                 best_cv_pearson_score = val_roc_auc
                 best_drug_model.load_state_dict(drug_model.state_dict())
@@ -350,11 +339,11 @@ if __name__ == "__main__":
         logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
 
         logger.debug(
-            "Validation mse is {0}, Validation roc_auc is {1!r}, pr_auc is {2!r}"
-                .format(np.mean(val_loss), val_roc_auc, val_pr_auc))
+            "Validation roc_auc is {0!r}, pr_auc is {1!r}"
+                .format( val_roc_auc, val_pr_auc))
 
-        mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
-                                 ytickmin=100, ytickmax=500)
+        #mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
+        #                         ytickmin=100, ytickmax=500)
         pearson_visualizer.plot_loss(epoch, val_train_pr_auc, val_pr_auc, loss_type='pearson_loss', ytickmin=0,
                                      ytickmax=1)
 
@@ -390,11 +379,6 @@ if __name__ == "__main__":
                     std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)
-            n_iter = 1
-            if (test_i + 1) % n_iter == 0:
-                avg_loss = test_total_loss / n_iter
-                test_loss.append(avg_loss)
-                test_total_loss = 0
 
         all_preds = np.concatenate(all_preds)
         all_ys = np.concatenate(all_ys)
@@ -407,9 +391,7 @@ if __name__ == "__main__":
                           all_ys[:sample_size]], axis=0)
         test_roc_auc = roc_auc_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
         test_pr_auc = average_precision_score(mean_y.reshape(-1), mean_prediction.reshape(-1))
-        save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction_on_cpu.reshape(-1, 1), local_labels_on_cpu.reshape(-1, 1)), axis=1),
+        save(np.concatenate((np.array(test_index[:sample_size]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
-
-
 
     logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {1!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
