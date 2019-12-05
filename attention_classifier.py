@@ -308,12 +308,6 @@ if __name__ == "__main__":
                     all_preds.append(mean_prediction_on_cpu)
                     all_ys.append(local_labels_on_cpu)
 
-                    n_iter = 1
-                    if val_i % n_iter == 0:
-                        avg_loss = val_total_loss / n_iter
-                        val_loss.append(avg_loss)
-                        val_total_loss = 0
-
                 all_preds = np.concatenate(all_preds)
                 all_ys = np.concatenate(all_ys)
 
@@ -328,9 +322,7 @@ if __name__ == "__main__":
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
 
-            logger.debug(
-                "Validation mse is {0}, Validation roc_auc is {1!r}, pr_auc is {2!r}"
-                    .format(np.mean(val_loss), val_roc_auc, val_pr_auc))
+            logger.debug("Validation roc_auc is {0!r}, pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
 
             mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
                                      ytickmin=100, ytickmax=500)
