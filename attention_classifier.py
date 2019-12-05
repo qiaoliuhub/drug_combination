@@ -21,6 +21,8 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.preprocessing import StandardScaler
 import torch_visual
+from imblearn.over_sampling import RandomOverSampler
+import random
 import feature_imp
 import shap
 import drug_drug
@@ -138,10 +140,21 @@ if __name__ == "__main__":
                 if setting.update_features or not path.exists(path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt')):
                     save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
 
-        partition = {'train': list(final_index.iloc[train_index]),
+        ros = RandomOverSampler(random_state=42)
+        resample_train_index = np.concatenate((train_index, evaluation_index, evaluation_index_2))
+        _ = ros.fit_resample(X[resample_train_index],
+                             Y[resample_train_index])
+        new_train_index = resample_train_index[ros.sample_indices_]
+        oversample_train_index = list(new_train_index)
+        random.shuffle(oversample_train_index)
+
+        partition = {'train': list(final_index.iloc[oversample_train_index]),
                      'test1': list(final_index.iloc[test_index]), 'test2': list(final_index.iloc[test_index_2]),
                      'eval1': list(final_index.iloc[evaluation_index]),
                      'eval2': list(final_index.iloc[evaluation_index_2])}
+
+        assert len(set(oversample_train_index) & set(test_index)) == 0
+        assert len(set(oversample_train_index) & set(resample_train_index)) == len(set(train_index))
 
         labels = {key: value for key, value in zip(list(final_index),
                                                    list(Y.reshape(-1)))}
@@ -324,8 +337,8 @@ if __name__ == "__main__":
 
             logger.debug("Validation roc_auc is {0!r}, pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
 
-            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
-                                     ytickmin=100, ytickmax=500)
+            #mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
+            #                         ytickmin=100, ytickmax=500)
             pearson_visualizer.plot_loss(epoch, val_train_pr_auc, val_pr_auc, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
     ### Testing
