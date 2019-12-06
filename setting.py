@@ -1,5 +1,6 @@
 import os
 from time import time
+import shutil
 
 unit_test = True
 
@@ -22,6 +23,17 @@ loss = 'mse'
 logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
 data_folder = os.path.join(working_dir, 'datas')
+
+uniq_part = "_run_{!r}".format(int(time()))
+run_dir = os.path.join(working_dir, uniq_part)
+
+run_specific_setting = os.path.join(run_dir, "setting.py")
+cur_dir_setting = os.path.join(working_dir, "setting.py")
+
+if not os.path.exists(run_dir):
+    os.makedirs(run_dir)
+    open(os.path.join(run_dir, "__init__.py"), 'w+').close()
+    shutil.copyfile(cur_dir_setting, run_specific_setting)
 
 update_final_index = True
 final_index = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/final_index.csv"
