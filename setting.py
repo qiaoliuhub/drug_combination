@@ -149,7 +149,7 @@ get_feature_imp = False
 save_feature_imp_model = True
 save_easy_input_only = (len(n_feature_type) == 1)
 save_inter_imp = False
-best_model_path = os.path.join(working_dir, "best_model")
+best_model_path = os.path.join(run_dir, "best_model")
 input_importance_path = os.path.join(working_dir, "input_importance")
 out_input_importance_path = os.path.join(working_dir, "out_input_importance")
 transform_input_importance_path = os.path.join(working_dir, "transform_input_importance")

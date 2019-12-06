@@ -46,7 +46,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-if __name__ == "__main__":
+def run():
 
     if not setting.update_final_index and path.exists(setting.final_index):
         final_index = pd.read_csv(setting.final_index, header=None)[0]
@@ -478,4 +478,21 @@ if __name__ == "__main__":
     #             feature_ranks_df = pd.DataFrame(feature_ranks)
     #             feature_ranks_df.to_csv(setting.feature_importance_path, index=False)
     #     logger.debug("Get features ranks successfully")
+
+
+if __name__ == "__main__":
+
+    np.random.seed(3)
+
+    try:
+        run()
+        logger.debug("new directory %s" % config.run_dir)
+
+    except:
+
+        import shutil
+
+        shutil.rmtree(config.run_dir)
+        logger.debug("clean directory %s" % config.run_dir)
+        raise
 
