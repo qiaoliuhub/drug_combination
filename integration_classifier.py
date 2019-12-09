@@ -43,7 +43,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-if __name__ == "__main__":
+def run():
 
     if not setting.update_final_index and os.path.exists(setting.final_index):
         final_index = pd.read_csv(setting.final_index, header=None)[0]
@@ -303,10 +303,11 @@ if __name__ == "__main__":
             val_roc_auc = 0
             val_pr_auc = 0
 
+            all_preds = []
+            all_ys = []
+
             for local_batch, local_labels in validation_generator:
 
-                all_preds = []
-                all_ys = []
                 val_i += 1
                 local_labels_on_cpu = np.array(local_labels).reshape(-1)
                 sample_size = local_labels_on_cpu.shape[-1]
@@ -398,3 +399,17 @@ if __name__ == "__main__":
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
     logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {1!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
+
+if __name__ == "__main__":
+
+    try:
+        run()
+        logger.debug("new directory %s" % setting.run_dir)
+
+    except:
+
+        import shutil
+
+        shutil.rmtree(setting.run_dir)
+        logger.debug("clean directory %s" % setting.run_dir)
+        raise

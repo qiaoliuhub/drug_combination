@@ -284,10 +284,10 @@ def run():
                 if epoch == setting.n_epochs - 1 and setting.save_final_pred:
                     save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
+                all_preds = []
+                all_ys = []
                 for local_batch, local_labels in validation_generator:
 
-                    all_preds = []
-                    all_ys = []
                     val_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
                     sample_size = local_labels_on_cpu.shape[-1]
@@ -482,17 +482,15 @@ def run():
 
 if __name__ == "__main__":
 
-    np.random.seed(3)
-
     try:
         run()
-        logger.debug("new directory %s" % config.run_dir)
+        logger.debug("new directory %s" % setting.run_dir)
 
     except:
 
         import shutil
 
-        shutil.rmtree(config.run_dir)
-        logger.debug("clean directory %s" % config.run_dir)
+        shutil.rmtree(setting.run_dir)
+        logger.debug("clean directory %s" % setting.run_dir)
         raise
 
