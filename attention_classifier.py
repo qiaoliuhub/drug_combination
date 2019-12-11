@@ -333,8 +333,8 @@ def run():
                 val_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
                 val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
-                if best_auc < val_roc_auc:
-                    best_cv_pearson_score = val_roc_auc
+                if best_auc < val_pr_auc:
+                    best_cv_pearson_score = val_pr_auc
                     best_drug_model.load_state_dict(drug_model.state_dict())
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
@@ -401,7 +401,7 @@ def run():
         test_loss.append(avg_loss)
         test_total_loss = 0
 
-    logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {1!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
+    logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {2!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
 
     batch_input_importance = []
     batch_out_input_importance = []
