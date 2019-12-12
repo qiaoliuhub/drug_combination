@@ -376,17 +376,21 @@ class LastLSTM(nn.Module):
 
 class LastFC(nn.Module):
 
-    def __init__(self, d_model_list, dropout, classifier = False):
+    def __init__(self, d_model_list, dropout, input_len = None, classifier = False):
 
         super(LastFC, self).__init__()
         self.hidden_size = 100
-        self.out = OutputFeedForward(3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(setting.dir_input_type.values())),
+        if input_len is None:
+            input_len = 3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(setting.dir_input_type.values()))
+        self.out = OutputFeedForward(input_len,
                                      1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.classifier = classifier
 
     def forward(self, input):
 
         #cat_input = cat(tuple(input), dim=1)
+        if isinstance(input, list) and len(input) == 1:
+            input = input[0]
         bs = input.size(0)
         attn_output = input.contiguous().view(bs, -1)
         output = self.out(attn_output, low_dim = True)
@@ -458,6 +462,7 @@ def get_multi_models(inputs_lengths, input_masks = None, classifier = False):
     #model = MultiTransformersPlusSDPAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = MultiTransformersPlusMulAttention(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout)
     #model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads, setting.attention_dropout, input_masks)
+    #model = LastFC(d_models, setting.attention_dropout, input_len=2324*3*len(setting.n_feature_type))
     model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads,
                                                  setting.attention_dropout, input_masks, linear_only=False, classifier=classifier)
 
