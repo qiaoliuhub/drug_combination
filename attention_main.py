@@ -432,10 +432,11 @@ def run():
         batch_input_importance.append(input_importance)
         logger.debug("Finished one batch of input importance analysis")
 
-        e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(total_data))
-        out_input_shap_value = e1.shap_values(list(local_batch))
-        batch_out_input_importance.append(out_input_shap_value)
-        logger.debug("Finished one batch of out input importance analysis")
+        if setting.save_out_imp:
+            e1 = shap.GradientExplainer((best_drug_model, best_drug_model.out), data=list(total_data))
+            out_input_shap_value = e1.shap_values(list(local_batch))
+            batch_out_input_importance.append(out_input_shap_value)
+            logger.debug("Finished one batch of out input importance analysis")
 
         if setting.save_inter_imp:
             transform_input_importance = []
@@ -448,9 +449,12 @@ def run():
             batch_transform_input_importance.append(transform_input_importance)
         logger.debug("Finished one batch of importance analysis")
     batch_input_importance = np.concatenate(tuple(batch_input_importance), axis=0)
-    batch_out_input_importance = np.concatenate(tuple(batch_out_input_importance), axis=0)
     pickle.dump(batch_input_importance, open(setting.input_importance_path, 'wb+'))
-    pickle.dump(batch_out_input_importance, open(setting.out_input_importance_path, 'wb+'))
+
+    if setting.save_out_imp:
+        batch_out_input_importance = np.concatenate(tuple(batch_out_input_importance), axis=0)
+        pickle.dump(batch_out_input_importance, open(setting.out_input_importance_path, 'wb+'))
+        
     if setting.save_inter_imp:
         batch_transform_input_importance = np.concatenate(tuple(batch_transform_input_importance), axis=0)
         pickle.dump(batch_transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))

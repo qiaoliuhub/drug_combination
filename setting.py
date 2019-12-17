@@ -148,6 +148,7 @@ n_layers = 1 # This has to be 1
 get_feature_imp = False
 save_feature_imp_model = True
 save_easy_input_only = (len(n_feature_type) == 1)
+save_out_imp = False
 save_inter_imp = False
 best_model_path = os.path.join(run_dir, "best_model")
 input_importance_path = os.path.join(working_dir, "input_importance")
