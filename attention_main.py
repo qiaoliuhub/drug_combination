@@ -337,6 +337,10 @@ def run():
             pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
     ### Testing
+
+    if setting.load_old_mode:
+        best_drug_model.load_state_dict(load(setting.old_model_path).state_dict())
+
     test_i = 0
     test_total_loss = 0
     test_loss = []
@@ -399,9 +403,6 @@ def run():
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {2!r}".format(np.mean(test_loss), test_pearson, test_spearman))
-
-    if setting.load_old_mode:
-        best_drug_model.load_state_dict(load(setting.old_model_path).state_dict())
 
     batch_input_importance = []
     batch_out_input_importance = []
