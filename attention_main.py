@@ -155,7 +155,7 @@ def run():
         eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
         eval_train_params1 = {'batch_size': len(partition['train'])//2,
-                        'shuffle': False}
+                        'shuffle': True}
         eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
@@ -400,6 +400,9 @@ def run():
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {2!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
+    if setting.load_old_mode:
+        best_drug_model.load_state_dict(load(setting.old_model_path).state_dict())
+
     batch_input_importance = []
     batch_out_input_importance = []
     batch_transform_input_importance = []
@@ -454,7 +457,7 @@ def run():
     if setting.save_out_imp:
         batch_out_input_importance = np.concatenate(tuple(batch_out_input_importance), axis=0)
         pickle.dump(batch_out_input_importance, open(setting.out_input_importance_path, 'wb+'))
-        
+
     if setting.save_inter_imp:
         batch_transform_input_importance = np.concatenate(tuple(batch_transform_input_importance), axis=0)
         pickle.dump(batch_transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))

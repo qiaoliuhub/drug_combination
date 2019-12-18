@@ -144,6 +144,8 @@ attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
+load_old_mode = False
+old_model_path = os.path.join(working_dir, "")
 
 get_feature_imp = False
 save_feature_imp_model = True
