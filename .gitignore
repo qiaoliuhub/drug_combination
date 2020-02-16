@@ -18,3 +18,4 @@ processed_expression.csv
 datas/*
 repr_datas/*
 last_output_*
+Gene_expression_raw/*
