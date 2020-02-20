@@ -7,6 +7,7 @@ import os
 import pickle
 from pandas.io.common import EmptyDataError
 import torch
+from sklearn.preprocessing import StandardScaler
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -248,3 +249,11 @@ def transfer_df_to_mask(df, target_set, delete_gene = None):
 
 def input_hook(module, input, output):
     setattr(module, "_value_hook", input)
+
+def standarize_dataframe(df):
+
+    scaler = StandardScaler()
+    scaler.fit(df.values.reshape(-1,1))
+    for col in df.columns:
+        df.loc[:, col] = scaler.transform(df.loc[:, col])
+    return df
