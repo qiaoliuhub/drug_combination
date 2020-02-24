@@ -233,7 +233,7 @@ def pyNBS_random_walk():
     from pyNBS import network_propagation as NBS_propagation
     from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes, network_prop_normalized
     import networkx as nx
-    from drug_drug import standarize_dataframe
+    from utils import standarize_dataframe
 
     # build the matrix from gene gene interaction network, so far
     # gene-gene self interaction weight is 0
@@ -251,7 +251,7 @@ def pyNBS_random_walk():
     I = pd.DataFrame(np.identity(len(subnetwork_nodes)), index=subnetwork_nodes, columns=subnetwork_nodes)
     logger.debug("Preparing network propagation kernel")
     print("Preparing network propagation kernel")
-    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.5, symmetric_norm=False, verbose=True)
+    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.7, symmetric_norm=False, verbose=True)
     logger.debug("Got network propagation kernel. Start propagate ...")
     print("Got network propagation kernel. Start propagate ...")
     #subnetwork = subnetwork.subgraph(list(drug_target.index))
