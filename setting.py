@@ -65,6 +65,7 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp_1_nor
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 L1000_downregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample_1.csv')
 F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
+add_single_response_to_drug_target = True
 single_response = os.path.join(working_dir, 'chemicals', 'single_response_features.csv')
 
 drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
@@ -100,9 +101,9 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
 combine_gene_expression_renew = False
-gene_expression = "Gene_expression_raw/CCLE.tsv"
-backup_expression = "Gene_expression_raw/GDSC.tsv"
-netexpress_df = "Gene_expression_raw/netexpress_scores_norm.tsv"
+gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
+backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
+netexpress_df = "Gene_expression_raw/netexpress_scores.tsv"
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
@@ -149,7 +150,7 @@ attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
 load_old_model = False
-old_model_path = os.path.join(working_dir, "_run_1582399859_gd/best_model__2401_0.5_dedup_norm_drug_target_epison_norm_gd")
+old_model_path = os.path.join(working_dir, "")
 
 get_feature_imp = False
 save_feature_imp_model = True

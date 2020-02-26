@@ -10,6 +10,7 @@ import random
 from sklearn.preprocessing import StandardScaler
 from torch import save
 import random_test
+import utils
 import pdb
 
 class CustomDataLoader:
@@ -155,7 +156,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
             if not setting.drug_profiles_renew and path.exists(setting.drug_profiles):
                 cls.drug_target = pd.read_csv(setting.drug_profiles, index_col=0)
                 cls.drug_target.index = cls.drug_target.index.astype(int)
-                assert set(cls.drug_target.index).issubset(cls.entrez_set), "Drug Profile index is not correct"
+                #assert set(cls.drug_target.index).issubset(cls.entrez_set), "Drug Profile index is not correct"
 
             else:
                 cls.drug_target = cls.__create_drug_target_profiles()
@@ -841,6 +842,7 @@ class SamplesDataLoader(CustomDataLoader):
     var_filter = None
     raw_x = None
     combine_drug_multi_gene_express = None
+    single_drug_response = None
 
     def __init__(self):
         super().__init__()
@@ -890,6 +892,12 @@ class SamplesDataLoader(CustomDataLoader):
         if 'netexpress' in setting.cellline_features:
             cls.netexpress_df = NetExpressDataLoader.prepare_netexpress_df(entrezIDs=list(cls.entrez_set))
 
+        if setting.add_single_response_to_drug_target:
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler()
+            cls.single_drug_response = pd.read_csv(setting.single_response, index_col=0)
+            cls.single_drug_response['pIC50'] = scaler.fit_transform(cls.single_drug_response['pIC50'])
+
         ######################
         ### 5-FU ....
         #####################
@@ -928,11 +936,22 @@ class SamplesDataLoader(CustomDataLoader):
 
                 drug_a_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
                 drug_a_target_feature = pd.DataFrame(drug_a_target_feature, columns=cls.entrez_set).reset_index(drop=True)
+                if setting.add_single_response_to_drug_target:
+                    drug_a_single_response = cls.single_drug_response.merge(cls.synergy_score,
+                                                                            left_on = ['drug', 'cell_line'],
+                                                                            right_on = ['drug_a_name', 'cell_line'])['pIC50']
+                    drug_a_target_feature['pIC50'] = drug_a_single_response
+
                 drug_a_target_feature.fillna(0, inplace=True)
                 cls.drug_a_features.append(drug_a_target_feature.values)
                 cls.drug_features_lengths.append(drug_a_target_feature.shape[1])
                 drug_b_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
                 drug_b_target_feature = pd.DataFrame(drug_b_target_feature, columns=cls.entrez_set).reset_index(drop=True)
+                if setting.add_single_response_to_drug_target:
+                    drug_a_single_response = cls.single_drug_response.merge(cls.synergy_score,
+                                                                            left_on = ['drug', 'cell_line'],
+                                                                            right_on = ['drug_a_name', 'cell_line'])['pIC50']
+                    drug_a_target_feature['pIC50'] = drug_a_single_response
                 drug_b_target_feature.fillna(0, inplace=True)
                 cls.drug_b_features.append(drug_b_target_feature.values)
 
@@ -990,7 +1009,10 @@ class SamplesDataLoader(CustomDataLoader):
                 cls.cellline_features.append(netexpress_feature.values/np.absolute(netexpress_feature.values).max())
                 cls.cellline_features_lengths.append(netexpress_feature.shape[1])
 
-
+            if setting.add_single_response_to_drug_target:
+                cls.cellline_features = np.concatenate([cls.cellline_features,
+                                                        np.array([[0] * len(cls.cellline_features)]).reshape(-1,1)],
+                                                       axis=1)
 
         return cls.cellline_features
 
