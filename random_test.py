@@ -19,7 +19,7 @@ from time import time
 
 # setting up nvidia GPU environment
 if not setting.ml_train:
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "6"
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     set_session(tf.Session(config=config))

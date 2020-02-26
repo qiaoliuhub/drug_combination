@@ -25,6 +25,7 @@ import feature_imp
 import shap
 import drug_drug
 import pickle
+import pdb
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -114,7 +115,6 @@ def run():
     for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func():
 
 
-
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
 
@@ -154,7 +154,7 @@ def run():
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
-        eval_train_params1 = {'batch_size': len(partition['train'])//2,
+        eval_train_params1 = {'batch_size': len(partition['train'])//4,
                         'shuffle': True}
         eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
@@ -177,7 +177,7 @@ def run():
         all_set = my_data.MyDataset(all_index_list, labels)
         logger.debug("All data length: {!r}".format(len(set(all_index_list))))
         pickle.dump(all_index_list, open("all_index_list", "wb+"))
-        all_set_params = {'batch_size': len(all_index_list) // 4,
+        all_set_params = {'batch_size': len(all_index_list) // 8,
                        'shuffle': False}
         all_set_generator = data.DataLoader(all_set, **all_set_params)
 
@@ -216,7 +216,7 @@ def run():
 
                 train_total_loss += loss.item()
 
-                n_iter = 2
+                n_iter = 100
                 if i % n_iter == 0:
                     sample_size = len(train_index) + 2* len(evaluation_index)
                     p = int(100 * i * setting.batch_size/sample_size)
@@ -511,7 +511,7 @@ if __name__ == "__main__":
 
         import shutil
 
-        shutil.rmtree(setting.run_dir)
+        #shutil.rmtree(setting.run_dir)
         logger.debug("clean directory %s" % setting.run_dir)
         raise
 

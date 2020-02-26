@@ -2,9 +2,9 @@ import os
 from time import time
 import shutil
 
-unit_test = True
+unit_test = False
 
-working_dir = '/Users/QiaoLiu1/drug_combin/drug_drug'
+working_dir = os.getcwd()
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
 # feature type: LINCS1000, others, determine whether or not ignoring drugs without hidden representation
@@ -13,19 +13,23 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.01
-lr_decay = 0.001
+start_lr = 0.0001
+lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 5
-batch_size = 32
+n_epochs = 700
+batch_size = 128
 loss = 'mse'
-logfile = os.path.join(working_dir, 'logfile')
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_folder = os.path.join(working_dir, 'datas')
+data_specific = '_5878_0.5_norm_drug_target_epison_norm_ge'
+data_folder = os.path.join(working_dir, 'datas' + data_specific)
+if not os.path.exists(data_folder):
+    os.makedirs(data_folder)
+    open(os.path.join(data_folder, "__init__.py"), 'w+').close()
 
 uniq_part = "_run_{!r}".format(int(time()))
 run_dir = os.path.join(working_dir, uniq_part)
+logfile = os.path.join(run_dir, 'logfile')
 
 run_specific_setting = os.path.join(run_dir, "setting.py")
 cur_dir_setting = os.path.join(working_dir, "setting.py")
@@ -36,26 +40,26 @@ if not os.path.exists(run_dir):
     shutil.copyfile(cur_dir_setting, run_specific_setting)
 
 update_final_index = True
-final_index = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/final_index.csv"
+final_index = os.path.join(working_dir,"synergy_score/final_index.csv")
 update_xy = True
-old_x = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/x.npy"
-old_x_lengths = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/old_x_lengths.pkl"
-old_y = "/Users/QiaoLiu1/drug_combin/drug_drug/synergy_score/y.pkl"
+old_x = os.path.join(working_dir,"synergy_score/x.npy")
+old_x_lengths = os.path.join(working_dir,"synergy_score/old_x_lengths.pkl")
+old_y = os.path.join(working_dir,"synergy_score/y.pkl")
 
 y_labels_file = os.path.join(working_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
-catoutput_output_type = "ge_dt"
+catoutput_output_type = data_specific + "_dt"
 save_final_pred = True
 #["ecfp", "phy", "ge", "gd"]
-catoutput_intput_type = ["ge_dt"]
+catoutput_intput_type = [data_specific + "_dt"]
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 
-genes = os.path.join(working_dir, 'Genes', 'hall_combine.csv')
+genes = os.path.join(working_dir, 'Genes', 'genes_5878_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp_1_norm.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
@@ -87,7 +91,7 @@ random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'ra
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
-test_ml_train = True
+test_ml_train = False
 
 # estimators: RandomForest, GradientBoosting
 estimator = "RandomForest"
@@ -108,12 +112,12 @@ combine_drug_target_renew = False
 combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_drug_target_matrix.csv')
 
 drug_profiles_renew = False
-drug_profiles = os.path.join(working_dir, 'chemicals','drug_profiles.csv')
+drug_profiles = os.path.join(working_dir, 'chemicals','new_drug_profile.csv')
 
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
-y_transform = False
+y_transform = True
 
 ### ['drug_target_profile', 'drug_ECFP', 'drug_physiochemistry', 'drug_F_repr']
 drug_features = ['drug_target_profile']
@@ -121,8 +125,8 @@ drug_features = ['drug_target_profile']
 ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
-### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['netexpress']
+### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
+cellline_features = ['gene_expression']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -133,13 +137,13 @@ single_response_feature = []#['single_response']
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
 update_features = True
-output_FF_layers = [400, 2]
+output_FF_layers = [2000, 1000, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
 d_model_i = 1
-d_model_j = 200
+d_model_j = 400
 d_model = d_model_i * d_model_j
 attention_heads = 1
 attention_dropout = 0.2
@@ -153,8 +157,8 @@ save_feature_imp_model = True
 save_easy_input_only = (len(n_feature_type) == 1)
 save_out_imp = False
 save_inter_imp = False
-best_model_path = os.path.join(run_dir, "best_model")
-input_importance_path = os.path.join(working_dir, "input_importance")
-out_input_importance_path = os.path.join(working_dir, "out_input_importance")
-transform_input_importance_path = os.path.join(working_dir, "transform_input_importance")
-feature_importance_path = os.path.join(working_dir, 'all_features_importance.csv')
+best_model_path = os.path.join(run_dir, "best_model_" + data_specific)
+input_importance_path = os.path.join(working_dir, "input_importance_" + data_specific)
+out_input_importance_path = os.path.join(working_dir, "out_input_importance_" + data_specific)
+transform_input_importance_path = os.path.join(working_dir, "transform_input_importance_" +data_specific)
+feature_importance_path = os.path.join(working_dir, 'all_features_importance_' + data_specific )

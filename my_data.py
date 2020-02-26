@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import save
 import random_test
 import utils
+import pdb
 
 class CustomDataLoader:
     pass
@@ -114,7 +115,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
     @classmethod
     def __raw_drug_target_initializer(cls):
         if cls.raw_drug_target_profile is None:
-            cls.raw_drug_target_profile = pd.read_csv("../drug_drug/chemicals/raw_chemicals.csv")
+            cls.raw_drug_target_profile = pd.read_csv("../drug_combination/chemicals/raw_chemicals.csv")
             assert {'Name', 'combin_entrez'}.issubset(set(cls.raw_drug_target_profile.columns)), \
                 "Name and combin_entrez should be in raw_drug_target_profile columns names"
 
@@ -250,7 +251,7 @@ class SynergyDataReader(CustomDataReader):
     @classmethod
     def __initialize_synergy_score(cls):
         if cls.synergy_score is None:
-            cls.synergy_score = pd.read_csv("../drug_drug/synergy_score/combin_data_2.csv")
+            cls.synergy_score = pd.read_csv("../drug_combination/synergy_score/combin_data_2.csv")
             assert {'cell_line', 'drug_a_name', 'drug_b_name'}.issubset(set(cls.synergy_score.columns)), \
                 "'cell_line', 'drug_a_name', 'drug_b_name' are not in synergy score data frame"
 
@@ -330,14 +331,14 @@ class GeneDependenciesDataReader(CustomDataReader):
     @classmethod
     def __initialize_genes_dp_indexes(cls):
         if cls.genes_dp_indexes is None:
-            cls.genes_dp_indexes = pd.read_csv("../drug_drug/cl_gene_dp/all_dependencies_gens.csv",
+            cls.genes_dp_indexes = pd.read_csv("../drug_combination/cl_gene_dp/all_dependencies_gens.csv",
                                          usecols=['symbol', 'entrez'], dtype={'entrez': np.int})
     @classmethod
     def __initialize_genes_dp(cls):
 
         cls.__initialize_genes_dp_indexes()
         if cls.genes_dp is None:
-            cls.genes_dp = pd.read_csv("../drug_drug/cl_gene_dp/complete_cl_gene_dp_1.csv")
+            cls.genes_dp = pd.read_csv(setting.cl_genes_dp)
             cls.genes_dp.index = cls.genes_dp_indexes['entrez']
             cls.genes_dp.columns = list(map(lambda x: x.split("_")[0], cls.genes_dp.columns))
 
@@ -361,8 +362,9 @@ class GeneDependenciesDataReader(CustomDataReader):
             return
         if cls.exp_genes is None:
             cls.exp_genes = GenesDataReader.get_gene_entrez_set()
-        index_filter_1 = list(cls.exp_genes)
-        cls.genes_dp = cls.genes_dp.loc[index_filter_1, :]
+        index_filter_1 = list(set(cls.exp_genes))
+        cls.genes_dp = cls.genes_dp.groupby(level = 0).mean()
+        cls.genes_dp = cls.genes_dp.loc[cls.genes_dp.index.intersection(index_filter_1)].reindex(index_filter_1)
         cls.gene_filtered = True
         print(len(index_filter_1))
         assert len(index_filter_1) != 0 and isinstance(index_filter_1[0], np.int), "entrezID filter should be integer"
@@ -464,7 +466,7 @@ class ExpressionDataLoader(CustomDataLoader):
         ### genes: interested genes
         ### return data frame: Select only the genes interested in the data frame
 
-        result_df = df.loc[entrezIDs, :]
+        result_df = df.loc[df.index.intersection(entrezIDs)].reindex(entrezIDs)
         repo_genes, interested_genes = set(df.index), set(entrezIDs)
         if not repo_genes.issuperset(interested_genes):
             unfound = interested_genes - repo_genes
@@ -478,7 +480,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         ### cell line: interested cell lines
         ### return data frame: select only the cell lines interested by user
-        result_df = df.loc[:, celllines]
+        result_df = df.loc[:, list(set(celllines) & set(df.columns))]
         repo_celllines, interested_celllines, unfound = set(df.columns), set(celllines), {}
 
         if not repo_celllines.issuperset(interested_celllines):
@@ -491,7 +493,7 @@ class ExpressionDataLoader(CustomDataLoader):
             backup_celllines_repo = set(cls.backup_expression.columns)
             if len(unfound.intersection(backup_celllines_repo)):
                 more_cellline_df = cls.__filter_celllines(cls.backup_expression, list(unfound))
-                result_df = pd.concat([result_df.drop(columns = list(unfound)), more_cellline_df], axis=1)
+                result_df = pd.concat([result_df, more_cellline_df], axis=1)
 
         result_df.fillna(0, inplace=True)
         return result_df
@@ -536,7 +538,7 @@ class NetExpressDataLoader(CustomDataLoader):
         ### genes: interested genes
         ### return data frame: Select only the genes interested in the data frame
 
-        result_df = df.loc[entrezIDs, :]
+        result_df = df.loc[df.index.intersection(entrezIDs)].reindex(entrezIDs)
         repo_genes, interested_genes = set(df.index), set(entrezIDs)
         if not repo_genes.issuperset(interested_genes):
             unfound = interested_genes - repo_genes
