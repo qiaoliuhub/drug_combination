@@ -896,7 +896,7 @@ class SamplesDataLoader(CustomDataLoader):
             from sklearn.preprocessing import StandardScaler
             scaler = StandardScaler()
             cls.single_drug_response = pd.read_csv(setting.single_response, index_col=0)
-            cls.single_drug_response['pIC50'] = scaler.fit_transform(cls.single_drug_response['pIC50'])
+            cls.single_drug_response['pIC50'] = scaler.fit_transform(cls.single_drug_response[['pIC50']]).reshape(-1,1)
 
         ######################
         ### 5-FU ....
@@ -948,10 +948,10 @@ class SamplesDataLoader(CustomDataLoader):
                 drug_b_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
                 drug_b_target_feature = pd.DataFrame(drug_b_target_feature, columns=cls.entrez_set).reset_index(drop=True)
                 if setting.add_single_response_to_drug_target:
-                    drug_a_single_response = cls.single_drug_response.merge(cls.synergy_score,
+                    drug_b_single_response = cls.single_drug_response.merge(cls.synergy_score,
                                                                             left_on = ['drug', 'cell_line'],
-                                                                            right_on = ['drug_a_name', 'cell_line'])['pIC50']
-                    drug_a_target_feature['pIC50'] = drug_a_single_response
+                                                                            right_on = ['drug_b_name', 'cell_line'])['pIC50']
+                    drug_b_target_feature['pIC50'] = drug_b_single_response
                 drug_b_target_feature.fillna(0, inplace=True)
                 cls.drug_b_features.append(drug_b_target_feature.values)
 
@@ -1010,9 +1010,11 @@ class SamplesDataLoader(CustomDataLoader):
                 cls.cellline_features_lengths.append(netexpress_feature.shape[1])
 
             if setting.add_single_response_to_drug_target:
-                cls.cellline_features = np.concatenate([cls.cellline_features,
-                                                        np.array([[0] * len(cls.cellline_features)]).reshape(-1,1)],
+                for i in range(len(cls.cellline_features)):
+                    cls.cellline_features[i] = np.concatenate([cls.cellline_features[i],
+                                                        np.array([[0] * len(cls.cellline_features[i])]).reshape(-1,1)],
                                                        axis=1)
+                    cls.cellline_features_lengths[i] += 1
 
         return cls.cellline_features
 

@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_2401_0.5_norm_drug_target_36_norm_ge'
+data_specific = '_2401_0.5_norm_drug_target_36_norm_net_single'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -64,8 +64,8 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp_1_nor
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 L1000_downregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample_1.csv')
-F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
 add_single_response_to_drug_target = True
+F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
 single_response = os.path.join(working_dir, 'chemicals', 'single_response_features.csv')
 
 drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
@@ -101,9 +101,9 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
 combine_gene_expression_renew = False
-gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
-backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
-netexpress_df = "Gene_expression_raw/netexpress_scores.tsv"
+gene_expression = "Gene_expression_raw/CCLE.tsv"
+backup_expression = "Gene_expression_raw/GDSC.tsv"
+netexpress_df = "Gene_expression_raw/netexpress_scores_norm.tsv"
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
@@ -126,7 +126,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['gene_expression']
+cellline_features = ['netexpress']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -150,7 +150,7 @@ attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
 load_old_model = False
-old_model_path = os.path.join(working_dir, "")
+old_model_path = os.path.join(working_dir, "_run_1582399859_gd/best_model__2401_0.5_dedup_norm_drug_target_epison_norm_gd")
 
 get_feature_imp = False
 save_feature_imp_model = True
