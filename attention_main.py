@@ -174,7 +174,7 @@ def run():
         test_generator = data.DataLoader(test_set, **test_params)
 
         all_index_list = partition['train'][:len(partition['train'])//2] + partition['eval1'] + partition['test1']
-        all_set = my_data.MyDataset(all_index_list)
+        all_set = my_data.MyDataset(all_index_list, labels)
         logger.debug("All data length: {!r}".format(len(set(all_index_list))))
         pickle.dump(all_index_list, open("all_index_list", "wb+"))
         all_set_params = {'batch_size': len(all_index_list) // 4,
@@ -348,7 +348,7 @@ def run():
 
     ### Testing
 
-    if setting.load_old_mode:
+    if setting.load_old_model:
         best_drug_model.load_state_dict(load(setting.old_model_path).state_dict())
 
     test_i = 0
@@ -422,6 +422,7 @@ def run():
     total_data = total_data.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
     reorder_tensor.load_raw_tensor(total_data)
     total_data = reorder_tensor.get_reordered_narrow_tensor()
+
     for local_batch, local_labels in all_set_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)

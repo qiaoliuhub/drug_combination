@@ -52,7 +52,7 @@ catoutput_intput_type = ["ge_dt"]
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 
-genes = os.path.join(working_dir, 'Genes', 'combin_genes.csv')
+genes = os.path.join(working_dir, 'Genes', 'hall_combine.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
@@ -61,6 +61,7 @@ cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp.csv')
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
 L1000_downregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample_1.csv')
 F_cl = os.path.join(working_dir, 'F_repr', 'sel_F_cl_sample.csv')
+add_single_response_to_drug_target = True
 single_response = os.path.join(working_dir, 'chemicals', 'single_response_features.csv')
 
 drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
@@ -82,7 +83,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_hallmark_0.8')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -98,7 +99,7 @@ tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time())
 combine_gene_expression_renew = False
 gene_expression = "/Users/QiaoLiu1/microbiome/trial/CCLE.tsv"
 backup_expression = "/Users/QiaoLiu1/microbiome/trial/GDSC.tsv"
-netexpress_df = ""
+netexpress_df = "Gene_expression_raw/netexpress_scores.tsv"
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
@@ -121,7 +122,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['gene_expression']
+cellline_features = ['netexpress']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -131,7 +132,7 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = False
+update_features = True
 output_FF_layers = [400, 2]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
@@ -144,7 +145,7 @@ attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
-load_old_mode = False
+load_old_model = False
 old_model_path = os.path.join(working_dir, "")
 
 get_feature_imp = False
