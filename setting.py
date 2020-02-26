@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_5878_0.5_norm_drug_target_epison_norm_ge'
+data_specific = '_2401_0.5_norm_drug_target_36_norm_ge'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -56,7 +56,7 @@ catoutput_intput_type = [data_specific + "_dt"]
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 
-genes = os.path.join(working_dir, 'Genes', 'genes_5878_df.csv')
+genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp_1_norm.csv')
@@ -86,7 +86,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_5878_0.5_norm_epison')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -111,7 +111,7 @@ combine_drug_target_renew = False
 combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_drug_target_matrix.csv')
 
 drug_profiles_renew = False
-drug_profiles = os.path.join(working_dir, 'chemicals','new_drug_profile.csv')
+drug_profiles = os.path.join(working_dir, 'chemicals','new_dedup_drug_profile.csv')
 
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
