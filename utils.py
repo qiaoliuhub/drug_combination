@@ -36,9 +36,9 @@ def parse_page(page, row_sep, delimiter):
             df.loc[i-1] = row.split(delimiter)
     return df
 
-def standarize_dataframe(df):
+def standarize_dataframe(df, with_mean = True):
 
-    scaler = StandardScaler()
+    scaler = StandardScaler(with_mean=with_mean)
     scaler.fit(df.values.reshape(-1,1))
     for col in df.columns:
         df.loc[:, col] = scaler.transform(df.loc[:, col].values.reshape(-1,1))

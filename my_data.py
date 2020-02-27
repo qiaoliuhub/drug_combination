@@ -894,7 +894,7 @@ class SamplesDataLoader(CustomDataLoader):
 
         if setting.add_single_response_to_drug_target:
             from sklearn.preprocessing import StandardScaler
-            scaler = StandardScaler()
+            scaler = StandardScaler(with_mean=False)
             cls.single_drug_response = pd.read_csv(setting.single_response, index_col=0)
             cls.single_drug_response['pIC50'] = scaler.fit_transform(cls.single_drug_response[['pIC50']]).reshape(-1,1)
 
