@@ -17,11 +17,11 @@ start_lr = 0.0001
 lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 700
+n_epochs = 1
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_2401_0.5_norm_drug_target_36_norm_net_single'
+data_specific = '_2401_0.8_norm_drug_target_36_norm_net_single'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -87,7 +87,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -136,7 +136,7 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = True
+update_features = False
 output_FF_layers = [2000, 1000, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
@@ -149,8 +149,8 @@ attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
-load_old_model = False
-old_model_path = os.path.join(working_dir, "_run_1582399859_gd/best_model__2401_0.5_dedup_norm_drug_target_epison_norm_gd")
+load_old_model = True
+old_model_path = os.path.join(working_dir, "best_model__2401_0.8_norm_drug_target_36_norm_net_single")
 
 get_feature_imp = False
 save_feature_imp_model = True

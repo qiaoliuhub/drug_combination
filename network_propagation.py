@@ -4,7 +4,7 @@ import numpy as np
 import setting
 import os
 import logging
-
+import pdb
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -242,23 +242,24 @@ def pyNBS_random_walk():
     drug_target = pd.read_csv(drug_profiles, index_col=0)
     genes = set(pd.read_csv(genes,
                             dtype={'entrez': np.int})['entrez'])
-    drug_target = drug_target.loc[list(genes), :]
-    subnetwork = network.subgraph(list(genes))
-    #subnetwork = network
+    drug_target = drug_target.loc[list(network.nodes), :]
+    drug_target.fillna(0.00001, inplace = True)
+    #subnetwork = network.subgraph(list(genes))
+    subnetwork = network
 
     ### Compute precoputed kernel to speed up random walk
     subnetwork_nodes = subnetwork.nodes()
     I = pd.DataFrame(np.identity(len(subnetwork_nodes)), index=subnetwork_nodes, columns=subnetwork_nodes)
     logger.debug("Preparing network propagation kernel")
     print("Preparing network propagation kernel")
-    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.5, symmetric_norm=False, verbose=True)
+    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.8, symmetric_norm=False, verbose=True)
     logger.debug("Got network propagation kernel. Start propagate ...")
     print("Got network propagation kernel. Start propagate ...")
-    #subnetwork = subnetwork.subgraph(list(drug_target.index))
     #assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))
     propagated_drug_target = NBS_propagation.network_kernel_propagation(network=subnetwork, network_kernel=kernel,
                                                          binary_matrix=drug_target.T, outdir = network_path)
-
+    pdb.set_trace()
+    propagated_drug_target = propagated_drug_target.loc[:, list(genes)]
     logger.debug("Propagation finished")
     print("Propagation finished")
     propagated_drug_target = standarize_dataframe(propagated_drug_target)

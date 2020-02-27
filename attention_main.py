@@ -26,6 +26,7 @@ import shap
 import drug_drug
 import pickle
 import pdb
+from sklearn.cluster import KMeans, MiniBatchKMeans
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -154,7 +155,7 @@ def run():
         logger.debug("Training data length: {!r}".format(len(training_index_list)))
         eval_train_params = {'batch_size': setting.batch_size,
                         'shuffle': False}
-        eval_train_params1 = {'batch_size': len(partition['train'])//4,
+        eval_train_params1 = {'batch_size': len(partition['train'])//8,
                         'shuffle': True}
         eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
         eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
@@ -180,7 +181,9 @@ def run():
         all_set_params = {'batch_size': len(all_index_list) // 8,
                        'shuffle': False}
         all_set_generator = data.DataLoader(all_set, **all_set_params)
-
+        all_set_params_total = {'batch_size': len(all_index_list),
+                       'shuffle': False}
+        all_set_generator_total = data.DataLoader(all_set, **all_set_params_total)
 
 
         logger.debug("Start training")
@@ -417,12 +420,18 @@ def run():
     batch_input_importance = []
     batch_out_input_importance = []
     batch_transform_input_importance = []
-    total_data, _ = next(iter(eval_train_1_generator))
-    total_data = total_data.float().to(device2)
+    total_data, _ = next(iter(all_set_generator_total))
+    logger.debug("start kmeans")
+    kmeans = MiniBatchKMeans(n_clusters=len(total_data)//40, random_state=0, batch_size=all_set_params['batch_size']).fit(total_data)
+    logger.debug("fiting finished")
+    #kmeans = KMeans(n_clusters=len(total_data)//8, random_state=0, n_jobs = 20).fit(total_data)
+    total_data = kmeans.cluster_centers_
+    total_data = torch.from_numpy(total_data).float().to(device2)
+    #total_data = total_data.float().to(device2)
     total_data = total_data.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
     reorder_tensor.load_raw_tensor(total_data)
     total_data = reorder_tensor.get_reordered_narrow_tensor()
-
+    
     for local_batch, local_labels in all_set_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
@@ -434,7 +443,7 @@ def run():
         # Model computations
         logger.debug("Start feature importances analysis")
         if setting.save_easy_input_only:
-            e = shap.GradientExplainer(best_drug_model, data=list(total_data))
+            e = shap.DeepExplainer(best_drug_model, data=list(total_data))
             input_importance = e.shap_values(list(local_batch))
             #pickle.dump(input_shap_values, open(setting.input_importance_path, 'wb+'))
         else:
@@ -463,7 +472,8 @@ def run():
 
             batch_transform_input_importance.append(transform_input_importance)
         logger.debug("Finished one batch of importance analysis")
-    batch_input_importance = np.concatenate(tuple(batch_input_importance), axis=0)
+    batch_input_importance = np.concatenate(tuple(x[0] for x in batch_input_importance), axis=0)
+    #batch_input_importance = np.concatenate(tuple(batch_input_importance), axis=0)
     pickle.dump(batch_input_importance, open(setting.input_importance_path, 'wb+'))
 
     if setting.save_out_imp:
