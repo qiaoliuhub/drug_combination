@@ -115,7 +115,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
     @classmethod
     def __raw_drug_target_initializer(cls):
         if cls.raw_drug_target_profile is None:
-            cls.raw_drug_target_profile = pd.read_csv("../drug_combination/chemicals/raw_chemicals.csv")
+            cls.raw_drug_target_profile = pd.read_csv("../drug_drug/chemicals/raw_chemicals.csv")
             assert {'Name', 'combin_entrez'}.issubset(set(cls.raw_drug_target_profile.columns)), \
                 "Name and combin_entrez should be in raw_drug_target_profile columns names"
 
@@ -251,7 +251,7 @@ class SynergyDataReader(CustomDataReader):
     @classmethod
     def __initialize_synergy_score(cls):
         if cls.synergy_score is None:
-            cls.synergy_score = pd.read_csv("../drug_combination/synergy_score/combin_data_2.csv")
+            cls.synergy_score = pd.read_csv(setting.synergy_score)
             assert {'cell_line', 'drug_a_name', 'drug_b_name'}.issubset(set(cls.synergy_score.columns)), \
                 "'cell_line', 'drug_a_name', 'drug_b_name' are not in synergy score data frame"
 
@@ -331,7 +331,7 @@ class GeneDependenciesDataReader(CustomDataReader):
     @classmethod
     def __initialize_genes_dp_indexes(cls):
         if cls.genes_dp_indexes is None:
-            cls.genes_dp_indexes = pd.read_csv("../drug_combination/cl_gene_dp/all_dependencies_gens.csv",
+            cls.genes_dp_indexes = pd.read_csv("../drug_drug/cl_gene_dp/all_dependencies_gens.csv",
                                          usecols=['symbol', 'entrez'], dtype={'entrez': np.int})
     @classmethod
     def __initialize_genes_dp(cls):
@@ -339,8 +339,12 @@ class GeneDependenciesDataReader(CustomDataReader):
         cls.__initialize_genes_dp_indexes()
         if cls.genes_dp is None:
             cls.genes_dp = pd.read_csv(setting.cl_genes_dp)
-            cls.genes_dp.index = cls.genes_dp_indexes['entrez']
-            cls.genes_dp.columns = list(map(lambda x: x.split("_")[0], cls.genes_dp.columns))
+            if cls.genes_dp.shape[0] < 40:
+                cls.genes_dp = cls.genes_dp.set_index('Unnamed: 0').T
+                cls.genes_dp.index = [x.split("(")[:-1] for x in cls.genes_dp.index]
+            else:
+                cls.genes_dp.index = cls.genes_dp_indexes['entrez']
+                cls.genes_dp.columns = list(map(lambda x: x.split("_")[0], cls.genes_dp.columns))
 
     @classmethod
     def __filter_cell_line(cls):
@@ -937,9 +941,13 @@ class SamplesDataLoader(CustomDataLoader):
                 drug_a_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_a_name']), :]
                 drug_a_target_feature = pd.DataFrame(drug_a_target_feature, columns=cls.entrez_set).reset_index(drop=True)
                 if setting.add_single_response_to_drug_target:
+
+                    drug_a_single_response = cls.single_drug_response.loc[list(cls.synergy_score['drug_a_name']), :]
+
                     drug_a_single_response = cls.single_drug_response.merge(cls.synergy_score,
                                                                             left_on = ['drug', 'cell_line'],
                                                                             right_on = ['drug_a_name', 'cell_line'])['pIC50']
+                    assert len(drug_a_single_response) == len(cls.single_drug_response), "single repsonse data didn't have same length with drug feature"
                     drug_a_target_feature['pIC50'] = drug_a_single_response
 
                 drug_a_target_feature.fillna(0, inplace=True)
@@ -948,9 +956,12 @@ class SamplesDataLoader(CustomDataLoader):
                 drug_b_target_feature = cls.simulated_drug_target.loc[list(cls.synergy_score['drug_b_name']), :]
                 drug_b_target_feature = pd.DataFrame(drug_b_target_feature, columns=cls.entrez_set).reset_index(drop=True)
                 if setting.add_single_response_to_drug_target:
+                    drug_b_single_response = cls.single_drug_response.loc[list(cls.synergy_score['drug_b_name']), :]
                     drug_b_single_response = cls.single_drug_response.merge(cls.synergy_score,
                                                                             left_on = ['drug', 'cell_line'],
                                                                             right_on = ['drug_b_name', 'cell_line'])['pIC50']
+                    assert len(drug_b_single_response) == len(cls.single_drug_response), "single repsonse data didn't have same length with drug feature"
+
                     drug_b_target_feature['pIC50'] = drug_b_single_response
                 drug_b_target_feature.fillna(0, inplace=True)
                 cls.drug_b_features.append(drug_b_target_feature.values)
@@ -1006,11 +1017,17 @@ class SamplesDataLoader(CustomDataLoader):
 
             if 'netexpress' in setting.cellline_features:
                 netexpress_feature = cls.netexpress_df.T.loc[list(cls.synergy_score['cell_line']), :]
-                cls.cellline_features.append(netexpress_feature.values/np.absolute(netexpress_feature.values).max())
+                cls.cellline_features.append(netexpress_feature)#.values/np.absolute(netexpress_feature.values).max())
                 cls.cellline_features_lengths.append(netexpress_feature.shape[1])
 
             if setting.add_single_response_to_drug_target:
+
+
                 for i in range(len(cls.cellline_features)):
+                    cell_line_single_response = cls.single_drug_response.loc[list(cls.synergy_score['cell_line']), :]
+                    assert len(cell_line_single_response) == len(cls.cellline_features[i]), "single repsonse data didn't have same length with cell line fetures"
+                    cls.cellline_features[i] = np.concatenate([cls.cellline_features[i], cell_line_single_response.values], axis = 1)
+
                     cls.cellline_features[i] = np.concatenate([cls.cellline_features[i],
                                                         np.array([[0] * len(cls.cellline_features[i])]).reshape(-1,1)],
                                                        axis=1)
