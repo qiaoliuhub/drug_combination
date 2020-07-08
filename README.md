@@ -55,9 +55,3 @@ Entrezid Entrezid posterior prob.
 5988    100287366       0.100036
 5988    100287362       0.105938
 ```
-
-# Models
-
-<p align="center">
-  <img src="/model.png" width="600"/>
-</p>
