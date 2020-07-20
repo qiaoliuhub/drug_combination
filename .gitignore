@@ -19,3 +19,5 @@ datas/*
 repr_datas/*
 last_output_*
 Gene_expression_raw/*
+_run_*
+datas_*/

@@ -12,7 +12,6 @@ import setting
 import os
 import drug_drug
 import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import TensorBoard
 import my_data
 from time import time
@@ -20,9 +19,9 @@ from time import time
 # setting up nvidia GPU environment
 if not setting.ml_train:
     os.environ["CUDA_VISIBLE_DEVICES"] = "6"
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
+    #config = tf.ConfigProto()
+    #config.gpu_options.allow_growth = True
+    #set_session(tf.Session(config=config))
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')

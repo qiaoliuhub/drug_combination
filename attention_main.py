@@ -20,7 +20,7 @@ import torchsummary
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-import torch_visual
+# import torch_visual
 import feature_imp
 import shap
 import drug_drug
