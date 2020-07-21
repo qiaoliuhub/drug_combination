@@ -41,7 +41,7 @@ if not os.path.exists(run_dir):
 
 update_final_index = True
 final_index = os.path.join(working_dir,"synergy_score/final_index.csv")
-update_xy = True
+update_xy = False
 old_x = os.path.join(working_dir,"synergy_score/x.npy")
 old_x_lengths = os.path.join(working_dir,"synergy_score/old_x_lengths.pkl")
 old_y = os.path.join(working_dir,"synergy_score/y.pkl")
@@ -134,10 +134,10 @@ single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
-arrangement = [[0,1,2]]
+arrangement = [[0,1]]
 update_features = True
 output_FF_layers = [2000, 1000, 1]
-n_feature_type = [3]
+n_feature_type = [2]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0

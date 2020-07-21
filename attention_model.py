@@ -8,6 +8,7 @@ import copy
 import setting
 from attention_main import use_cuda, device2
 from CustomizedLinear import CustomizedLinear
+import pdb
 
 def get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
