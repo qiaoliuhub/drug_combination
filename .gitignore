@@ -21,3 +21,5 @@ last_output_*
 Gene_expression_raw/*
 _run_*
 datas_*/
+synergy_score/*.pkl
+synergy_score/*.npy

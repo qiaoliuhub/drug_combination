@@ -188,8 +188,8 @@ def run():
 
         logger.debug("Start training")
         # Loop over epochs
-        mse_visualizer = torch_visual.VisTorch(env_name='MSE')
-        pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
+        # mse_visualizer = torch_visual.VisTorch(env_name='MSE')
+        # pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
 
         for epoch in range(setting.n_epochs):
 
@@ -345,9 +345,9 @@ def run():
                 "Validation mse is {0}, Validation pearson correlation is {1!r}, Spearman correlation is {2!r}"
                     .format(np.mean(val_loss), val_pearson, val_spearman))
 
-            mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
-                                     ytickmin=100, ytickmax=500)
-            pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+            # mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
+            #                         ytickmin=100, ytickmax=500)
+            # pearson_visualizer.plot_loss(epoch, val_train_pearson, val_pearson, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
 
     ### Testing
 

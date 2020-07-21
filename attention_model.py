@@ -48,7 +48,7 @@ class Transformer(nn.Module):
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         # print("DECODER")
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
-        flat_d_output = d_output.view(-1, d_output.size(-2)*d_output.size(-1))
+        flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
 class TransformerPlusLinear(Transformer):

@@ -17,11 +17,11 @@ start_lr = 0.0001
 lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 1
+n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_2401_0.8_norm_drug_target_36_norm_net_single'
+data_specific = '_2401_0.5_norm_drug_target_36_norm_gd_singlet_whole_network_no_mean_cl50_all_more_cl'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -57,9 +57,9 @@ dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
-synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_2.csv')
+synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'complete_cl_gene_dp_1_norm.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
@@ -87,7 +87,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -101,8 +101,8 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
 combine_gene_expression_renew = False
-gene_expression = "Gene_expression_raw/CCLE.tsv"
-backup_expression = "Gene_expression_raw/GDSC.tsv"
+gene_expression = "Gene_expression_raw/normalized_gene_expession_35.tsv" #"CCLE.tsv"
+backup_expression = "Gene_expression_raw/normalized_gene_expession_35.tsv" #"GDSC.tsv"
 netexpress_df = "Gene_expression_raw/netexpress_scores_norm.tsv"
 
 raw_expression_data_renew = False
@@ -113,7 +113,6 @@ combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_dru
 
 drug_profiles_renew = False
 drug_profiles = os.path.join(working_dir, 'chemicals','new_dedup_drug_profile.csv')
-
 
 python_interpreter_path = '/Users/QiaoLiu1/anaconda3/envs/pynbs_env/bin/python'
 
@@ -126,7 +125,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['netexpress']
+cellline_features = ['gene_dependence']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -136,7 +135,7 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = False
+update_features = True
 output_FF_layers = [2000, 1000, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
@@ -149,8 +148,8 @@ attention_heads = 1
 attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
-load_old_model = True
-old_model_path = os.path.join(working_dir, "best_model__2401_0.8_norm_drug_target_36_norm_net_single")
+load_old_model = False
+old_model_path = os.path.join(working_dir, "_run_1582753440/best_model__2401_0.8_norm_drug_target_36_norm_net_single")
 
 get_feature_imp = False
 save_feature_imp_model = True
