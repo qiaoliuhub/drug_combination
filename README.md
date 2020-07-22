@@ -28,7 +28,7 @@ cp setting_net.py setting.py
 python ./attention_main.py
 ```
 #### check results
-check the logfile in the newest _run_***** folder
+check the logfile in the newest ```_run_*****``` folder
 
 # Dataset
 
