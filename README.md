@@ -2,6 +2,33 @@
 
 In many patients, a tumor’s innate or acquired resistance to a given therapy will render the treatment ineffective. To increase therapeutic options and to overcome drug resistance, cancer researchers have been actively investigating drug combinations.
 
+## Build environment (dependencies)
+```
+conda env create -f environment.yml
+```
+
+## Check model performance with differnt cell line features (gene dependencies, gene expression and netexpress scores)
+### gene dependencies
+```
+cp setting_gene_dependencies.py setting.py
+```
+
+### gene expression
+```
+cp setting_gene_expression.py setting.py
+```
+
+### netexpress
+```
+cp setting_net.py setting.py
+```
+
+# Run 
+```
+python ./attention_main.py
+```
+#### check results
+check the logfile in the newest _run_***** folder
 
 # Dataset
 
