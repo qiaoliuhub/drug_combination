@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_2401_0.5_norm_drug_target_36_norm_gd_singlet_whole_network_no_mean_cl50_all_more_cl'
+data_specific = '_2401_0.5_norm_drug_target_36_norm_gd_singlet_whole_network_no_mean_cl50_all_more_cl_0.8'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -41,7 +41,7 @@ if not os.path.exists(run_dir):
 
 update_final_index = True
 final_index = os.path.join(working_dir,"synergy_score/final_index.csv")
-update_xy = False
+update_xy = True
 old_x = os.path.join(working_dir,"synergy_score/x.npy")
 old_x_lengths = os.path.join(working_dir,"synergy_score/old_x_lengths.pkl")
 old_y = os.path.join(working_dir,"synergy_score/y.pkl")
@@ -87,7 +87,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36_whole_network_no_mean')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -134,10 +134,10 @@ single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
-arrangement = [[0,1]]
+arrangement = [[0,1,2]]
 update_features = True
 output_FF_layers = [2000, 1000, 1]
-n_feature_type = [2]
+n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0

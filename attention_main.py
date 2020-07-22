@@ -80,7 +80,7 @@ def run():
 
     logger.debug("Preparing models")
     slice_indices = drug_features_length + drug_features_length + cellline_features_length
-    slice_indices = slice_indices[:2]
+    # slice_indices = slice_indices[:2]
     reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
     #mask = torch.rand(2324, 20).ge(0.5)
@@ -205,7 +205,7 @@ def run():
                 i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
+                # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
@@ -261,7 +261,7 @@ def run():
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                    local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
+                    # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     if epoch == setting.n_epochs - 1:
@@ -312,7 +312,7 @@ def run():
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-                    local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
+                    # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds = drug_model(*local_batch)
@@ -376,7 +376,7 @@ def run():
             sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-            local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
+            # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
