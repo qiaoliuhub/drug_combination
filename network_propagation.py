@@ -252,7 +252,7 @@ def pyNBS_random_walk():
     I = pd.DataFrame(np.identity(len(subnetwork_nodes)), index=subnetwork_nodes, columns=subnetwork_nodes)
     logger.debug("Preparing network propagation kernel")
     print("Preparing network propagation kernel")
-    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.2, symmetric_norm=False, verbose=True)
+    kernel = NBS_propagation.network_propagation(subnetwork, I, alpha=0.9999, symmetric_norm=False, verbose=True)
     logger.debug("Got network propagation kernel. Start propagate ...")
     print("Got network propagation kernel. Start propagate ...")
     #assert len(subnetwork.nodes()) == len(drug_target.index), "{!r}, {!r} doesn't match".format(len(subnetwork.nodes()), len(drug_target.index))

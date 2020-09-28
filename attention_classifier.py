@@ -27,6 +27,7 @@ import feature_imp
 import shap
 import drug_drug
 import pickle
+import pdb
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -96,8 +97,8 @@ def run():
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
     #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
-    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier = True)
-    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier=True)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier = False)
+    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier=False)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
@@ -154,7 +155,7 @@ def run():
                      'eval2': list(final_index.iloc[evaluation_index_2])}
 
         assert len(set(oversample_train_index) & set(test_index)) == 0
-        assert len(set(oversample_train_index) & set(resample_train_index)) == len(set(train_index))
+        assert len(set(oversample_train_index) & set(resample_train_index)) == len(set(resample_train_index))
 
         labels = {key: value for key, value in zip(list(final_index),
                                                    list(Y.reshape(-1)))}
@@ -216,14 +217,14 @@ def run():
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 # Model computations
                 preds = drug_model(*local_batch)
-                preds = preds.contiguous()
+                preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
                 assert preds.size(0) == ys.size(0)
-                loss = F.nll_loss(preds, ys)
-                # criterion = torch.nn.BCELoss(reduce=False)
-                # loss = criterion(preds, ys)
-                # loss.backward(retain_graph=True)
+                # loss = F.nll_loss(preds, ys)
+                criterion = torch.nn.BCEWithLogitsLoss()
+                loss = criterion(preds, ys.float())
+                loss.backward()
                 optimizer.step()
 
                 train_total_loss += loss.item()
@@ -278,9 +279,10 @@ def run():
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
                     preds = drug_model(*local_batch)
-                    preds = preds.contiguous()
+                    preds = preds.contiguous().view(-1)
+                    preds = torch.sigmoid(preds)
                     assert preds.size(0) == local_labels.size(0)
-                    prediction_on_cpu = preds.cpu().numpy()[:,1]
+                    prediction_on_cpu = preds.cpu().numpy()
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                     #                                   prediction_on_cpu[sample_size:]], axis=0)
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
@@ -316,9 +318,10 @@ def run():
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     preds = drug_model(*local_batch)
-                    preds = preds.contiguous()
+                    preds = preds.contiguous().view(-1)
+                    preds = torch.sigmoid(preds)
                     assert preds.size(0) == local_labels.size(0)
-                    prediction_on_cpu = preds.cpu().numpy()[:,1]
+                    prediction_on_cpu = preds.cpu().numpy()
                     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                     #                                   prediction_on_cpu[sample_size:]], axis=0)
                     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
@@ -369,6 +372,8 @@ def run():
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
             # Model computations
             preds = best_drug_model(*local_batch)
+            preds = preds.contiguous().view(-1)
+            preds = torch.sigmoid(preds)
             cur_test_start_index = test_params['batch_size'] * (test_i-1)
             cur_test_stop_index = min(test_params['batch_size'] * (test_i), len(test_index_list))
             for n, m in best_drug_model.named_modules():
@@ -381,7 +386,7 @@ def run():
                                                              str(test_combination) + '.pt'))
                 save_data_num += 1
             assert preds.size(0) == local_labels.size(0)
-            prediction_on_cpu = preds.cpu().numpy()[:, 1]
+            prediction_on_cpu = preds.cpu().numpy()
             mean_prediction_on_cpu = prediction_on_cpu
             all_preds.append(mean_prediction_on_cpu)
             all_ys.append(local_labels_on_cpu)

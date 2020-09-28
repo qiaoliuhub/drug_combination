@@ -49,7 +49,8 @@ class Transformer(nn.Module):
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         # print("DECODER")
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
-        flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
+        flat_d_output, _ = torch.max(d_output, dim = -1)
+        #flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
 class TransformerPlusLinear(Transformer):
@@ -228,7 +229,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, classifier = False):
 
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks, linear_only = linear_only)
-        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))]) \
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i]//3 for i in range(len(d_model_list))]) \
                            + setting.single_repsonse_feature_length
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only

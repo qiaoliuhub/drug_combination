@@ -470,7 +470,6 @@ class ExpressionDataLoader(CustomDataLoader):
         ### genes: interested genes
         ### return data frame: Select only the genes interested in the data frame
 
-        pdb.set_trace()
         result_df = df.loc[df.index.intersection(entrezIDs)].reindex(entrezIDs)
         repo_genes, interested_genes = set(df.index), set(entrezIDs)
         if not repo_genes.issuperset(interested_genes):
@@ -950,7 +949,6 @@ class SamplesDataLoader(CustomDataLoader):
                     drug_a_single_response = cls.single_drug_response.merge(cls.synergy_score,
                                                                             left_on = ['drug', 'cell_line'],
                                                                             right_on = ['drug_a_name', 'cell_line'])['pIC50'].values
-                    pdb.set_trace()
                     assert len(drug_a_single_response) == len(drug_a_target_feature), "single repsonse data didn't have same length with drug feature"
                     drug_a_target_feature['pIC50'] = drug_a_single_response
 
