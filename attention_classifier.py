@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 import network_propagation
 import setting
-from os import path, mkdir
+from os import path, mkdir, environ
 import drug_drug
 import my_data
 from time import time
@@ -20,7 +20,6 @@ import torchsummary
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.preprocessing import StandardScaler
-import torch_visual
 from imblearn.over_sampling import RandomOverSampler
 import random
 import feature_imp
@@ -28,6 +27,13 @@ import shap
 import drug_drug
 import pickle
 import pdb
+import wandb
+
+USE_wandb = True
+if USE_wandb:
+    wandb.init(project="Drug combination")
+else:
+    environ["WANDB_MODE"] = "dryrun"
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -39,7 +45,6 @@ else:
     device2 = device("cpu")
 
 torch.set_default_tensor_type('torch.FloatTensor')
-# cudnn.benchmark = True
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -49,24 +54,18 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def run():
 
+def get_final_index():
+    ## get the index of synergy score database
     if not setting.update_final_index and path.exists(setting.final_index):
         final_index = pd.read_csv(setting.final_index, header=None)[0]
     else:
         final_index = my_data.SynergyDataReader.get_final_index()
-    entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
+    return final_index
 
-    # print(simulated_drug_target, simulated_drug_target.shape)
-    # print("synergy_score filtered data amount %s" %str(len(synergy_score)))
-    # print(simulated_drug_target.shape, sel_dp.shape)
-    # print(sel_dp)
-    # print(sel_dp.shape)
-    std_scaler = StandardScaler()
-    logger.debug("Getting features and synergy scores ...")
-    # X, drug_features_len, cl_features_len, drug_features_name, cl_features_name = \
-    #     my_data.SamplesDataLoader.Raw_X_features_prep(methods='attn')
 
+def prepare_data():
+    ## avoid repeating calculate input and output data
     if not setting.update_xy and path.exists(setting.old_x) and path.exists(setting.old_y):
         X = np.load(setting.old_x)
         with open(setting.old_x_lengths, 'rb') as old_x_lengths:
@@ -78,22 +77,19 @@ def run():
             my_data.SamplesDataLoader.Raw_X_features_prep(methods='flexible_attn')
         np.save(setting.old_x, X)
         with open(setting.old_x_lengths, 'wb+') as old_x_lengths:
-            pickle.dump((drug_features_length,cellline_features_length), old_x_lengths)
+            pickle.dump((drug_features_length, cellline_features_length), old_x_lengths)
 
         Y = my_data.SamplesDataLoader.Y_features_prep()
         with open(setting.old_y, 'wb+') as old_y:
             pickle.dump(Y, old_y)
+    return X, Y, drug_features_length, cellline_features_length
 
-    if setting.output_FF_layers != 1:
-        Y = (Y>=30).astype(int)
+def prepare_model(reorder_tensor, entrez_set):
 
-    logger.debug("Spliting data ...")
+    ### prepare two models
+    ### drug_model: the one used for training
+    ### best_drug_mode;: the one used for same the best model
 
-    logger.debug("Preparing models")
-    slice_indices = drug_features_length + drug_features_length + cellline_features_length
-    reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
-    logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
-    #mask = torch.rand(2324, 20).ge(0.5)
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
     #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
@@ -105,42 +101,103 @@ def run():
     for best_n, best_m in best_drug_model.named_modules():
         if best_n == "out":
             best_m.register_forward_hook(drug_drug.input_hook)
-    drug_model.to(device2)
-    best_drug_model.to(device2)
-    # torchsummary.summary(drug_model, input_size=[(setting.n_feature_type, setting.d_input), (setting.n_feature_type, setting.d_input)])
+    drug_model = drug_model.to(device2)
+    best_drug_model = best_drug_model.to(device2)
+    if USE_wandb:
+        wandb.watch(drug_model, log="all")
+    return drug_model, best_drug_model
+
+def persist_data_as_data_point_file(local_X, final_index_for_X):
+
+    ### prepare files for dataloader
+    for i, combin_drug_feature_array in enumerate(local_X):
+        if setting.unit_test:
+            if i <= 501:  # and not path.exists(path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
+                save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
+        else:
+            if setting.update_features or not path.exists(
+                    path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt')):
+                save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
+
+def prepare_splitted_dataset(partition, labels):
+
+    ### prepare train, test, evaluation data generator
+
+    logger.debug("Preparing datasets ... ")
+    training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+    train_params = {'batch_size': setting.batch_size,
+                    'shuffle': True}
+    training_generator = data.DataLoader(training_set, **train_params)
+
+    eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+    training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
+    logger.debug("Training data length: {!r}".format(len(training_index_list)))
+    eval_train_params = {'batch_size': setting.batch_size,
+                         'shuffle': False}
+    eval_train_params1 = {'batch_size': len(partition['train']) // 2,
+                          'shuffle': False}
+
+    ## used for SHAP analysis
+    eval_train_shap_generator = data.DataLoader(eval_train_set, **eval_train_params1)
+    eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
+
+    # validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
+    validation_set = my_data.MyDataset(partition['test1'], labels)
+    eval_params = {'batch_size': len(partition['test1']),
+                   'shuffle': False}
+    validation_generator = data.DataLoader(validation_set, **eval_params)
+
+    test_set = my_data.MyDataset(partition['test1'], labels)
+    test_index_list = partition['test1']  # + partition['test2']
+    logger.debug("Test data length: {!r}".format(len(test_index_list)))
+    pickle.dump(test_index_list, open("test_index_list", "wb+"))
+    test_params = {'batch_size': len(test_index_list) // 4,
+                   'shuffle': False}
+    test_generator = data.DataLoader(test_set, **test_params)
+
+    return training_generator, eval_train_generator, eval_train_shap_generator, validation_generator, test_generator
+
+def run():
+
+
+    final_index = get_final_index()
+    ## get genes
+    entrez_set = my_data.GenesDataReader.get_gene_entrez_set()
+
+    logger.debug("Getting features and synergy scores ...")
+    X, Y, drug_features_length, cellline_features_length = prepare_data()
+
+    ## Construct a classification problem, if synergy score is larger than 30, we set it as positive samples
+    assert setting.output_FF_layers == 2, "classification model should have output dim as 2"
+    Y = (Y>=30).astype(int)
+
+    logger.debug("Preparing models")
+    slice_indices = drug_features_length + drug_features_length + cellline_features_length
+    reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
+    logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
+    drug_model, best_drug_model = prepare_model(reorder_tensor, entrez_set)
+
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
                                  betas=(0.9, 0.98), eps=1e-9)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min = 1e-7)
-    # train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
-    #     my_data.DataPreprocessor.reg_train_eval_test_split()
+
     test_generator = None
-    eval_train_generator = None
-    eval_train_1_generator = None
+    eval_train_shap_generator = None
     test_index_list = None
     test_params = None
-    partition = None
-    labels = None
     best_auc = 0
 
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
 
+    logger.debug("Spliting data ...")
     for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func():
-
-
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
-
         ori_Y = Y
+        persist_data_as_data_point_file(local_X, final_index_for_X)
 
-        for i, combin_drug_feature_array in enumerate(local_X):
-            if setting.unit_test:
-                if i<=501:# and not path.exists(path.join('datas', str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
-            else:
-                if setting.update_features or not path.exists(path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt')):
-                    save(combin_drug_feature_array, path.join(setting.data_folder, str(final_index_for_X.iloc[i]) + '.pt'))
-
+        #### Deal with imbalanced data problem with negative sampling
         ros = RandomOverSampler(random_state=42)
         resample_train_index = np.concatenate((train_index, evaluation_index, evaluation_index_2))
         _ = ros.fit_resample(X[resample_train_index],
@@ -163,41 +220,12 @@ def run():
                                                    list(ori_Y.reshape(-1)))}
         save(ori_labels, setting.y_labels_file)
 
-        logger.debug("Preparing datasets ... ")
-        #training_set = my_data.MyDataset(partition['train'], labels)
-        training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
-        train_params = {'batch_size': setting.batch_size,
-                        'shuffle': True}
-        training_generator = data.DataLoader(training_set, **train_params)
-
-        eval_train_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+        training_generator, eval_train_generator, eval_train_shap_generator, \
+        validation_generator, test_generator = prepare_splitted_dataset(partition, labels)
         training_index_list = partition['train'] + partition['eval1'] + partition['eval2']
-        logger.debug("Training data length: {!r}".format(len(training_index_list)))
-        eval_train_params = {'batch_size': setting.batch_size,
-                        'shuffle': False}
-        eval_train_params1 = {'batch_size': len(partition['train'])//2,
-                        'shuffle': False}
-        eval_train_1_generator = data.DataLoader(eval_train_set, **eval_train_params1)
-        eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
-
-        #validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
-        validation_set = my_data.MyDataset(partition['test1'], labels)
-        eval_params = {'batch_size': len(test_index),
-                       'shuffle': False}
-        validation_generator = data.DataLoader(validation_set, **eval_params)
-
-        test_set = my_data.MyDataset(partition['test1'], labels)
-        test_index_list = partition['test1'] #+ partition['test2']
-        logger.debug("Test data length: {!r}".format(len(test_index_list)))
-        pickle.dump(test_index_list, open("test_index_list", "wb+"))
-        test_params = {'batch_size': len(test_index_list)//4,
-                       'shuffle': False}
-        test_generator = data.DataLoader(test_set, **test_params)
+        test_index_list = partition['test1']
 
         logger.debug("Start training")
-        # Loop over epochs
-        mse_visualizer = torch_visual.VisTorch(env_name='MSE')
-        pearson_visualizer = torch_visual.VisTorch(env_name='Pearson')
 
         for epoch in range(setting.n_epochs):
 
@@ -205,11 +233,11 @@ def run():
             start = time()
             cur_epoch_train_loss = []
             train_total_loss = 0
-            i = 0
+            train_i = 0
 
             # Training
             for local_batch, local_labels in training_generator:
-                i += 1
+                train_i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
@@ -230,9 +258,9 @@ def run():
                 train_total_loss += loss.item()
 
                 n_iter = 2
-                if i % n_iter == 0:
+                if train_i % n_iter == 0:
                     sample_size = len(train_index) + 2* len(evaluation_index)
-                    p = int(100 * i * setting.batch_size/sample_size)
+                    p = int(100 * train_i * setting.batch_size/sample_size)
                     avg_loss = train_total_loss / n_iter
                     random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
                           ((time() - start) // 60, epoch, "".join('#' * (p // 5)),
@@ -244,10 +272,6 @@ def run():
 
             ### Evaluation
             val_train_i = 0
-            val_train_total_loss = 0
-            val_train_loss = []
-            val_train_roc_auc = 0
-            val_train_pr_auc = 0
             save_data_num = 0
 
             with torch.set_grad_enabled(False):
@@ -258,16 +282,18 @@ def run():
                 for local_batch, local_labels in eval_train_generator:
                     val_train_i += 1
                     local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                    sample_size = local_labels_on_cpu.shape[-1]
+                    sample_size = local_labels_on_cpu.shape[0]
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                     # Transfer to GPU
-                    local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                    local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     if epoch == setting.n_epochs - 1:
+
+                        #### save intermediate results in the last traing epoch
                         preds = best_drug_model(*local_batch)
-                        cur_train_start_index = eval_train_params['batch_size'] * (val_train_i - 1)
-                        cur_train_stop_index = min(eval_train_params['batch_size'] * (val_train_i), len(training_index_list))
+                        cur_train_start_index = setting.batch_size * (val_train_i - 1)
+                        cur_train_stop_index = min(setting.batch_size * (val_train_i), len(training_index_list))
                         for n, m in best_drug_model.named_modules():
                             if n == "out":
                                 catoutput = m._value_hook[0]
@@ -278,6 +304,7 @@ def run():
                             save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
+
                     preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     preds = torch.sigmoid(preds)
@@ -299,11 +326,6 @@ def run():
                     save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
                 val_i = 0
-                val_total_loss = 0
-                val_loss = []
-                val_roc_auc = 0
-                val_pr_auc = 0
-
                 all_preds = []
                 all_ys = []
 
@@ -337,23 +359,19 @@ def run():
                 val_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
 
                 if best_auc < val_pr_auc:
-                    best_cv_pearson_score = val_pr_auc
+                    best_auc = val_pr_auc
                     best_drug_model.load_state_dict(drug_model.state_dict())
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
+            logger.debug("Validation roc_auc is {0!r}, Validation pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
 
-            logger.debug("Validation roc_auc is {0!r}, pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
-
-            #mse_visualizer.plot_loss(epoch, np.mean(cur_epoch_train_loss),np.mean(val_loss), np.mean(val_train_loss), loss_type='mse',
-            #                         ytickmin=100, ytickmax=500)
-            pearson_visualizer.plot_loss(epoch, val_train_pr_auc, val_pr_auc, loss_type='pearson_loss', ytickmin=0, ytickmax=1)
+            wandb.log({"Training roc_auc": val_train_roc_auc, "Training pr_auc": val_train_pr_auc}, step=epoch)
+            wandb.log({"Validation roc_auc": val_roc_auc, "Validation pr_auc": val_pr_auc}, step=epoch)
 
     ### Testing
     test_i = 0
     test_total_loss = 0
     test_loss = []
-    test_roc_auc = 0
-    test_pr_auc = 0
     save_data_num = 0
 
     with torch.set_grad_enabled(False):
@@ -400,18 +418,15 @@ def run():
         save(np.concatenate((np.array(test_index_list).reshape(-1,1), all_preds.reshape(-1, 1), all_ys.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
-            # n_iter = 1
-            # if (test_i + 1) % n_iter == 0:
-        avg_loss = test_total_loss #/ n_iter
+        avg_loss = test_total_loss
         test_loss.append(avg_loss)
-        test_total_loss = 0
 
     logger.debug("Testing mse is {0}, Testing roc_auc is {1!r}, Testing pr_auc is {2!r}".format(np.mean(test_loss), test_roc_auc, test_pr_auc))
 
     batch_input_importance = []
     batch_out_input_importance = []
     batch_transform_input_importance = []
-    total_data, _ = next(iter(eval_train_1_generator))
+    total_data, _ = next(iter(eval_train_shap_generator))
     total_data = total_data.float().to(device2)
     total_data = total_data.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
     reorder_tensor.load_raw_tensor(total_data)
@@ -463,31 +478,6 @@ def run():
         batch_transform_input_importance = np.concatenate(tuple(batch_transform_input_importance), axis=0)
         pickle.dump(batch_transform_input_importance, open(setting.transform_input_importance_path, 'wb+'))
 
-    # if setting.get_feature_imp:
-    #
-    #     logger.debug("Getting features ranks")
-    #     test_set = my_data.MyDataset(partition['test1'], labels)
-    #     test_index_list = partition['test1']
-    #     test_params = {'batch_size': len(test_index_list),
-    #                    'shuffle': False}
-    #     test_generator = data.DataLoader(test_set, **test_params)
-    #     with torch.set_grad_enabled(False):
-    #
-    #         drug_model.eval()
-    #         for local_batch, local_labels in test_generator:
-    #             local_labels_on_cpu = np.array(local_labels).reshape(-1)
-    #             # sample_size = local_labels_on_cpu.shape[-1]
-    #             # local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-    #             # Transfer to GPU
-    #             local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
-    #             local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
-    #             feature_names = reorder_tensor.get_features_names(flatten=True)
-    #             ranker = feature_imp.InputPerturbationRank(feature_names)
-    #             feature_ranks = ranker.rank(2, local_labels_on_cpu, drug_model, local_batch,
-    #                                         drug_model=True, reorder_tensor=reorder_tensor, scaler=std_scaler)
-    #             feature_ranks_df = pd.DataFrame(feature_ranks)
-    #             feature_ranks_df.to_csv(setting.feature_importance_path, index=False)
-    #     logger.debug("Get features ranks successfully")
 
 if __name__ == "__main__":
 
