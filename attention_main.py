@@ -101,6 +101,8 @@ def prepare_model(reorder_tensor, entrez_set):
             best_m.register_forward_hook(drug_drug.input_hook)
     drug_model = drug_model.to(device2)
     best_drug_model = best_drug_model.to(device2)
+    if USE_wandb:
+        wandb.watch(drug_model, log="all")
     return drug_model, best_drug_model
 
 
@@ -371,10 +373,11 @@ def run():
                 "Validation mse is {0}, Validation pearson correlation is {1!r}, Validation spearman correlation is {2!r}"
                     .format(np.mean(val_loss), val_pearson, val_spearman))
 
-            wandb.log({"Training mse": np.mean(val_train_loss), "Training pearson correlation": val_train_pearson,
-                       "Training spearman correlation": val_train_spearman}, step=epoch)
-            wandb.log({"Validation mse": np.mean(val_loss), "Validation pearson correlation": val_pearson,
-                       "Validation spearman correlation": val_spearman}, step=epoch)
+            if USE_wandb:
+                wandb.log({"Training mse": np.mean(val_train_loss), "Training pearson correlation": val_train_pearson,
+                           "Training spearman correlation": val_train_spearman}, step=epoch)
+                wandb.log({"Validation mse": np.mean(val_loss), "Validation pearson correlation": val_pearson,
+                           "Validation spearman correlation": val_spearman}, step=epoch)
 
     ### Testing
 

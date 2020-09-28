@@ -92,8 +92,8 @@ def prepare_model(reorder_tensor, entrez_set):
     mask = drug_drug.transfer_df_to_mask(torch.load(setting.pathway_dataset), entrez_set).T
     #final_mask = pd.concat([mask for _ in range(setting.d_model_i)], axis=1).values
     final_mask = None
-    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier = True)
-    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier=True)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier = False)
+    best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask, classifier=False)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
@@ -249,7 +249,7 @@ def run():
                 optimizer.zero_grad()
                 assert preds.size(0) == ys.size(0)
                 # loss = F.nll_loss(preds, ys)
-                criterion = torch.nn.BCELoss()
+                criterion = torch.nn.BCEWithLogitsLoss()
                 loss = criterion(preds, ys.float())
                 loss.backward()
                 optimizer.step()
@@ -363,9 +363,9 @@ def run():
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
             logger.debug("Validation roc_auc is {0!r}, Validation pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
-
-            wandb.log({"Training roc_auc": val_train_roc_auc, "Training pr_auc": val_train_pr_auc}, step=epoch)
-            wandb.log({"Validation roc_auc": val_roc_auc, "Validation pr_auc": val_pr_auc}, step=epoch)
+            if USE_wandb:
+                wandb.log({"Training roc_auc": val_train_roc_auc, "Training pr_auc": val_train_pr_auc}, step=epoch)
+                wandb.log({"Validation roc_auc": val_roc_auc, "Validation pr_auc": val_pr_auc}, step=epoch)
 
     ### Testing
     test_i = 0
