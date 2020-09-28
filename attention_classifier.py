@@ -364,9 +364,9 @@ def run():
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
             logger.debug("Validation roc_auc is {0!r}, Validation pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
-
-            wandb.log({"Training roc_auc": val_train_roc_auc, "Training pr_auc": val_train_pr_auc}, step=epoch)
-            wandb.log({"Validation roc_auc": val_roc_auc, "Validation pr_auc": val_pr_auc}, step=epoch)
+            if USE_wandb:
+                wandb.log({"Training roc_auc": val_train_roc_auc, "Training pr_auc": val_train_pr_auc}, step=epoch)
+                wandb.log({"Validation roc_auc": val_roc_auc, "Validation pr_auc": val_pr_auc}, step=epoch)
 
     ### Testing
     test_i = 0
