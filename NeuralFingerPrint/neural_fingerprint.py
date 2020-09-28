@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from graph_degree_conv import GraphDegreeConv
-
+import pdb
 
 class NeuralFingerprint(nn.Module):
     def __init__(self, node_size, edge_size, conv_layer_sizes, output_size, degree_list, device, batch_normalize=True):
@@ -45,8 +45,8 @@ class NeuralFingerprint(nn.Module):
         molecule_length = [len(idx) for idx in batch_idx]
         max_length = max(molecule_length)
         num_atom = sum(molecule_length)
-        fingerprint_atom = torch.zeros(batch_size, max_length, self.output_size).to(self.device).double()
-        atom_activations = torch.zeros(num_atom, self.output_size).to(self.device).double()
+        fingerprint_atom = torch.zeros(batch_size, max_length, self.output_size).to(self.device).float()
+        atom_activations = torch.zeros(num_atom, self.output_size).to(self.device).float()
         neighbor_by_degree = []
         for degree in self.degree_list:
             neighbor_by_degree.append({
@@ -55,7 +55,7 @@ class NeuralFingerprint(nn.Module):
             })
 
         def fingerprint_update(linear, node_repr):
-            atom_activations = F.softmax(linear(node_repr))
+            atom_activations = F.softmax(linear(node_repr.float()))
             return atom_activations
 
         node_repr = drugs['atom']

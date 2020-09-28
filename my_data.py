@@ -1165,7 +1165,6 @@ class DataPreprocessor:
         if setting.unit_test:
             train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 = \
                 train_index[:100], test_index[:100], test_index_2[:100], evaluation_index[:100], evaluation_index_2[:100]
-        pdb.set_trace()
         yield train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
 
     @classmethod
@@ -1204,6 +1203,7 @@ class MyDataset(data.Dataset):
             synergy_score_reverse['drug_a_name'] = MyDataset.synergy_score['drug_b_name']
             synergy_score_reverse['drug_b_name'] = MyDataset.synergy_score['drug_a_name']
             MyDataset.synergy_score = pd.concat([MyDataset.synergy_score, synergy_score_reverse])
+            MyDataset.synergy_score.reset_index(inplace=True)
         if MyDataset.drug_smile is None:
             name_smile_df = pd.read_csv('chemicals/inchi_merck.csv')
             MyDataset.drug_smile = {name: smile for name, smile in zip(name_smile_df['Name'], name_smile_df['SMILE'])}
@@ -1227,9 +1227,9 @@ class MyDataset(data.Dataset):
             random_test.logger.error("Fail to get {}".format(ID))
             raise
         y = self.labels[ID]
-        drug_a = MyDataset.synergy_score.loc[ID, 'drug_a_name']
+        drug_a = MyDataset.synergy_score.loc[index, 'drug_a_name']
         drug_a_smiles = MyDataset.drug_smile[drug_a]
-        drug_b = MyDataset.synergy_score.loc[ID, 'drug_b_name']
+        drug_b = MyDataset.synergy_score.loc[index, 'drug_b_name']
         drug_b_smiles = MyDataset.drug_smile[drug_b]
 
         return (X, drug_a_smiles, drug_b_smiles), y

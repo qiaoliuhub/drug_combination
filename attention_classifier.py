@@ -237,7 +237,6 @@ def run():
                 train_i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
-                pdb.set_trace()
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()

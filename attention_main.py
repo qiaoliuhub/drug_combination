@@ -23,6 +23,7 @@ import pickle
 import pdb
 from sklearn.cluster import KMeans, MiniBatchKMeans
 import wandb
+import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 
