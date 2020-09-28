@@ -1191,12 +1191,23 @@ class DataPreprocessor:
 
 class MyDataset(data.Dataset):
 
+    synergy_score = None
+    drug_smile = None
     'Characterizes a dataset for PyTorch'
     def __init__(self, list_IDs, labels, prefix=None):
         'Initialization'
         self.labels = labels
         self.list_IDs = list_IDs
         self.prefix = prefix
+        if MyDataset.synergy_score is None:
+            MyDataset.synergy_score = SynergyDataReader.get_synergy_score()
+            synergy_score_reverse = MyDataset.synergy_score.copy()
+            synergy_score_reverse['drug_a_name'] = MyDataset.synergy_score['drug_b_name']
+            synergy_score_reverse['drug_b_name'] = MyDataset.synergy_score['drug_a_name']
+            MyDataset.synergy_score = pd.concat([MyDataset.synergy_score, synergy_score_reverse])
+        if MyDataset.drug_smile is None:
+            name_smile_df = pd.read_csv('chemicals/inchi_merck.csv')
+            MyDataset.drug_smile = {name: smile for name, smile in zip(name_smile_df['Name'], name_smile_df['SMILE'])}
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -1217,5 +1228,9 @@ class MyDataset(data.Dataset):
             random_test.logger.error("Fail to get {}".format(ID))
             raise
         y = self.labels[ID]
+        drug_a = MyDataset.synergy_score.loc[ID, 'drug_a_name']
+        drug_a_smiles = MyDataset.drug_smile[drug_a]
+        drug_b = MyDataset.synergy_score.loc[ID, 'drug_b_name']
+        drug_b_smiles = MyDataset.drug_smile[drug_b]
 
-        return X, y
+        return (X, drug_a_smiles, drug_b_smiles), y

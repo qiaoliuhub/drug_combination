@@ -55,6 +55,10 @@ catoutput_intput_type = [data_specific + "_dt"]
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
+drug_input_dim = {'atom': 62, 'bond': 6}
+conv_size = [16, 16]
+degree = [0, 1, 2, 3, 4, 5]
+drug_emb_dim = 128
 
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
