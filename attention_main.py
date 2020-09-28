@@ -23,6 +23,7 @@ import pickle
 import pdb
 from sklearn.cluster import KMeans, MiniBatchKMeans
 import wandb
+import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 
@@ -88,9 +89,10 @@ def prepare_model(reorder_tensor, entrez_set):
     ### best_drug_mode;: the one used for same the best model
 
     final_mask = None
-    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask)
+    drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask,
+                                                  drugs_on_the_side=True)
     best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(),
-                                                       input_masks=final_mask)
+                                                       input_masks=final_mask, drugs_on_the_side=True)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
@@ -242,7 +244,7 @@ def run():
                 drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 drugs = (drug_a, drug_b)
                 # Model computations
-                preds = drug_model(*local_batch)
+                preds = drug_model(*local_batch, drugs = drugs)
                 preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
@@ -305,7 +307,7 @@ def run():
                             save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
-                    preds = drug_model(*local_batch)
+                    preds = drug_model(*local_batch, drugs = drugs)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -346,7 +348,7 @@ def run():
                     drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                     drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                     drugs = (drug_a, drug_b)
-                    preds = drug_model(*local_batch)
+                    preds = drug_model(*local_batch, drugs = drugs)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -413,7 +415,7 @@ def run():
             drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
             drugs = (drug_a, drug_b)
             # Model computations
-            preds = best_drug_model(*local_batch)
+            preds = best_drug_model(*local_batch, drugs = drugs)
             preds = preds.contiguous().view(-1)
             cur_test_start_index = len(test_index_list) // 4 * (test_i-1)
             cur_test_stop_index = min(len(test_index_list) // 4 * (test_i), len(test_index_list))
