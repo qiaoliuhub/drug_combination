@@ -28,7 +28,7 @@ import pdb
 from sklearn.cluster import KMeans, MiniBatchKMeans
 import wandb
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:

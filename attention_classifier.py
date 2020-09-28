@@ -29,7 +29,7 @@ import pickle
 import pdb
 import wandb
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:
@@ -168,7 +168,6 @@ def run():
     X, Y, drug_features_length, cellline_features_length = prepare_data()
 
     ## Construct a classification problem, if synergy score is larger than 30, we set it as positive samples
-    assert setting.output_FF_layers == 2, "classification model should have output dim as 2"
     Y = (Y>=30).astype(int)
 
     logger.debug("Preparing models")
@@ -206,7 +205,7 @@ def run():
         oversample_train_index = list(new_train_index)
         random.shuffle(oversample_train_index)
 
-        partition = {'train': list(final_index.iloc[oversample_train_index]),
+        partition = {'train': list(final_index.iloc[train_index]),
                      'test1': list(final_index.iloc[test_index]), 'test2': list(final_index.iloc[test_index_2]),
                      'eval1': list(final_index.iloc[evaluation_index]),
                      'eval2': list(final_index.iloc[evaluation_index_2])}
@@ -240,6 +239,7 @@ def run():
                 train_i += 1
                 # Transfer to GPU
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
+                pdb.set_trace()
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
@@ -257,7 +257,7 @@ def run():
 
                 train_total_loss += loss.item()
 
-                n_iter = 2
+                n_iter = 50
                 if train_i % n_iter == 0:
                     sample_size = len(train_index) + 2* len(evaluation_index)
                     p = int(100 * train_i * setting.batch_size/sample_size)

@@ -172,6 +172,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             trg_list = src_list
         input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
+        pdb.set_trace()
         single_response_feature_list = []
         if setting.single_repsonse_feature_length != 0:
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
