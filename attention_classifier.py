@@ -21,6 +21,8 @@ import drug_drug
 import pickle
 import pdb
 import wandb
+import sys
+sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 
 USE_wandb = False
