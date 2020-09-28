@@ -8,6 +8,7 @@ import copy
 import setting
 from attention_main import use_cuda, device2
 from CustomizedLinear import CustomizedLinear
+from neural_fingerprint import NeuralFingerprint
 import pdb
 
 def get_clones(module, N):
@@ -153,21 +154,23 @@ class TransposeMultiTransformers(nn.Module):
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
-    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, classifier = False):
+    def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, drugs_on_the_side = False, classifier = False):
 
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks, linear_only = linear_only)
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i]//3 for i in range(len(d_model_list))]) \
                            + setting.single_repsonse_feature_length
+        if drugs_on_the_side:
+            self.drugs_on_the_side = drugs_on_the_side
+            out_input_length += 2*setting.drug_emb_dim
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
         self.classifier = classifier
+        self.drug_fp = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=device2)
 
-    def forward(self, *src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = True):
+    def forward(self, *src_list, trg_list=None, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
         input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
-        # if self.linear_only:
-        #     output_list = super().forward(input_src_list, low_dim=low_dim)
-        # else:
         if trg_list is None:
             trg_list = src_list
         input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
@@ -176,7 +179,10 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         single_response_feature_list = []
         if setting.single_repsonse_feature_length != 0:
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
-        cat_output = cat(tuple(output_list + single_response_feature_list), dim=1)
+        if drugs is not None and self.drugs_on_the_side:
+            drug_a_embed = torch.sum(self.drug_fp(drugs[0]), dim = 1)
+            drug_b_embed = torch.sum(self.drug_fp(drugs[1]), dim = 1)
+            cat_output = cat(tuple(output_list + single_response_feature_list + [drug_a_embed, drug_b_embed]), dim=1)
         output = self.out(cat_output)
         if self.classifier:
             # output = F.log_softmax(output, dim = -1)
@@ -241,7 +247,7 @@ def get_model(inputs_lengths):
 
     return model
 
-def get_multi_models(inputs_lengths, input_masks = None, classifier = False):
+def get_multi_models(inputs_lengths, input_masks = None, drugs_on_the_side = False, classifier = False):
 
     if not isinstance(setting.d_model, list):
         d_models = [setting.d_model] * len(inputs_lengths)
@@ -263,8 +269,10 @@ def get_multi_models(inputs_lengths, input_masks = None, classifier = False):
         input_masks = input_masks
 
     final_inputs_lengths = [inputs_lengths[i]//n_feature_types[i] for i in range(len(inputs_lengths))]
-    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers, setting.attention_heads,
-                                                 setting.attention_dropout, input_masks, linear_only=False, classifier=classifier)
+    model = TransposeMultiTransformersPlusLinear(final_inputs_lengths, d_models, n_feature_types, setting.n_layers,
+                                                 setting.attention_heads, setting.attention_dropout,
+                                                 input_masks, linear_only=False,
+                                                 drugs_on_the_side = drugs_on_the_side, classifier=classifier)
 
 
     for p in model.parameters():
