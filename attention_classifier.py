@@ -247,7 +247,7 @@ def run():
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 wrapped = wrapper(data_utils.convert_smile_to_feature, smiles = smiles_a, device = device2)
-                print(timeit.timeit(wrapped) * len(training_index_list) // setting.batch_size)
+                print(timeit.timeit(wrapped, number = 10))
                 drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 drugs = (drug_a, drug_b)
