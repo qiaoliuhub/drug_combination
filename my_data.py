@@ -1200,6 +1200,7 @@ class MyDataset(data.Dataset):
         self.list_IDs = list_IDs
         self.prefix = prefix
         if MyDataset.synergy_score is None:
+            print('prepare synergy score')
             MyDataset.synergy_score = SynergyDataReader.get_synergy_score()
             synergy_score_reverse = MyDataset.synergy_score.copy()
             synergy_score_reverse['drug_a_name'] = MyDataset.synergy_score['drug_b_name']
@@ -1207,6 +1208,7 @@ class MyDataset(data.Dataset):
             MyDataset.synergy_score = pd.concat([MyDataset.synergy_score, synergy_score_reverse])
             MyDataset.synergy_score.reset_index(inplace=True)
         if MyDataset.drug_smile is None:
+            print('prepare drug smile')
             name_smile_df = pd.read_csv('chemicals/inchi_merck.csv')
             MyDataset.drug_smile = {name: smile for name, smile in zip(name_smile_df['Name'], name_smile_df['SMILE'])}
 
