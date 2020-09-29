@@ -3,6 +3,7 @@ import molecule_utils
 from collections import Iterable
 import pandas as pd
 import setting
+import pdb
 degrees = [0, 1, 2, 3, 4, 5]
 
 
@@ -131,8 +132,9 @@ class Molecules(object):
         self.atom_list = []
         self.bond_list = []
         self.degree_nodelist = dict()
-        self.all_smiles = pd.read_csv(setting.inchi_merck)['SMILE']
         if Molecules.smiles_mol_map is None:
+            self.all_smiles = pd.read_csv(setting.inchi_merck)['SMILE']
+            pdb.set_trace()
             Molecules.smiles_mol_map = {smiles: Molecule(smiles) for smiles in self.all_smiles}
         self.read_from_smiles_batch(smiles)
 
