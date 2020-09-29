@@ -1,8 +1,7 @@
 import rdkit
 import molecule_utils
 from collections import Iterable
-
-
+import pandas as pd
 degrees = [0, 1, 2, 3, 4, 5]
 
 
@@ -122,6 +121,8 @@ class Molecule(object):
 
 
 class Molecules(object):
+
+    smiles_mol_map = None
     def __init__(self, smiles):
         self.batch_size = len(smiles)
         self.atom_dict = dict()
@@ -130,6 +131,9 @@ class Molecules(object):
         self.bond_list = []
         self.degree_nodelist = dict()
         self.read_from_smiles_batch(smiles)
+        self.all_smiles = pd.read_csv("../chemicals/inchi_merck.csv")['SMILE']
+        if Molecules.smiles_mol_map is None:
+            Molecules.smiles_mol_map = {smiles: Molecule(smiles) for smiles in self.all_smiles}
 
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """
@@ -164,7 +168,8 @@ class Molecules(object):
 
     def read_from_smiles_batch(self, smiles_batch):
         for idx, smiles in enumerate(smiles_batch):
-            molecule = Molecule(smiles)
+
+            molecule = Molecules.smiles_mol_map[smiles] if smiles in Molecules.smiles_mol_map else Molecule(smiles)
             self.add_subgraph(molecule, str(idx))
         self.sort_atom_by_degree()
 
