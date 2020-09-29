@@ -76,6 +76,7 @@ drug_ECFP = os.path.join(working_dir, 'chemicals', 'ECFP6.csv')
 drug_physicochem = os.path.join(working_dir, 'chemicals', 'physicochemical_des.csv')
 cl_ECFP = os.path.join(working_dir, 'RF_features', 'features_importance_df.csv')
 cl_physicochem = os.path.join(working_dir, 'RF_features', 'features_importance_df_phychem.csv')
+inchi_merck = os.path.join(working_dir, 'chemicals', 'inchi_merck.csv')
 
 # networks: string_network, all_tissues_top
 network_update = True

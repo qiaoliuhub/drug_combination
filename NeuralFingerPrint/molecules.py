@@ -130,10 +130,11 @@ class Molecules(object):
         self.atom_list = []
         self.bond_list = []
         self.degree_nodelist = dict()
-        self.read_from_smiles_batch(smiles)
         self.all_smiles = pd.read_csv("../chemicals/inchi_merck.csv")['SMILE']
         if Molecules.smiles_mol_map is None:
             Molecules.smiles_mol_map = {smiles: Molecule(smiles) for smiles in self.all_smiles}
+        self.read_from_smiles_batch(smiles)
+        pdb.set_trace()
 
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """

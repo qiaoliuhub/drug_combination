@@ -23,6 +23,7 @@ import pdb
 import wandb
 import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
+sys.path.append(path.dirname(path.realpath(__file__)))
 import data_utils
 import timeit
 
