@@ -4,6 +4,7 @@ import torch
 from molecules import Molecules
 import pdb
 import pandas as pd
+import attention_classifier
 
 def read_drug_number(input_file, num_feature):
     drug = []
@@ -46,6 +47,10 @@ def read_gene(input_file, device):
 
 
 def convert_smile_to_feature(smiles, device):
+    import timeit
+    wrapped = attention_classifier.wrapper(Molecules, smiles=smiles)
+    pdb.set_trace()
+    print(timeit.timeit(wrapped) * 236)
     molecules = Molecules(smiles)
     node_repr = torch.FloatTensor([node.data for node in molecules.get_node_list('atom')]).to(device).double()
     edge_repr = torch.FloatTensor([node.data for node in molecules.get_node_list('bond')]).to(device).double()
