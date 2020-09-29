@@ -237,7 +237,6 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
-            TIME = True
             # Training
             for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
                 train_i += 1
@@ -246,11 +245,6 @@ def run():
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                wrapped = wrapper(data_utils.convert_smile_to_feature, smiles = smiles_a, device = device2)
-                if TIME:
-                    print(timeit.timeit(wrapped,
-                                  number=len(training_index_list)//setting.batch_size))
-                    TIME = False
                 drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 drugs = (drug_a, drug_b)
