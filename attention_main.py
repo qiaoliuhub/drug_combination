@@ -27,7 +27,7 @@ import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:

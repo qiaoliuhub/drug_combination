@@ -26,7 +26,7 @@ sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 import timeit
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:
@@ -40,7 +40,7 @@ if use_cuda:
     cuda.empty_cache()
 else:
     device2 = device("cpu")
-
+smiles_a = None
 torch.set_default_tensor_type('torch.FloatTensor')
 
 # Setting up log file
@@ -242,7 +242,8 @@ def run():
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 if TIME:
-                    print(timeit.timeit("data_utils.convert_smile_to_feature(smiles_a, device2)",
+                    pdb.set_trace()
+                    print(timeit.timeit("data_utils.convert_smile_to_feature(smiles_a, device2)", setup ="import data_utils", globals=globals(),
                                   number=len(training_index_list)//setting.batch_size))
                     TIME = False
 
