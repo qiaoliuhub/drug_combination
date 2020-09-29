@@ -51,6 +51,11 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
+def wrapper(func, *args, **kwargs):
+    def wrapped():
+        return func(*args, **kwargs)
+
+    return wrapped
 
 def get_final_index():
     ## get the index of synergy score database
@@ -241,12 +246,11 @@ def run():
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
+                wrapped = wrapper(data_utils.convert_smile_to_feature, smiles = smiles_a, device = device2)
                 if TIME:
-                    pdb.set_trace()
-                    print(timeit.timeit("data_utils.convert_smile_to_feature(smiles_a, device2)", setup ="import data_utils", globals=globals(),
+                    print(timeit.timeit(wrapped,
                                   number=len(training_index_list)//setting.batch_size))
                     TIME = False
-
                 drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 drugs = (drug_a, drug_b)
