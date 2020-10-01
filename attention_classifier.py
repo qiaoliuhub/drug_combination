@@ -238,7 +238,7 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
-            TIME = False
+            TIME = True
             # Training
             for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
                 train_i += 1

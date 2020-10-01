@@ -126,6 +126,7 @@ class Molecule(object):
 class Molecules(object):
 
     smiles_mol_map = None
+
     def __init__(self, smiles):
         self.batch_size = len(smiles)
         self.atom_dict = dict()
@@ -171,13 +172,13 @@ class Molecules(object):
         self.atom_list = sorted_nodes
 
     def read_from_smiles_batch(self, smiles_batch):
-        for idx, smiles in enumerate(smiles_batch):
-
-            molecule = copy.deepcopy(Molecules.smiles_mol_map[smiles]) if smiles in Molecules.smiles_mol_map else Molecule(smiles)
+        for idx, one_smiles in enumerate(smiles_batch):
+            molecule = Molecules.smiles_mol_map[one_smiles] if one_smiles in Molecules.smiles_mol_map else Molecule(one_smiles)
             self.add_subgraph(molecule, str(idx))
         self.sort_atom_by_degree()
 
     def get_neighbor_idx_by_degree(self, neighbor_type, degree):
+
         node_idx = {node.ext_id: idx for idx, node in enumerate(self.get_node_list(neighbor_type))}
         neighbor_idx = []
         for node in self.degree_nodelist[degree]:
