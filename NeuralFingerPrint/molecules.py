@@ -3,6 +3,8 @@ import molecule_utils
 from collections import Iterable
 import pandas as pd
 import setting
+import pdb
+import copy
 degrees = [0, 1, 2, 3, 4, 5]
 
 
@@ -131,15 +133,16 @@ class Molecules(object):
         self.atom_list = []
         self.bond_list = []
         self.degree_nodelist = dict()
-        self.all_smiles = pd.read_csv(setting.inchi_merck)['SMILE']
         if Molecules.smiles_mol_map is None:
-            Molecules.smiles_mol_map = {smiles: Molecule(smiles) for smiles in self.all_smiles}
+            self.all_smiles = pd.read_csv(setting.inchi_merck)['SMILE']
+            Molecules.smiles_mol_map = {one_smiles: Molecule(one_smiles) for one_smiles in self.all_smiles}
+            # Molecules.smiles_mol_map = {}
         self.read_from_smiles_batch(smiles)
 
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """
         for ntype in ['atom', 'bond']:
-            new_nodes = subgraph.get_node_list(ntype)
+            new_nodes = subgraph.get_node_list(ntype)[::]
             for node in new_nodes:
                 node.ext_id = node_id(prefix, node.ext_id)
                 if ntype == 'atom':
@@ -170,7 +173,7 @@ class Molecules(object):
     def read_from_smiles_batch(self, smiles_batch):
         for idx, smiles in enumerate(smiles_batch):
 
-            molecule = Molecules.smiles_mol_map[smiles] if smiles in Molecules.smiles_mol_map else Molecule(smiles)
+            molecule = copy.deepcopy(Molecules.smiles_mol_map[smiles]) if smiles in Molecules.smiles_mol_map else Molecule(smiles)
             self.add_subgraph(molecule, str(idx))
         self.sort_atom_by_degree()
 

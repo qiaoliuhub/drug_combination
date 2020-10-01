@@ -42,6 +42,7 @@ class NeuralFingerprint(nn.Module):
         """
         batch_size = drugs['molecules'].batch_size
         batch_idx = drugs['molecules'].get_neighbor_idx_by_batch('atom')
+        pdb.set_trace()
         molecule_length = [len(idx) for idx in batch_idx]
         max_length = max(molecule_length)
         num_atom = sum(molecule_length)
@@ -61,6 +62,7 @@ class NeuralFingerprint(nn.Module):
         node_repr = drugs['atom']
         for layer_idx in range(self.num_layers):
             # (#nodes, #output_size)
+            pdb.set_trace()
             atom_activations += fingerprint_update(self.out_layers[layer_idx], node_repr)
             node_repr = self.conv_layers[layer_idx](drugs['molecules'],  node_repr, drugs['bond'],
                                                     neighbor_by_degree)
