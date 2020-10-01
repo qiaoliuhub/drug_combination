@@ -200,8 +200,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
         if drugs is not None and self.drugs_on_the_side:
             sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1)
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
             output_list += [drug_a_embed, drug_b_embed]
         cat_output = cat(tuple(output_list), dim=1)
         output.append(self.out(cat_output))
