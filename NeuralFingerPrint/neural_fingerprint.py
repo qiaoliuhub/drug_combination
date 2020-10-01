@@ -28,10 +28,10 @@ class NeuralFingerprint(nn.Module):
         self.device = device
         layers_sizes = [node_size] + conv_layer_sizes
         for input_size in layers_sizes:
-            self.out_layers.append(nn.Linear(input_size, output_size))
+            self.out_layers.append(nn.Linear(input_size, output_size).to(device))
         for prev_size, next_size in zip(layers_sizes[:-1], layers_sizes[1:]):
             self.conv_layers.append(
-                GraphDegreeConv(prev_size, edge_size, next_size, degree_list, device, batch_normalize=batch_normalize))
+                    GraphDegreeConv(prev_size, edge_size, next_size, degree_list, device, batch_normalize=batch_normalize))
 
     def forward(self, drugs):
         """
@@ -42,7 +42,6 @@ class NeuralFingerprint(nn.Module):
         """
         batch_size = drugs['molecules'].batch_size
         batch_idx = drugs['molecules'].get_neighbor_idx_by_batch('atom')
-        pdb.set_trace()
         molecule_length = [len(idx) for idx in batch_idx]
         max_length = max(molecule_length)
         num_atom = sum(molecule_length)
@@ -56,6 +55,7 @@ class NeuralFingerprint(nn.Module):
             })
 
         def fingerprint_update(linear, node_repr):
+            pdb.set_trace()
             atom_activations = F.softmax(linear(node_repr.float()))
             return atom_activations
 

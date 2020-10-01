@@ -168,41 +168,42 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         self.linear_only = linear_only
         self.classifier = classifier
         self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
         self.split_size = 32
 
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
-        pdb.set_trace()
-        src_list_splits = zip([src_list[i].split(self.split_size) for i in range(len(src_list))])
-        split_input_src_list = next(src_list_splits)
+        src_list_splits = []
+        for i in range(len(src_list)):
+            src_list_splits.append(src_list[0].split(self.split_size))
+        split_input_src_list = list(src_list_splits[j][0] for j in range(len(src_list)))
         input_src_list = split_input_src_list
         input_trg_list = split_input_src_list[::]
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
         output = []
 
-        for i, sub_src in enumerate(src_list_splits):
+        for i in range(len(src_list_splits[0])):
 
             if drugs is not None and self.drugs_on_the_side:
                 sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
-                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device1)
-                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device1)
+                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device2)
+                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device2)
                 output_list += [drug_a_embed, drug_b_embed]
             cat_output = cat(tuple(output_list), dim=1)
             output.append(self.out(cat_output))
 
-            split_input_src_list = sub_src
+            split_input_src_list = list(src_list_splits[j][i+1] for j in range(len(src_list)))
             input_src_list = split_input_src_list
             input_trg_list = split_input_src_list[::]
             output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
 
         if drugs is not None and self.drugs_on_the_side:
             sub_drugs_a, sub_drugs_b = drugs[0][-1], drugs[1][-1]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device2)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device2)
             output_list += [drug_a_embed, drug_b_embed]
         cat_output = cat(tuple(output_list), dim=1)
         output.append(self.out(cat_output))
