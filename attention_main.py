@@ -26,6 +26,8 @@ import wandb
 import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
+from multiprocessing.pool import ThreadPool
+pool = ThreadPool(processes=2)
 
 USE_wandb = False
 if USE_wandb:
@@ -232,17 +234,28 @@ def run():
             train_total_loss = 0
             train_i = 0
 
+            training_iter = iter(training_generator)
+            pre_local_batch, pre_smiles_a, pre_smiles_b, pre_local_labels = next(training_iter)
+            drug_a_result = pool.apply_async(data_utils.convert_smile_to_feature, (pre_smiles_a, device2))
+            drug_b_result = pool.apply_async(data_utils.convert_smile_to_feature, (pre_smiles_b, device2))
+            pre_drug_a = drug_a_result.get()
+            pre_drug_b = drug_b_result.get()
+            # pre_drug_a = data_utils.convert_smile_to_feature(pre_smiles_a, device2)
+            # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
+
             # Training
-            for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
+            for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_generator:
                 train_i += 1
                 # Transfer to GPU
-                local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
+                local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-                drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                drugs = (drug_a, drug_b)
+                drugs = (pre_drug_a, pre_drug_b)
+                drug_a_result = pool.apply_async(data_utils.convert_smile_to_feature, (smiles_a, device2))
+                drug_b_result = pool.apply_async(data_utils.convert_smile_to_feature, (smiles_b, device2))
+                # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+                # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 # Model computations
                 preds = drug_model(*local_batch, drugs = drugs)
                 preds = preds.contiguous().view(-1)
@@ -252,6 +265,10 @@ def run():
                 loss = F.mse_loss(preds, ys)
                 loss.backward()
                 optimizer.step()
+                pre_drug_a = drug_a_result.get()
+                pre_drug_b = drug_b_result.get()
+                pre_local_batch = cur_local_batch
+                pre_local_labels = cur_local_labels
 
                 train_total_loss += loss.item()
 
