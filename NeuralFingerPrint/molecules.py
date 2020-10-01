@@ -125,6 +125,7 @@ class Molecule(object):
 class Molecules(object):
 
     smiles_mol_map = None
+
     def __init__(self, smiles):
         self.batch_size = len(smiles)
         self.atom_dict = dict()
@@ -134,14 +135,13 @@ class Molecules(object):
         self.degree_nodelist = dict()
         if Molecules.smiles_mol_map is None:
             self.all_smiles = pd.read_csv(setting.inchi_merck)['SMILE']
-            pdb.set_trace()
-            Molecules.smiles_mol_map = {smiles: Molecule(smiles) for smiles in self.all_smiles}
+            Molecules.smiles_mol_map = {one_smiles: Molecule(one_smiles) for one_smiles in self.all_smiles}
         self.read_from_smiles_batch(smiles)
 
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """
         for ntype in ['atom', 'bond']:
-            new_nodes = subgraph.get_node_list(ntype)
+            new_nodes = subgraph.get_node_list(ntype)[::]
             for node in new_nodes:
                 node.ext_id = node_id(prefix, node.ext_id)
                 if ntype == 'atom':
@@ -170,13 +170,13 @@ class Molecules(object):
         self.atom_list = sorted_nodes
 
     def read_from_smiles_batch(self, smiles_batch):
-        for idx, smiles in enumerate(smiles_batch):
-
-            molecule = Molecules.smiles_mol_map[smiles] if smiles in Molecules.smiles_mol_map else Molecule(smiles)
+        for idx, one_smiles in enumerate(smiles_batch):
+            molecule = Molecules.smiles_mol_map[one_smiles] if one_smiles in Molecules.smiles_mol_map else Molecule(one_smiles)
             self.add_subgraph(molecule, str(idx))
         self.sort_atom_by_degree()
 
     def get_neighbor_idx_by_degree(self, neighbor_type, degree):
+
         node_idx = {node.ext_id: idx for idx, node in enumerate(self.get_node_list(neighbor_type))}
         neighbor_idx = []
         for node in self.degree_nodelist[degree]:
