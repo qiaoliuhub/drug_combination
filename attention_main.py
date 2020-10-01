@@ -26,8 +26,8 @@ import wandb
 import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
-from multiprocessing.pool import ThreadPool
-pool = ThreadPool(processes=2)
+import concurrent.futures
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 USE_wandb = True
 if USE_wandb:
@@ -236,10 +236,10 @@ def run():
 
             training_iter = iter(training_generator)
             pre_local_batch, pre_smiles_a, pre_smiles_b, pre_local_labels = next(training_iter)
-            drug_a_result = pool.apply_async(data_utils.convert_smile_to_feature, (pre_smiles_a, device2))
-            drug_b_result = pool.apply_async(data_utils.convert_smile_to_feature, (pre_smiles_b, device2))
-            pre_drug_a = drug_a_result.get()
-            pre_drug_b = drug_b_result.get()
+            drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_a, device2))
+            drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_b, device2))
+            pre_drug_a = drug_a_result.result()
+            pre_drug_b = drug_b_result.result()
             # pre_drug_a = data_utils.convert_smile_to_feature(pre_smiles_a, device2)
             # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
 
@@ -252,8 +252,8 @@ def run():
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 drugs = (pre_drug_a, pre_drug_b)
-                drug_a_result = pool.apply_async(data_utils.convert_smile_to_feature, (smiles_a, device2))
-                drug_b_result = pool.apply_async(data_utils.convert_smile_to_feature, (smiles_b, device2))
+                drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_a, device2))
+                drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_b, device2))
                 # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 # Model computations
@@ -265,8 +265,8 @@ def run():
                 loss = F.mse_loss(preds, ys)
                 loss.backward()
                 optimizer.step()
-                pre_drug_a = drug_a_result.get()
-                pre_drug_b = drug_b_result.get()
+                pre_drug_a = drug_a_result.result()
+                pre_drug_b = drug_b_result.result()
                 pre_local_batch = cur_local_batch
                 pre_local_labels = cur_local_labels
 
