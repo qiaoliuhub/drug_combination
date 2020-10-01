@@ -175,15 +175,16 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
-
-        src_list_splits = zip(src_list[i].split(self.split_size) for i in range(len(src_list)))
-        split_input_src_list = next(src_list_splits)
+        src_list_splits = []
+        for i in range(len(src_list)):
+            src_list_splits.append(src_list[0].split(self.split_size))
+        split_input_src_list = list(src_list_splits[j][0] for j in range(len(src_list)))
         input_src_list = split_input_src_list
         input_trg_list = split_input_src_list[::]
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
         output = []
 
-        for i, sub_src in enumerate(src_list_splits):
+        for i in range(len(src_list_splits[0])):
 
             if drugs is not None and self.drugs_on_the_side:
                 sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
@@ -193,7 +194,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             cat_output = cat(tuple(output_list), dim=1)
             output.append(self.out(cat_output))
 
-            split_input_src_list = sub_src
+            split_input_src_list = list(src_list_splits[j][i+1] for j in range(len(src_list)))
             input_src_list = split_input_src_list
             input_trg_list = split_input_src_list[::]
             output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
