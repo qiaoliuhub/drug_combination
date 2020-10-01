@@ -254,7 +254,7 @@ def run():
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
                 pre_drug_a, pre_drug_b = [], []
-                for i in range(len(pre_smiles_a)):
+                for i in range(len(drug_a_result)):
                     pre_drug_a.append(drug_a_result[i].result())
                     pre_drug_b.append(drug_b_result[i].result())
                 drugs = (pre_drug_a, pre_drug_b)
