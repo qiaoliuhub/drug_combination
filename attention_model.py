@@ -178,7 +178,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
         pdb.set_trace()
         src_list_splits = zip(src_list[i].split(self.split_size) for i in range(len(src_list)))
-        split_input_src_list = list(next(src_list_splits))
+        split_input_src_list = next(src_list_splits)
         input_src_list = split_input_src_list
         input_trg_list = split_input_src_list[::]
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
@@ -194,13 +194,13 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             cat_output = cat(tuple(output_list), dim=1)
             output.append(self.out(cat_output))
 
-            split_input_src_list = list(sub_src)
+            split_input_src_list = sub_src
             input_src_list = split_input_src_list
             input_trg_list = split_input_src_list[::]
             output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
 
         if drugs is not None and self.drugs_on_the_side:
-            sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
+            sub_drugs_a, sub_drugs_b = drugs[0][-1], drugs[1][-1]
             drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
             drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
             output_list += [drug_a_embed, drug_b_embed]
