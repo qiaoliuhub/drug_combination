@@ -172,7 +172,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
 
     def forward(self, *src_list, trg_list=None, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
-
+        
+        pdb.set_trace()
         input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
         if trg_list is None:
             trg_list = src_list

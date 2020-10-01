@@ -250,6 +250,7 @@ def run():
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
+                pdb.set_trace()
                 pre_drug_a = drug_a_result.result()
                 pre_drug_b = drug_b_result.result()
                 drugs = (pre_drug_a, pre_drug_b)
@@ -271,7 +272,7 @@ def run():
 
                 train_total_loss += loss.item()
 
-                n_iter = 100
+                n_iter = 50
                 if train_i % n_iter == 0:
                     sample_size = len(train_index) + 2* len(evaluation_index)
                     p = int(100 * train_i * setting.batch_size/sample_size)

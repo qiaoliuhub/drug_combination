@@ -238,7 +238,7 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
-            TIME = True
+            TIME = False
             # Training
             for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
                 train_i += 1
@@ -251,9 +251,9 @@ def run():
                     wrapped = wrapper(data_utils.convert_smile_to_feature, smiles = smiles_a, device = device2)
                     print(timeit.timeit(wrapped, number=10))
                     TIME = False
+
                 drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                pdb.set_trace()
                 drugs = (drug_a, drug_b)
                 # Model computations
                 preds = drug_model(*local_batch, drugs = drugs)
