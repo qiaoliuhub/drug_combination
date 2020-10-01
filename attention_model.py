@@ -9,6 +9,7 @@ import setting
 from attention_main import use_cuda, device2
 from CustomizedLinear import CustomizedLinear
 from neural_fingerprint import NeuralFingerprint
+from torch import device
 import pdb
 
 def get_clones(module, N):
@@ -155,9 +156,10 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, drugs_on_the_side = False, classifier = False):
 
+        self.device1 = device('cuda:0')
+        self.device2 = device('cuda:1')
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks, linear_only = linear_only)
-        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))]) \
-                           + setting.single_repsonse_feature_length
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         if drugs_on_the_side:
             self.drugs_on_the_side = drugs_on_the_side
             out_input_length += 2*setting.drug_emb_dim
@@ -165,29 +167,48 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         self.linear_only = linear_only
         self.classifier = classifier
         self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
+        self.split_size = 16
 
 
-    def forward(self, *src_list, trg_list=None, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
+    def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
-        input_src_list = src_list[:-1] if setting.single_repsonse_feature_length != 0 else src_list
-        if trg_list is None:
-            trg_list = src_list
-        input_trg_list = trg_list[:-1] if setting.single_repsonse_feature_length != 0 else trg_list
+
+        src_list_splits = zip(src_list[i].split(self.split_size) for i in range(len(src_list)))
+        split_input_src_list = list(next(src_list_splits))
+        input_src_list = split_input_src_list
+        input_trg_list = split_input_src_list[::]
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
-        single_response_feature_list = []
-        if setting.single_repsonse_feature_length != 0:
-            single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
+        output = []
+
+        for i, sub_src in enumerate(src_list_splits):
+
+            if drugs is not None and self.drugs_on_the_side:
+                sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
+                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device1)
+                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device1)
+                output_list += [drug_a_embed, drug_b_embed]
+            cat_output = cat(tuple(output_list), dim=1)
+            output.append(self.out(cat_output))
+
+            split_input_src_list = list(sub_src)
+            input_src_list = split_input_src_list
+            input_trg_list = split_input_src_list[::]
+            output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
+
         if drugs is not None and self.drugs_on_the_side:
-            drug_a_embed = torch.sum(self.drug_fp_a(drugs[0]), dim = 1)
-            drug_b_embed = torch.sum(self.drug_fp_b(drugs[1]), dim = 1)
-            cat_output = cat(tuple(output_list + single_response_feature_list + [drug_a_embed, drug_b_embed]), dim=1)
-        output = self.out(cat_output)
+            sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1)
+            output_list += [drug_a_embed, drug_b_embed]
+        cat_output = cat(tuple(output_list), dim=1)
+        output.append(self.out(cat_output))
+        output = torch.cat(output)
         if self.classifier:
             # output = F.log_softmax(output, dim = -1)
-            output = F.softmax(output, dim = -1)
+            output = F.softmax(output, dim=-1)
         return output
 
 class LastFC(nn.Module):
