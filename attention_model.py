@@ -177,7 +177,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
         pdb.set_trace()
-        src_list_splits = zip(src_list[i].split(self.split_size) for i in range(len(src_list)))
+        src_list_splits = zip([src_list[i].split(self.split_size) for i in range(len(src_list))])
         split_input_src_list = next(src_list_splits)
         input_src_list = split_input_src_list
         input_trg_list = split_input_src_list[::]
