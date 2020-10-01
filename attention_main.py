@@ -101,8 +101,8 @@ def prepare_model(reorder_tensor, entrez_set):
     for best_n, best_m in best_drug_model.named_modules():
         if best_n == "out":
             best_m.register_forward_hook(drug_drug.input_hook)
-    drug_model = drug_model.to(device2)
-    best_drug_model = best_drug_model.to(device2)
+    # drug_model = drug_model.to(device2)
+    # best_drug_model = best_drug_model.to(device2)
     if USE_wandb:
         wandb.watch(drug_model, log="all")
     return drug_model, best_drug_model

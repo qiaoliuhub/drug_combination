@@ -94,14 +94,14 @@ class TransposeMultiTransformers(nn.Module):
             num_of_linear_module = setting.n_feature_type[i] if setting.one_linear_per_dim else 1
 
             for j in range(num_of_linear_module):
-                self.linear_layers.append(CustomizedLinear(masks[i])) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
-                self.norms.append(Norm(d_model_list[i]))
-                self.dropouts.append(nn.Dropout(p=dropout))
+                self.linear_layers.append(CustomizedLinear(masks[i]).to(device("cuda:0"))) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]).to(device("cuda:0")))
+                self.norms.append(Norm(d_model_list[i]).to(device("cuda:0")))
+                self.dropouts.append(nn.Dropout(p=dropout).to(device("cuda:0")))
 
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
-            self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout))
+            self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout).to(device("cuda:0")))
 
     def forward(self, src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = False):
 
@@ -163,14 +163,14 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         if drugs_on_the_side:
             self.drugs_on_the_side = drugs_on_the_side
             out_input_length += 2*setting.drug_emb_dim
-        self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
+        self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout).to(self.device1)
         self.linear_only = linear_only
         self.classifier = classifier
         self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
-        self.split_size = 16
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
+        self.split_size = 32
 
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
@@ -188,8 +188,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
             if drugs is not None and self.drugs_on_the_side:
                 sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
-                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device1)
-                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device1)
+                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device2)
+                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device2)
                 output_list += [drug_a_embed, drug_b_embed]
             cat_output = cat(tuple(output_list), dim=1)
             output.append(self.out(cat_output))
@@ -201,8 +201,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
         if drugs is not None and self.drugs_on_the_side:
             sub_drugs_a, sub_drugs_b = drugs[0][-1], drugs[1][-1]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device2)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device2)
             output_list += [drug_a_embed, drug_b_embed]
         cat_output = cat(tuple(output_list), dim=1)
         output.append(self.out(cat_output))

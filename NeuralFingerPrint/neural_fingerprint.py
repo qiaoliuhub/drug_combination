@@ -28,7 +28,7 @@ class NeuralFingerprint(nn.Module):
         self.device = device
         layers_sizes = [node_size] + conv_layer_sizes
         for input_size in layers_sizes:
-            self.out_layers.append(nn.Linear(input_size, output_size))
+            self.out_layers.append(nn.Linear(input_size, output_size).to(device))
         for prev_size, next_size in zip(layers_sizes[:-1], layers_sizes[1:]):
             self.conv_layers.append(
                 GraphDegreeConv(prev_size, edge_size, next_size, degree_list, device, batch_normalize=batch_normalize))
