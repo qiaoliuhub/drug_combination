@@ -27,7 +27,7 @@ import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 import concurrent.futures
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=20)
 
 USE_wandb = False
 if USE_wandb:
@@ -236,9 +236,12 @@ def run():
 
             training_iter = iter(training_generator)
             (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
-            pdb.set_trace()
-            drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_a), device = device2)
-            drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_b), device = device2)
+            drug_a_result, drug_b_result = [], []
+            for i in range(0, len(pre_smiles_a), len(pre_smiles_a)//16):
+                drug_a_result.append(executor.submit(data_utils.convert_smile_to_feature,
+                                                (pre_smiles_a[i:i+len(pre_smiles_a)//16]), device = device("cuda:2")))
+                drug_b_result.append(executor.submit(data_utils.convert_smile_to_feature,
+                                                (pre_smiles_b[i:i+len(pre_smiles_a)//16]), device = device("cuda:2")))
             # pre_drug_a = data_utils.convert_smile_to_feature(pre_smiles_a, device2)
             # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
 
@@ -250,12 +253,18 @@ def run():
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                pdb.set_trace()
-                pre_drug_a = drug_a_result.result()
-                pre_drug_b = drug_b_result.result()
+                pre_drug_a, pre_drug_b = [], []
+                for i in range(len(pre_smiles_a)):
+                    pre_drug_a.append(drug_a_result[i].result())
+                    pre_drug_b.append(drug_b_result[i].result())
                 drugs = (pre_drug_a, pre_drug_b)
-                drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_a), device = device2)
-                drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_b), device = device2)
+                for i in range(0, len(pre_smiles_a), len(pre_smiles_a) // 16):
+                    drug_a_result.append(executor.submit(data_utils.convert_smile_to_feature,
+                                                         (pre_smiles_a[i:i + len(pre_smiles_a) // 16]),
+                                                         device=device("cuda:2")))
+                    drug_b_result.append(executor.submit(data_utils.convert_smile_to_feature,
+                                                         (pre_smiles_b[i:i + len(pre_smiles_a) // 16]),
+                                                         device=device("cuda:2")))
                 # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 # Model computations
