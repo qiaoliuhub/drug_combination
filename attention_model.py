@@ -164,8 +164,11 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
         self.classifier = classifier
-        self.drug_fp = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
+        self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=device2)
+        self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=device2)
+
 
     def forward(self, *src_list, trg_list=None, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
@@ -178,8 +181,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         if setting.single_repsonse_feature_length != 0:
             single_response_feature_list = [src_list[-1].contiguous().view(-1, setting.single_repsonse_feature_length)]
         if drugs is not None and self.drugs_on_the_side:
-            drug_a_embed = torch.sum(self.drug_fp(drugs[0]), dim = 1)
-            drug_b_embed = torch.sum(self.drug_fp(drugs[1]), dim = 1)
+            drug_a_embed = torch.sum(self.drug_fp_a(drugs[0]), dim = 1)
+            drug_b_embed = torch.sum(self.drug_fp_b(drugs[1]), dim = 1)
             cat_output = cat(tuple(output_list + single_response_feature_list + [drug_a_embed, drug_b_embed]), dim=1)
         output = self.out(cat_output)
         if self.classifier:

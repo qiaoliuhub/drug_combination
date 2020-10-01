@@ -19,11 +19,11 @@ class Node(object):
         data: Node payload (default None)
     """
 
-    def __init__(self, ntype, ext_id, data=None):
+    def __init__(self, ntype, ext_id, data=None, neighbors = None):
         self.ntype = ntype
         self.ext_id = ext_id
         self.data = data
-        self.neighbors = set()
+        self.neighbors = set() if neighbors is None else neighbors
 
     def __str__(self):
         return ":".join([self.ext_id, self.ntype])
@@ -141,15 +141,15 @@ class Molecules(object):
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """
         for ntype in ['atom', 'bond']:
-            new_nodes = subgraph.get_node_list(ntype)[::]
+            new_nodes = subgraph.get_node_list(ntype)
             for node in new_nodes:
-                node.ext_id = node_id(prefix, node.ext_id)
+                new_node = Node(node.ntype, node_id(prefix, node.ext_id), node.data, set(node.neighbors))
                 if ntype == 'atom':
-                    self.atom_dict[node.ext_id] = node
-                    self.atom_list.append(node)
+                    self.atom_dict[node.ext_id] = new_node
+                    self.atom_list.append(new_node)
                 elif ntype == 'bond':
-                    self.bond_dict[node.ext_id] = node
-                    self.bond_list.append(node)
+                    self.bond_dict[node.ext_id] = new_node
+                    self.bond_list.append(new_node)
 
     def get_node_list(self, ntype):
         if ntype == 'atom':
