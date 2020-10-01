@@ -143,15 +143,15 @@ class Molecules(object):
     def add_subgraph(self, subgraph, prefix):
         """ Add a sub-graph to the current graph. """
         for ntype in ['atom', 'bond']:
-            new_nodes = subgraph.get_node_list(ntype)
+            new_nodes = subgraph.get_node_list(ntype)[::]
             for node in new_nodes:
-                new_node = Node(node.ntype, node_id(prefix, node.ext_id), node.data, set(node.neighbors))
+                node.ext_id = node_id(prefix, node.ext_id)
                 if ntype == 'atom':
-                    self.atom_dict[node.ext_id] = new_node
-                    self.atom_list.append(new_node)
+                    self.atom_dict[node.ext_id] = node
+                    self.atom_list.append(node)
                 elif ntype == 'bond':
-                    self.bond_dict[node.ext_id] = new_node
-                    self.bond_list.append(new_node)
+                    self.bond_dict[node.ext_id] = node
+                    self.bond_list.append(node)
 
     def get_node_list(self, ntype):
         if ntype == 'atom':
