@@ -239,9 +239,9 @@ def run():
             drug_a_result, drug_b_result = [], []
             for i in range(0, len(pre_smiles_a), len(pre_smiles_a)//16):
                 drug_a_result.append(executor.submit(data_utils.convert_smile_to_feature,
-                                                (pre_smiles_a[i:i+len(pre_smiles_a)//16]), device = device("cuda:2")))
+                                                (pre_smiles_a[i:i+len(pre_smiles_a)//16]), device = device("cuda:1")))
                 drug_b_result.append(executor.submit(data_utils.convert_smile_to_feature,
-                                                (pre_smiles_b[i:i+len(pre_smiles_a)//16]), device = device("cuda:2")))
+                                                (pre_smiles_b[i:i+len(pre_smiles_a)//16]), device = device("cuda:1")))
             # pre_drug_a = data_utils.convert_smile_to_feature(pre_smiles_a, device2)
             # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
 
@@ -261,10 +261,10 @@ def run():
                 for i in range(0, len(pre_smiles_a), len(pre_smiles_a) // 16):
                     drug_a_result.append(executor.submit(data_utils.convert_smile_to_feature,
                                                          (pre_smiles_a[i:i + len(pre_smiles_a) // 16]),
-                                                         device=device("cuda:2")))
+                                                         device=device("cuda:1")))
                     drug_b_result.append(executor.submit(data_utils.convert_smile_to_feature,
                                                          (pre_smiles_b[i:i + len(pre_smiles_a) // 16]),
-                                                         device=device("cuda:2")))
+                                                         device=device("cuda:1")))
                 # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 # Model computations
