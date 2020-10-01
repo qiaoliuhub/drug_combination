@@ -171,12 +171,12 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2)
-        self.split_size = 16
+        self.split_size = 32
 
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
-
+        pdb.set_trace()
         src_list_splits = zip(src_list[i].split(self.split_size) for i in range(len(src_list)))
         split_input_src_list = list(next(src_list_splits))
         input_src_list = split_input_src_list
