@@ -235,7 +235,8 @@ def run():
             train_i = 0
 
             training_iter = iter(training_generator)
-            pre_local_batch, pre_smiles_a, pre_smiles_b, pre_local_labels = next(training_iter)
+            (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
+            pdb.set_trace()
             drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_a, device2))
             drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_b, device2))
             pre_drug_a = drug_a_result.result()
@@ -244,13 +245,15 @@ def run():
             # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
 
             # Training
-            for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_generator:
+            for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_iter:
                 train_i += 1
                 # Transfer to GPU
                 local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
+                pre_drug_a = drug_a_result.result()
+                pre_drug_b = drug_b_result.result()
                 drugs = (pre_drug_a, pre_drug_b)
                 drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_a, device2))
                 drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_b, device2))
@@ -265,8 +268,6 @@ def run():
                 loss = F.mse_loss(preds, ys)
                 loss.backward()
                 optimizer.step()
-                pre_drug_a = drug_a_result.result()
-                pre_drug_b = drug_b_result.result()
                 pre_local_batch = cur_local_batch
                 pre_local_labels = cur_local_labels
 
