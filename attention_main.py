@@ -237,10 +237,8 @@ def run():
             training_iter = iter(training_generator)
             (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
             pdb.set_trace()
-            drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_a, device2))
-            drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_b, device2))
-            pre_drug_a = drug_a_result.result()
-            pre_drug_b = drug_b_result.result()
+            drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_a, {"device": device2}))
+            drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (pre_smiles_b, {"device": device2}))
             # pre_drug_a = data_utils.convert_smile_to_feature(pre_smiles_a, device2)
             # pre_drug_b = data_utils.convert_smile_to_feature(pre_smiles_b, device2)
 
@@ -255,8 +253,8 @@ def run():
                 pre_drug_a = drug_a_result.result()
                 pre_drug_b = drug_b_result.result()
                 drugs = (pre_drug_a, pre_drug_b)
-                drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_a, device2))
-                drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_b, device2))
+                drug_a_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_a, {"device": device2}))
+                drug_b_result = executor.submit(data_utils.convert_smile_to_feature, (cur_smiles_b, {"device": device2}))
                 # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
                 # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
                 # Model computations
