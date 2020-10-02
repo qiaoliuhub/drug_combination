@@ -257,17 +257,17 @@ def run():
                 # Model computations
                 preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
-                prediction_on_cpu = preds.cpu().numpy()
-                # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                #                                   prediction_on_cpu[sample_size:]], axis=0)
-                mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
+                ys = local_labels.contiguous().view(-1)
                 assert preds.size(0) == ys.size(0)
                 # loss = F.nll_loss(preds, ys)
                 criterion = torch.nn.BCEWithLogitsLoss()
                 loss = criterion(preds, ys.float())
                 loss.backward()
+                prediction_on_cpu = preds.cpu().numpy()
+                # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                #                                   prediction_on_cpu[sample_size:]], axis=0)
+                mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
                 optimizer.step()
                 all_preds.append(mean_prediction_on_cpu)
                 all_ys.append(local_labels_on_cpu)
