@@ -27,7 +27,7 @@ sys.path.append(path.dirname(path.realpath(__file__)))
 import data_utils
 import timeit
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:

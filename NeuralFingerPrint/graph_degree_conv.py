@@ -23,6 +23,7 @@ class GraphDegreeConv(nn.Module):
     def forward(self, graph, node_repr, edge_repr, neighbor_by_degree):
         degree_activation_list = []
         for d_idx, degree_layer in enumerate(self.degree_layer_list):
+            pdb.set_trace()
             degree = self.degree_list[d_idx]
             node_neighbor_list = neighbor_by_degree[degree]['node']
             edge_neighbor_list = neighbor_by_degree[degree]['edge']

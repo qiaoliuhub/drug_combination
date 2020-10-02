@@ -141,7 +141,7 @@ single_response_feature = []#['single_response']
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
 update_features = False
-output_FF_layers = [2000, 1000, 1]
+output_FF_layers = [200, 100, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
