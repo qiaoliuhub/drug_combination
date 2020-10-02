@@ -237,10 +237,14 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
+            all_preds = []
+            all_ys = []
             # Training
             for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
                 train_i += 1
                 # Transfer to GPU
+                local_labels_on_cpu = np.array(local_labels).reshape(-1)
+                sample_size = local_labels_on_cpu.shape[0]
                 local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
@@ -252,6 +256,10 @@ def run():
                 # Model computations
                 preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
+                prediction_on_cpu = preds.cpu().numpy()
+                # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                #                                   prediction_on_cpu[sample_size:]], axis=0)
+                mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
                 assert preds.size(0) == ys.size(0)
@@ -260,6 +268,8 @@ def run():
                 loss = criterion(preds, ys.float())
                 loss.backward()
                 optimizer.step()
+                all_preds.append(mean_prediction_on_cpu)
+                all_ys.append(local_labels_on_cpu)
 
                 train_total_loss += loss.item()
 
@@ -274,69 +284,74 @@ def run():
                     train_total_loss = 0
                     cur_epoch_train_loss.append(avg_loss)
 
-            scheduler.step()
+            all_preds = np.concatenate(all_preds)
+            all_ys = np.concatenate(all_ys).astype(int)
+            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+            val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
+
 
             ### Evaluation
-            val_train_i = 0
-            save_data_num = 0
-
+            # val_train_i = 0
+            # save_data_num = 0
+            #
             with torch.set_grad_enabled(False):
 
                 drug_model.eval()
-                all_preds = []
-                all_ys = []
-                for (local_batch, smiles_a, smiles_b), local_labels in eval_train_generator:
-                    val_train_i += 1
-                    local_labels_on_cpu = np.array(local_labels).reshape(-1)
-                    sample_size = local_labels_on_cpu.shape[0]
-                    local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-                    # Transfer to GPU
-                    local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
-                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
-                    local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-                    # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                    # drugs = (drug_a, drug_b)
+            #     all_preds = []
+            #     all_ys = []
+            #     for (local_batch, smiles_a, smiles_b), local_labels in eval_train_generator:
+            #         val_train_i += 1
+            #         local_labels_on_cpu = np.array(local_labels).reshape(-1)
+            #         sample_size = local_labels_on_cpu.shape[0]
+            #         local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+            #         # Transfer to GPU
+            #         local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
+            #         reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
+            #         local_batch = reorder_tensor.get_reordered_narrow_tensor()
+            #         # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+            #         # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
+            #         # drugs = (drug_a, drug_b)
+            #
+            #         if epoch == setting.n_epochs - 1:
+            #
+            #             #### save intermediate results in the last traing epoch
+            #             preds = best_drug_model(*local_batch)
+            #             cur_train_start_index = setting.batch_size * (val_train_i - 1)
+            #             cur_train_stop_index = min(setting.batch_size * (val_train_i), len(training_index_list))
+            #             for n, m in best_drug_model.named_modules():
+            #                 if n == "out":
+            #                     catoutput = m._value_hook[0]
+            #             for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
+            #
+            #                 if not path.exists("train_" + setting.catoutput_output_type + "_datas"):
+            #                     mkdir("train_" + setting.catoutput_output_type + "_datas")
+            #                 save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
+            #                                                            str(train_combination) + '.pt'))
+            #                 save_data_num += 1
+            #
+            #         # preds = drug_model(*local_batch, drugs = drugs)
+            #         # Model computations
+            #         preds = drug_model(*local_batch)
+            #         preds = preds.contiguous().view(-1)
+            #         preds = torch.sigmoid(preds)
+            #         assert preds.size(0) == local_labels.size(0)
+            #         prediction_on_cpu = preds.cpu().numpy()
+            #         # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+            #         #                                   prediction_on_cpu[sample_size:]], axis=0)
+            #         mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
+            #         all_preds.append(mean_prediction_on_cpu)
+            #         all_ys.append(local_labels_on_cpu)
 
-                    if epoch == setting.n_epochs - 1:
-
-                        #### save intermediate results in the last traing epoch
-                        preds = best_drug_model(*local_batch)
-                        cur_train_start_index = setting.batch_size * (val_train_i - 1)
-                        cur_train_stop_index = min(setting.batch_size * (val_train_i), len(training_index_list))
-                        for n, m in best_drug_model.named_modules():
-                            if n == "out":
-                                catoutput = m._value_hook[0]
-                        for i, train_combination in enumerate(training_index_list[cur_train_start_index: cur_train_stop_index]):
-
-                            if not path.exists("train_" + setting.catoutput_output_type + "_datas"):
-                                mkdir("train_" + setting.catoutput_output_type + "_datas")
-                            save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
-                                                                       str(train_combination) + '.pt'))
-                            save_data_num += 1
-
-                    # preds = drug_model(*local_batch, drugs = drugs)
-                    # Model computations
-                    preds = drug_model(*local_batch)
-                    preds = preds.contiguous().view(-1)
-                    preds = torch.sigmoid(preds)
-                    assert preds.size(0) == local_labels.size(0)
-                    prediction_on_cpu = preds.cpu().numpy()
-                    # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                    #                                   prediction_on_cpu[sample_size:]], axis=0)
-                    mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                    all_preds.append(mean_prediction_on_cpu)
-                    all_ys.append(local_labels_on_cpu)
-
-                logger.debug("saved {!r} data points".format(save_data_num))
-                all_preds = np.concatenate(all_preds)
-                all_ys = np.concatenate(all_ys).astype(int)
-                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-                val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
-                if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
-
+            #    logger.debug("saved {!r} data points".format(save_data_num))
+            #     all_preds = np.concatenate(all_preds)
+            #     all_ys = np.concatenate(all_ys).astype(int)
+            #     assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+            #     val_train_roc_auc = roc_auc_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            #     val_train_pr_auc = average_precision_score(all_ys.reshape(-1), all_preds.reshape(-1))
+            #     if epoch == setting.n_epochs - 1 and setting.save_final_pred:
+            #         save(np.concatenate((np.array(training_index_list).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
+            #
                 val_i = 0
                 all_preds = []
                 all_ys = []
@@ -378,6 +393,8 @@ def run():
                 if best_auc < val_pr_auc:
                     best_auc = val_pr_auc
                     best_drug_model.load_state_dict(drug_model.state_dict())
+
+            scheduler.step()
 
             logger.debug("Training roc_auc is {0!r}, Training pr_auc is {1!r}".format(val_train_roc_auc, val_train_pr_auc))
             logger.debug("Validation roc_auc is {0!r}, Validation pr_auc is {1!r}".format(val_roc_auc, val_pr_auc))
