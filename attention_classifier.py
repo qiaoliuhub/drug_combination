@@ -237,7 +237,6 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
-            TIME = True
             # Training
             for (local_batch, smiles_a, smiles_b), local_labels in training_generator:
                 train_i += 1
@@ -246,15 +245,12 @@ def run():
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                if TIME:
-                    wrapped = wrapper(data_utils.convert_smile_to_feature, smiles = smiles_a, device = device2)
-                    print(timeit.timeit(wrapped, number=10))
-                    TIME = False
-                drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-                drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                drugs = (drug_a, drug_b)
+                # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+                # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
+                # drugs = (drug_a, drug_b)
+                # preds = drug_model(*local_batch, drugs = drugs)
                 # Model computations
-                preds = drug_model(*local_batch, drugs = drugs)
+                preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
@@ -298,9 +294,10 @@ def run():
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-                    drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                    drugs = (drug_a, drug_b)
+                    # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+                    # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
+                    # drugs = (drug_a, drug_b)
+
                     if epoch == setting.n_epochs - 1:
 
                         #### save intermediate results in the last traing epoch
@@ -318,7 +315,9 @@ def run():
                                                                        str(train_combination) + '.pt'))
                             save_data_num += 1
 
-                    preds = drug_model(*local_batch, drugs = drugs)
+                    # preds = drug_model(*local_batch, drugs = drugs)
+                    # Model computations
+                    preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     preds = torch.sigmoid(preds)
                     assert preds.size(0) == local_labels.size(0)
@@ -352,10 +351,12 @@ def run():
                     local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-                    drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-                    drugs = (drug_a, drug_b)
-                    preds = drug_model(*local_batch, drugs = drugs)
+                    # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+                    # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
+                    # drugs = (drug_a, drug_b)
+                    # preds = drug_model(*local_batch, drugs = drugs)
+                    # Model computations
+                    preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     preds = torch.sigmoid(preds)
                     assert preds.size(0) == local_labels.size(0)
@@ -404,11 +405,12 @@ def run():
             local_batch, local_labels = local_batch.float().to(device2), local_labels.long().to(device2)
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
-            drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
-            drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
-            drugs = (drug_a, drug_b)
+            # drug_a = data_utils.convert_smile_to_feature(smiles_a, device2)
+            # drug_b = data_utils.convert_smile_to_feature(smiles_b, device2)
+            # drugs = (drug_a, drug_b)
+            # preds = drug_model(*local_batch, drugs = drugs)
             # Model computations
-            preds = best_drug_model(*local_batch, drugs = drugs)
+            preds = drug_model(*local_batch)
             preds = preds.contiguous().view(-1)
             preds = torch.sigmoid(preds)
             cur_test_start_index = test_params['batch_size'] * (test_i-1)
