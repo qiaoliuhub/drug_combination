@@ -264,7 +264,7 @@ def run():
                 criterion = torch.nn.BCEWithLogitsLoss()
                 loss = criterion(preds, ys.float())
                 loss.backward()
-                prediction_on_cpu = preds.cpu().numpy()
+                prediction_on_cpu = preds.detach().cpu().numpy()
                 # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
                 #                                   prediction_on_cpu[sample_size:]], axis=0)
                 mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
