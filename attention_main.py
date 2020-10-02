@@ -237,7 +237,7 @@ def run():
             all_ys = []
 
             training_iter = iter(training_generator)
-            (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
+            # (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
             # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
             #                                 pre_smiles_a, device = device("cuda:0"))
             # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
@@ -247,6 +247,8 @@ def run():
             for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_iter:
                 train_i += 1
                 # Transfer to GPU
+                pre_local_batch = cur_local_batch
+                pre_local_labels = cur_local_labels
                 local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
                 sample_size = local_labels_on_cpu.shape[-1]
                 local_labels_on_cpu = local_labels_on_cpu[:sample_size]
@@ -389,7 +391,7 @@ def run():
                 val_i = 0
 
                 validation_iter = iter(validation_generator)
-                (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(validation_iter)
+                # (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(validation_iter)
                 # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
                 #                                 pre_smiles_a, device=device("cuda:0"))
                 # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
@@ -398,6 +400,8 @@ def run():
                 for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in validation_iter:
 
                     val_i += 1
+                    pre_local_batch = cur_local_batch
+                    pre_local_labels = cur_local_labels
                     local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
                     sample_size = local_labels_on_cpu.shape[-1]
                     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
@@ -470,7 +474,7 @@ def run():
         all_ys = []
 
         test_iter = iter(test_generator)
-        (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(test_iter)
+        # (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(test_iter)
         # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
         #                                 pre_smiles_a, device=device("cuda:0"))
         # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
@@ -479,6 +483,8 @@ def run():
         for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in test_iter:
             # Transfer to GPU
             test_i += 1
+            pre_local_batch = cur_local_batch
+            pre_local_labels = cur_local_labels
             local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
             sample_size = local_labels_on_cpu.shape[-1]
             local_labels_on_cpu = local_labels_on_cpu[:sample_size]
