@@ -50,8 +50,8 @@ class Transformer(nn.Module):
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
-        flat_d_output, _ = torch.max(d_output, dim = -1)
-        #flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
+        #flat_d_output, _ = torch.max(d_output, dim = -1)
+        flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
 class FlexibleTransformer(Transformer):
@@ -95,14 +95,14 @@ class TransposeMultiTransformers(nn.Module):
             num_of_linear_module = setting.n_feature_type[i] if setting.one_linear_per_dim else 1
 
             for j in range(num_of_linear_module):
-                self.linear_layers.append(CustomizedLinear(masks[i]).to(device("cuda:0"))) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]).to(device("cuda:0")))
-                self.norms.append(Norm(d_model_list[i]).to(device("cuda:0")))
-                self.dropouts.append(nn.Dropout(p=dropout).to(device("cuda:0")))
+                self.linear_layers.append(CustomizedLinear(masks[i])) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+                self.norms.append(Norm(d_model_list[i]))
+                self.dropouts.append(nn.Dropout(p=dropout))
 
         self.transformer_list = nn.ModuleList()
         self.n_feature_type_list = n_feature_type_list
         for i in range(len(d_input_list)):
-            self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout).to(device("cuda:0")))
+            self.transformer_list.append(Transformer(n_feature_type_list[i] * setting.d_model_i, N, heads, dropout))
 
     def forward(self, src_list, trg_list=None, src_mask=None, trg_mask=None, low_dim = False):
 
@@ -160,55 +160,32 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         self.device1 = device('cuda:0')
         self.device2 = device('cuda:1')
         super().__init__(d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=masks, linear_only = linear_only)
-        out_input_length = sum([d_model_list[i] * n_feature_type_list[i]//3 for i in range(len(d_model_list))])
+        out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         if drugs_on_the_side:
             self.drugs_on_the_side = drugs_on_the_side
             out_input_length += 2*setting.drug_emb_dim
-        self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout).to(self.device1)
+        self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
         self.classifier = classifier
         self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
-        self.split_size = setting.batch_size
-
+                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
-        src_list_splits = []
-        for i in range(len(src_list)):
-            src_list_splits.append(src_list[0].split(self.split_size))
-        split_input_src_list = list(src_list_splits[j][0] for j in range(len(src_list)))
-        input_src_list = split_input_src_list
-        input_trg_list = split_input_src_list[::]
+        input_src_list = src_list
+        input_trg_list = src_list[::]
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
-        output = []
-
-        for i in range(len(src_list_splits[0])-1):
-
-            if drugs is not None and self.drugs_on_the_side:
-                pdb.set_trace()
-                sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
-                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device1)
-                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device1)
-                output_list += [drug_a_embed, drug_b_embed]
-            cat_output = cat(tuple(output_list), dim=1)
-            output.append(self.out(cat_output))
-
-            split_input_src_list = list(src_list_splits[j][i+1] for j in range(len(src_list)))
-            input_src_list = split_input_src_list
-            input_trg_list = split_input_src_list[::]
-            output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
 
         if drugs is not None and self.drugs_on_the_side:
-            sub_drugs_a, sub_drugs_b = drugs[0][-1], drugs[1][-1]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
+            sub_drugs_a, sub_drugs_b = drugs[0], drugs[1]
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1)
             output_list += [drug_a_embed, drug_b_embed]
+
         cat_output = cat(tuple(output_list), dim=1)
-        output.append(self.out(cat_output))
-        output = torch.cat(output)
+        output = self.out(cat_output)
         if self.classifier:
             # output = F.log_softmax(output, dim = -1)
             output = F.softmax(output, dim=-1)
