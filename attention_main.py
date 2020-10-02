@@ -92,9 +92,9 @@ def prepare_model(reorder_tensor, entrez_set):
 
     final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask,
-                                                  drugs_on_the_side=True)
+                                                  drugs_on_the_side=False)
     best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(),
-                                                       input_masks=final_mask, drugs_on_the_side=True)
+                                                       input_masks=final_mask, drugs_on_the_side=False)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
@@ -233,30 +233,36 @@ def run():
             cur_epoch_train_loss = []
             train_total_loss = 0
             train_i = 0
+            all_preds = []
+            all_ys = []
 
             training_iter = iter(training_generator)
             (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(training_iter)
-            drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                            pre_smiles_a, device = device("cuda:0"))
-            drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                            pre_smiles_b, device = device("cuda:0"))
+            # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+            #                                 pre_smiles_a, device = device("cuda:0"))
+            # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+            #                                 pre_smiles_b, device = device("cuda:0"))
 
             # Training
             for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_iter:
                 train_i += 1
                 # Transfer to GPU
+                local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
+                sample_size = local_labels_on_cpu.shape[-1]
+                local_labels_on_cpu = local_labels_on_cpu[:sample_size]
                 local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
                 local_batch = local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
                 reorder_tensor.load_raw_tensor(local_batch)
                 local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
-                drugs = (pre_drug_a, pre_drug_b)
-                drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                cur_smiles_a, device=device("cuda:0"))
-                drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                cur_smiles_b, device=device("cuda:0"))
+                # pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
+                # drugs = (pre_drug_a, pre_drug_b)
+                # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+                #                                 cur_smiles_a, device=device("cuda:0"))
+                # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+                #                                 cur_smiles_b, device=device("cuda:0"))
                 # Model computations
-                preds = drug_model(*local_batch, drugs = drugs)
+                # preds = drug_model(*local_batch, drugs = drugs)
+                preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
@@ -264,6 +270,16 @@ def run():
                 loss = F.mse_loss(preds, ys)
                 loss.backward()
                 optimizer.step()
+                prediction_on_cpu = preds.detach().cpu().numpy().reshape(-1)
+                # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                #                                   prediction_on_cpu[sample_size:]], axis=0)
+                mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
+                if setting.y_transform:
+                    local_labels_on_cpu, mean_prediction_on_cpu = \
+                        std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
+                        std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+                all_preds.append(mean_prediction_on_cpu)
+                all_ys.append(local_labels_on_cpu)
                 pre_local_batch = cur_local_batch
                 pre_local_labels = cur_local_labels
 
@@ -282,6 +298,14 @@ def run():
                     train_total_loss = 0
                     cur_epoch_train_loss.append(avg_loss)
 
+            all_preds = np.concatenate(all_preds)
+            all_ys = np.concatenate(all_ys)
+
+            assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+            val_train_loss = mean_squared_error(all_preds, all_ys)
+            val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+            val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+
             scheduler.step()
 
             ### Evaluation
@@ -294,70 +318,71 @@ def run():
                 all_preds = []
                 all_ys = []
 
-                eval_train_iter = iter(eval_train_generator)
-                (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(eval_train_iter)
-                drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                pre_smiles_a, device=device("cuda:0"))
-                drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                pre_smiles_b, device=device("cuda:0"))
-
-                for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in eval_train_iter:
-                    val_train_i += 1
-                    local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
-                    sample_size = local_labels_on_cpu.shape[-1]
-                    local_labels_on_cpu = local_labels_on_cpu[:sample_size]
-                    # Transfer to GPU
-                    local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
-                    # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
-                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
-                    local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
-                    drugs = (pre_drug_a, pre_drug_b)
-                    drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                    cur_smiles_a, device=device("cuda:0"))
-                    drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                    cur_smiles_b, device=device("cuda:0"))
-
-                    if epoch == setting.n_epochs - 1:
-                        #### save intermediate steps results
-                        preds = best_drug_model(*local_batch)
-                        cur_train_start_index = setting.batch_size * (val_train_i - 1)
-                        cur_train_stop_index = min(setting.batch_size * (val_train_i), len(partition['test1']))
-                        for n, m in best_drug_model.named_modules():
-                            if n == "out":
-                                catoutput = m._value_hook[0]
-                        for i, train_combination in enumerate(partition['test1'][cur_train_start_index: cur_train_stop_index]):
-
-                            if not path.exists("train_" + setting.catoutput_output_type + "_datas"):
-                                mkdir("train_" + setting.catoutput_output_type + "_datas")
-                            save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
-                                                                       str(train_combination) + '.pt'))
-                            save_data_num += 1
-                    preds = drug_model(*local_batch, drugs = drugs)
-                    preds = preds.contiguous().view(-1)
-                    assert preds.size(-1) == local_labels.size(-1)
-                    prediction_on_cpu = preds.cpu().numpy().reshape(-1)
-                    # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
-                    #                                   prediction_on_cpu[sample_size:]], axis=0)
-                    mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
-                    if setting.y_transform:
-                        local_labels_on_cpu, mean_prediction_on_cpu = \
-                            std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
-                            std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
-                    all_preds.append(mean_prediction_on_cpu)
-                    all_ys.append(local_labels_on_cpu)
-                    pre_local_batch = cur_local_batch
-                    pre_local_labels = cur_local_labels
-
-                logger.debug("saved {!r} data points".format(save_data_num))
-                all_preds = np.concatenate(all_preds)
-                all_ys = np.concatenate(all_ys)
-                assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
-                val_train_loss = mean_squared_error(all_preds, all_ys)
-                val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
-                if epoch == setting.n_epochs - 1 and setting.save_final_pred:
-                    save(np.concatenate((np.array(partition['test1']).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
+                # eval_train_iter = iter(eval_train_generator)
+                # (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(eval_train_iter)
+                # # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+                # #                                 pre_smiles_a, device=device("cuda:0"))
+                # # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+                # #                                 pre_smiles_b, device=device("cuda:0"))
+                #
+                # for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in eval_train_iter:
+                #     val_train_i += 1
+                #     local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
+                #     sample_size = local_labels_on_cpu.shape[-1]
+                #     local_labels_on_cpu = local_labels_on_cpu[:sample_size]
+                #     # Transfer to GPU
+                #     local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
+                #     # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
+                #     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
+                #     local_batch = reorder_tensor.get_reordered_narrow_tensor()
+                #     # pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
+                #     # drugs = (pre_drug_a, pre_drug_b)
+                #     # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+                #     #                                 cur_smiles_a, device=device("cuda:0"))
+                #     # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+                #     #                                 cur_smiles_b, device=device("cuda:0"))
+                #
+                #     if epoch == setting.n_epochs - 1:
+                #         #### save intermediate steps results
+                #         preds = best_drug_model(*local_batch)
+                #         cur_train_start_index = setting.batch_size * (val_train_i - 1)
+                #         cur_train_stop_index = min(setting.batch_size * (val_train_i), len(partition['test1']))
+                #         for n, m in best_drug_model.named_modules():
+                #             if n == "out":
+                #                 catoutput = m._value_hook[0]
+                #         for i, train_combination in enumerate(partition['test1'][cur_train_start_index: cur_train_stop_index]):
+                #
+                #             if not path.exists("train_" + setting.catoutput_output_type + "_datas"):
+                #                 mkdir("train_" + setting.catoutput_output_type + "_datas")
+                #             save(catoutput.narrow_copy(0,i,1), path.join("train_" + setting.catoutput_output_type + "_datas",
+                #                                                        str(train_combination) + '.pt'))
+                #             save_data_num += 1
+                #     # preds = drug_model(*local_batch, drugs = drugs)
+                #     preds = drug_model(*local_batch)
+                #     preds = preds.contiguous().view(-1)
+                #     assert preds.size(-1) == local_labels.size(-1)
+                #     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
+                #     # mean_prediction_on_cpu = np.mean([prediction_on_cpu[:sample_size],
+                #     #                                   prediction_on_cpu[sample_size:]], axis=0)
+                #     mean_prediction_on_cpu = prediction_on_cpu[:sample_size]
+                #     if setting.y_transform:
+                #         local_labels_on_cpu, mean_prediction_on_cpu = \
+                #             std_scaler.inverse_transform(local_labels_on_cpu.reshape(-1, 1) / 100), \
+                #             std_scaler.inverse_transform(mean_prediction_on_cpu.reshape(-1, 1) / 100)
+                #     all_preds.append(mean_prediction_on_cpu)
+                #     all_ys.append(local_labels_on_cpu)
+                #     pre_local_batch = cur_local_batch
+                #     pre_local_labels = cur_local_labels
+                #
+                # logger.debug("saved {!r} data points".format(save_data_num))
+                # all_preds = np.concatenate(all_preds)
+                # all_ys = np.concatenate(all_ys)
+                # assert len(all_preds) == len(all_ys), "predictions and labels are in different length"
+                # val_train_loss = mean_squared_error(all_preds, all_ys)
+                # val_train_pearson = pearsonr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                # val_train_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
+                # if epoch == setting.n_epochs - 1 and setting.save_final_pred:
+                #     save(np.concatenate((np.array(partition['test1']).reshape(-1,1), all_preds.reshape(-1,1), all_ys.reshape(-1,1)), axis=1), "prediction/prediction_" + setting.catoutput_output_type + "_training")
 
                 all_preds = []
                 all_ys = []
@@ -365,10 +390,10 @@ def run():
 
                 validation_iter = iter(validation_generator)
                 (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(validation_iter)
-                drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                pre_smiles_a, device=device("cuda:0"))
-                drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                pre_smiles_b, device=device("cuda:0"))
+                # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+                #                                 pre_smiles_a, device=device("cuda:0"))
+                # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+                #                                 pre_smiles_b, device=device("cuda:0"))
 
                 for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in validation_iter:
 
@@ -381,13 +406,14 @@ def run():
                     # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
                     reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
-                    pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
-                    drugs = (pre_drug_a, pre_drug_b)
-                    drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                    cur_smiles_a, device=device("cuda:0"))
-                    drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                                    cur_smiles_b, device=device("cuda:0"))
-                    preds = drug_model(*local_batch, drugs = drugs)
+                    # pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
+                    # drugs = (pre_drug_a, pre_drug_b)
+                    # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+                    #                                 cur_smiles_a, device=device("cuda:0"))
+                    # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+                    #                                 cur_smiles_b, device=device("cuda:0"))
+                    # preds = drug_model(*local_batch, drugs = drugs)
+                    preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -445,10 +471,10 @@ def run():
 
         test_iter = iter(test_generator)
         (pre_local_batch, pre_smiles_a, pre_smiles_b), pre_local_labels = next(test_iter)
-        drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                        pre_smiles_a, device=device("cuda:0"))
-        drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                        pre_smiles_b, device=device("cuda:0"))
+        # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+        #                                 pre_smiles_a, device=device("cuda:0"))
+        # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+        #                                 pre_smiles_b, device=device("cuda:0"))
 
         for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in test_iter:
             # Transfer to GPU
@@ -460,14 +486,15 @@ def run():
             # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
             reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
             local_batch = reorder_tensor.get_reordered_narrow_tensor()
-            pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
-            drugs = (pre_drug_a, pre_drug_b)
-            drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
-                                            cur_smiles_a, device=device("cuda:0"))
-            drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
-                                            cur_smiles_b, device=device("cuda:0"))
+            # pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
+            # drugs = (pre_drug_a, pre_drug_b)
+            # drug_a_result = executor.submit(data_utils.convert_smile_to_feature,
+            #                                 cur_smiles_a, device=device("cuda:0"))
+            # drug_b_result = executor.submit(data_utils.convert_smile_to_feature,
+            #                                 cur_smiles_b, device=device("cuda:0"))
             # Model computations
-            preds = best_drug_model(*local_batch, drugs = drugs)
+            # preds = best_drug_model(*local_batch, drugs = drugs)
+            preds = drug_model(*local_batch)
             preds = preds.contiguous().view(-1)
             cur_test_start_index = len(test_index_list) // 4 * (test_i-1)
             cur_test_stop_index = min(len(test_index_list) // 4 * (test_i), len(test_index_list))
