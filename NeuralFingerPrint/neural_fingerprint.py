@@ -55,7 +55,6 @@ class NeuralFingerprint(nn.Module):
             })
 
         def fingerprint_update(linear, node_repr):
-            pdb.set_trace()
             atom_activations = F.softmax(linear(node_repr.float()))
             return atom_activations
 

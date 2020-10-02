@@ -171,7 +171,7 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
         self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device2).to(self.device2)
-        self.split_size = 32
+        self.split_size = setting.batch_size
 
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
@@ -185,12 +185,13 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         output_list = super().forward(input_src_list, input_trg_list, low_dim=low_dim)
         output = []
 
-        for i in range(len(src_list_splits[0])):
+        for i in range(len(src_list_splits[0])-1):
 
             if drugs is not None and self.drugs_on_the_side:
+                pdb.set_trace()
                 sub_drugs_a, sub_drugs_b = drugs[0][i], drugs[1][i]
-                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device2)
-                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device2)
+                drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1).to(self.device1)
+                drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1).to(self.device1)
                 output_list += [drug_a_embed, drug_b_embed]
             cat_output = cat(tuple(output_list), dim=1)
             output.append(self.out(cat_output))
@@ -202,8 +203,8 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
         if drugs is not None and self.drugs_on_the_side:
             sub_drugs_a, sub_drugs_b = drugs[0][-1], drugs[1][-1]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device2)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device2)
+            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim=1).to(self.device1)
+            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim=1).to(self.device1)
             output_list += [drug_a_embed, drug_b_embed]
         cat_output = cat(tuple(output_list), dim=1)
         output.append(self.out(cat_output))
