@@ -13,12 +13,12 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.0001
+start_lr = 0.0002
 lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 700
-batch_size = 512
+batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
 data_specific = '_2401_0.5_norm_drug_target_36_norm_gd_singlet_whole_network_no_mean_cl50_all_more_cl_0.8'
@@ -141,7 +141,7 @@ single_response_feature = []#['single_response']
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
 update_features = False
-output_FF_layers = [200, 100, 1]
+output_FF_layers = [200, 100, 50, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:

@@ -29,7 +29,7 @@ import data_utils
 import concurrent.futures
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-USE_wandb = False
+USE_wandb = True
 if USE_wandb:
     wandb.init(project="Drug combination")
 else:
