@@ -278,6 +278,6 @@ def get_multi_models(inputs_lengths, input_masks = None, drugs_on_the_side = Fal
 
     for p in model.parameters():
         if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
+            nn.init.kaiming_normal_(p)
 
     return model

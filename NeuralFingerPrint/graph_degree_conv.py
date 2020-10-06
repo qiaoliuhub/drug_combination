@@ -38,12 +38,15 @@ class GraphDegreeConv(nn.Module):
                     # (#nodes, #degree, node_size + edge_size)
                     stacked = torch.cat([node_neighbor_repr, edge_neighbor_repr], dim=2)
                     summed = torch.sum(stacked, dim=1, keepdim=False)
+                    ## summed = Adjacency matrix * H
                     degree_activation = degree_layer(summed)
+                    ## degree activation = (Adjacency matrix * H) * W
                     degree_activation_list.append(degree_activation)
         neighbor_repr = torch.cat(degree_activation_list, dim=0)
         self_repr = self.linear(node_repr)
         # size = (#nodes, #output_size)
         activations = self_repr + neighbor_repr + self.bias.expand_as(self_repr)
+        # activations = (Adjacency matrix +  I) * H
         if self.batch_normalize:
             activations = self.normalize(activations)
         return F.relu(activations)
