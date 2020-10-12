@@ -1143,23 +1143,23 @@ class DataPreprocessor:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
     @classmethod
-    def reg_train_eval_test_split(cls):
+    def reg_train_eval_test_split(cls, fold = 'fold'):
 
         if cls.synergy_score is None:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
         if setting.index_in_literature:
             evluation_fold = random.choice(range(1,5))
-            test_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == 0].index)
-            evaluation_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == evluation_fold].index)
-            train_index = np.array(cls.synergy_score[(cls.synergy_score['fold'] != 0) &
-                                                     (cls.synergy_score['fold'] != evluation_fold)].index)
+            test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == 0].index)
+            evaluation_index = np.array(cls.synergy_score[cls.synergy_score[fold] == evluation_fold].index)
+            train_index = np.array(cls.synergy_score[(cls.synergy_score[fold] != 0) &
+                                                     (cls.synergy_score[fold] != evluation_fold)].index)
 
         else:
-            train_index, test_index = drug_drug.split_data(cls.synergy_score, group_df=cls.synergy_score, group_col=['fold'])
+            train_index, test_index = drug_drug.split_data(cls.synergy_score, group_df=cls.synergy_score, group_col=[fold])
             train_index, evaluation_index = drug_drug.split_data(cls.synergy_score,
                                                                  group_df=cls.synergy_score[train_index],
-                                                                 group_col=['fold'])
+                                                                 group_col=[fold])
 
         train_index = np.concatenate([train_index, train_index + cls.synergy_score.shape[0]])
         evaluation_index_2 = evaluation_index + cls.synergy_score.shape[0]
@@ -1170,17 +1170,17 @@ class DataPreprocessor:
         yield train_index, test_index, test_index_2, evaluation_index, evaluation_index_2
 
     @classmethod
-    def cv_train_eval_test_split_generator(cls):
+    def cv_train_eval_test_split_generator(cls, fold = 'fold'):
 
         if cls.synergy_score is None:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
         assert setting.index_in_literature, "Cross validation is only available when index_in_literature is set to True"
         for evluation_fold in range(1,5):
-            test_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == 0].index)
-            evaluation_index = np.array(cls.synergy_score[cls.synergy_score['fold'] == evluation_fold].index)
-            train_index = np.array(cls.synergy_score[(cls.synergy_score['fold'] != 0) &
-                                                     (cls.synergy_score['fold'] != evluation_fold)].index)
+            test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == 0].index)
+            evaluation_index = np.array(cls.synergy_score[cls.synergy_score[fold] == evluation_fold].index)
+            train_index = np.array(cls.synergy_score[(cls.synergy_score[fold] != 0) &
+                                                     (cls.synergy_score[fold] != evluation_fold)].index)
             train_index = np.concatenate([train_index + cls.synergy_score.shape[0], train_index])
             evaluation_index_2 = evaluation_index + cls.synergy_score.shape[0]
             test_index_2 = test_index + cls.synergy_score.shape[0]
