@@ -548,6 +548,8 @@ def run():
         test_loss = mean_squared_error(mean_prediction, mean_y)
         test_pearson = pearsonr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
         test_spearman = spearmanr(mean_y.reshape(-1), mean_prediction.reshape(-1))[0]
+        if not path.exists('prediction'):
+            mkdir('prediction')
         save(np.concatenate((np.array(test_index_list[:sample_size]).reshape(-1,1), mean_prediction.reshape(-1, 1), mean_y.reshape(-1, 1)), axis=1),
              "prediction/prediction_" + setting.catoutput_output_type + "_testing")
 
