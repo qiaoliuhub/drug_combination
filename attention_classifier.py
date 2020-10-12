@@ -29,7 +29,7 @@ import timeit
 
 USE_wandb = True
 if USE_wandb:
-    wandb.init(project="Drug combination norm")
+    wandb.init(project="Drug combination")
 else:
     environ["WANDB_MODE"] = "dryrun"
 

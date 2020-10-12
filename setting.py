@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_netexpress'
+data_specific = '_gene_dependencies_norm'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -108,7 +108,7 @@ tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time())
 combine_gene_expression_renew = False
 gene_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"CCLE.tsv"
 backup_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"GDSC.tsv"
-netexpress_df = "Gene_expression_raw/netexpress_35_.tsv"
+netexpress_df = "Gene_expression_raw/netexpress_norm_35.tsv"
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw_norm')
@@ -130,7 +130,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['netexpress']
+cellline_features = ['gene_dependence']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
