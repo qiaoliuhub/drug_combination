@@ -92,9 +92,9 @@ def prepare_model(reorder_tensor, entrez_set):
 
     final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask,
-                                                  drugs_on_the_side=False)
+                                                  drugs_on_the_side=True)
     best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(),
-                                                       input_masks=final_mask, drugs_on_the_side=False)
+                                                       input_masks=final_mask, drugs_on_the_side=True)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)

@@ -13,7 +13,7 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.001
+start_lr = 0.0005
 lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_gene_dependencies_norm'
+data_specific = '_netexpress'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -108,10 +108,10 @@ tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time())
 combine_gene_expression_renew = False
 gene_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"CCLE.tsv"
 backup_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"GDSC.tsv"
-netexpress_df = "Gene_expression_raw/netexpress_scores_norm.tsv"
+netexpress_df = "Gene_expression_raw/netexpress_35_.tsv"
 
 raw_expression_data_renew = False
-processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw')
+processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw_norm')
 
 combine_drug_target_renew = False
 combine_drug_target_matrix = os.path.join(working_dir, 'chemicals', 'combine_drug_target_matrix.csv')
@@ -130,7 +130,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['gene_dependence']
+cellline_features = ['netexpress']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -150,7 +150,7 @@ d_model_i = 1
 d_model_j = 200
 d_model = d_model_i * d_model_j
 attention_heads = 1
-attention_dropout = 0.0
+attention_dropout = 0.1
 n_layers = 1 # This has to be 1
 
 load_old_model = False
