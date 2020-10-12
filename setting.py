@@ -13,7 +13,7 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.0002
+start_lr = 0.001
 lr_decay = 0.00001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
@@ -21,7 +21,7 @@ n_epochs = 700
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_2401_0.5_norm_drug_target_36_norm_gd_singlet_whole_network_no_mean_cl50_all_more_cl_0.8'
+data_specific = '_gene_dependencies_norm'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -63,7 +63,7 @@ drug_emb_dim = 128
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35_norm.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
@@ -106,8 +106,8 @@ if not os.path.exists(os.path.join(working_dir, 'tensorboard_logs')):
 tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time()))
 
 combine_gene_expression_renew = False
-gene_expression = "Gene_expression_raw/normalized_gene_expession_35.tsv" #"CCLE.tsv"
-backup_expression = "Gene_expression_raw/normalized_gene_expession_35.tsv" #"GDSC.tsv"
+gene_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"CCLE.tsv"
+backup_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"GDSC.tsv"
 netexpress_df = "Gene_expression_raw/netexpress_scores_norm.tsv"
 
 raw_expression_data_renew = False
@@ -141,16 +141,16 @@ single_response_feature = []#['single_response']
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
 update_features = False
-output_FF_layers = [200, 100, 50, 1]
+output_FF_layers = [1000, 500, 1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
 d_model_i = 1
-d_model_j = 400
+d_model_j = 200
 d_model = d_model_i * d_model_j
 attention_heads = 1
-attention_dropout = 0.2
+attention_dropout = 0.0
 n_layers = 1 # This has to be 1
 
 load_old_model = False
