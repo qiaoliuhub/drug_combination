@@ -448,6 +448,9 @@ def run():
                 val_spearman = spearmanr(all_preds.reshape(-1), all_ys.reshape(-1))[0]
 
                 if best_cv_pearson_score < val_pearson:
+                    logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+                    logger.debug('saved a model, sample size {0!r}'.format(len(all_preds)))
+                    logger.debug('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
                     best_cv_pearson_score = val_pearson
                     best_drug_model.load_state_dict(drug_model.state_dict())
 

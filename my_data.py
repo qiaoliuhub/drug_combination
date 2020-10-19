@@ -1143,16 +1143,16 @@ class DataPreprocessor:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
     @classmethod
-    def reg_train_eval_test_split(cls, fold = 'fold'):
+    def reg_train_eval_test_split(cls, fold = 'fold', test_fold = 0):
 
         if cls.synergy_score is None:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
         if setting.index_in_literature:
             evluation_fold = random.choice(range(1,5))
-            test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == 0].index)
+            test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == test_fold].index)
             evaluation_index = np.array(cls.synergy_score[cls.synergy_score[fold] == evluation_fold].index)
-            train_index = np.array(cls.synergy_score[(cls.synergy_score[fold] != 0) &
+            train_index = np.array(cls.synergy_score[(cls.synergy_score[fold] != test_fold) &
                                                      (cls.synergy_score[fold] != evluation_fold)].index)
 
         else:
