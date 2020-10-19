@@ -13,15 +13,15 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.0005
-lr_decay = 0.00001
+start_lr = 0.0001
+lr_decay = 0.0001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
-n_epochs = 700
+n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_gene_dependencies_ori'
+data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + '_2000_lv_drug'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -141,16 +141,16 @@ single_response_feature = []#['single_response']
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
 update_features = False
-output_FF_layers = [1000, 500, 1]
+output_FF_layers = [2000, 1000,  1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
 d_model_i = 1
-d_model_j = 200
+d_model_j = 400
 d_model = d_model_i * d_model_j
 attention_heads = 1
-attention_dropout = 0.1
+attention_dropout = 0.2
 n_layers = 1 # This has to be 1
 
 load_old_model = False
