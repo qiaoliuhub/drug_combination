@@ -21,7 +21,7 @@ n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + '_2000_lv_drug'
+data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + str(400)
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
