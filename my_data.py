@@ -6,7 +6,6 @@ import torch
 from torch.utils import data
 import network_propagation
 import drug_drug
-import random
 from sklearn.preprocessing import StandardScaler
 from torch import save
 import random_test
@@ -1147,7 +1146,7 @@ class DataPreprocessor:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
         if setting.index_in_literature:
-            evluation_fold = random.choice(range(1,5))
+            evluation_fold = np.random.choice(range(1,5))
             test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == test_fold].index)
             evaluation_index = np.array(cls.synergy_score[cls.synergy_score[fold] == evluation_fold].index)
             train_index = np.array(cls.synergy_score[(cls.synergy_score[fold] != test_fold) &
