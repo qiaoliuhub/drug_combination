@@ -27,7 +27,9 @@ import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 import concurrent.futures
+import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+
 
 USE_wandb = True
 if USE_wandb:
@@ -40,7 +42,6 @@ use_cuda = cuda.is_available()
 if use_cuda:
     device2 = device("cuda:0")
     cuda.set_device(device2)
-    cuda.empty_cache()
 else:
     device2 = device("cpu")
 
@@ -53,6 +54,14 @@ fh.setFormatter(fmt=formatter)
 logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
+
+def set_seed(seed):
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 def get_final_index():
 
@@ -180,6 +189,7 @@ def run():
     slice_indices = drug_features_length + drug_features_length + cellline_features_length
     reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
+    set_seed(7)
     drug_model, best_drug_model = prepare_model(reorder_tensor, entrez_set)
 
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
@@ -225,6 +235,7 @@ def run():
         test_index_list = partition['test1']
 
         logger.debug("Start training")
+        set_seed(7)
 
         for epoch in range(setting.n_epochs):
 
@@ -245,8 +256,13 @@ def run():
 
             # Training
             for (cur_local_batch, cur_smiles_a, cur_smiles_b), cur_local_labels in training_iter:
+
                 train_i += 1
                 # Transfer to GPU
+                if epoch == 0 and train_i == 1:
+                    print('--------------------------------cur local labels---------------------------------')
+                    print(cur_local_labels)
+                    print('--------------------------------cur local labels---------------------------------')
                 pre_local_batch = cur_local_batch
                 pre_local_labels = cur_local_labels
                 local_labels_on_cpu = np.array(pre_local_labels).reshape(-1)
