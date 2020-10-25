@@ -165,8 +165,9 @@ class ChemFP(nn.Module):
         self.device = device
 
     def forward(self, drug_names):
-        input = torch.from_numpy(self.feature_map.loc[drug_names].values).to(self.device)
-        return self.linear(input)
+        pdb.set_trace()
+        input_drug = torch.from_numpy(self.feature_map.loc[drug_names].values).to(self.device)
+        return self.linear(input_drug)
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 

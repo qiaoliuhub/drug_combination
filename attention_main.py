@@ -55,7 +55,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def set_seed(seed=42):
+def set_seed(seed=3000):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(seed)
@@ -207,7 +207,7 @@ def run():
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
     logger.debug("Spliting data ...")
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='new_drug_fold', test_fold = 0):
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='fold', test_fold = 0):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
