@@ -55,7 +55,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def set_seed(seed=3000):
+def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(seed)

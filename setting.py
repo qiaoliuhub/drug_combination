@@ -21,7 +21,7 @@ n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + str(400) + 'rw_tanh_chemfp'
+data_specific = '_gene_dependencies_norm' + str(start_lr) + str(lr_decay) + str(400) + 'rw_chemfp'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -65,7 +65,7 @@ drug_emb_dim = 128
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35_norm.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
@@ -94,7 +94,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean_tanh')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -142,7 +142,7 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = True
+update_features = False
 output_FF_layers = [2000, 1000,  1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
