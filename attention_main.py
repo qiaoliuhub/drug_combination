@@ -101,9 +101,9 @@ def prepare_model(reorder_tensor, entrez_set):
 
     final_mask = None
     drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(), input_masks=final_mask,
-                                                  drugs_on_the_side=False)
+                                                  drugs_on_the_side=True)
     best_drug_model = attention_model.get_multi_models(reorder_tensor.get_reordered_slice_indices(),
-                                                       input_masks=final_mask, drugs_on_the_side=False)
+                                                       input_masks=final_mask, drugs_on_the_side=True)
     for n, m in drug_model.named_modules():
         if n == "out":
             m.register_forward_hook(drug_drug.input_hook)
@@ -210,7 +210,8 @@ def run():
     for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='new_drug_fold', test_fold = 0):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
-        final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
+        final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
+                                                             test_index_2, evaluation_index, evaluation_index_2))]
 
         ori_Y = Y
         std_scaler.fit(Y[train_index])
@@ -282,8 +283,9 @@ def run():
                 # drug_a = data_utils.convert_smile_to_feature(cur_smiles_a, device=device("cuda:0"))
                 # drug_b = data_utils.convert_smile_to_feature(cur_smiles_b, device=device("cuda:0"))
                 # drugs = (drug_a, drug_b)
-                # preds = drug_model(*local_batch, drugs = drugs)
-                preds = drug_model(*local_batch)
+                drugs = (cur_smiles_a, cur_smiles_b)
+                preds = drug_model(*local_batch, drugs = drugs)
+                # preds = drug_model(*local_batch)
                 preds = preds.contiguous().view(-1)
                 ys = local_labels.contiguous().view(-1)
                 optimizer.zero_grad()
@@ -438,8 +440,9 @@ def run():
                     # drug_a = data_utils.convert_smile_to_feature(cur_smiles_a, device=device("cuda:0"))
                     # drug_b = data_utils.convert_smile_to_feature(cur_smiles_b, device=device("cuda:0"))
                     # drugs = (drug_a, drug_b)
-                    # preds = drug_model(*local_batch, drugs = drugs)
-                    preds = drug_model(*local_batch)
+                    drugs = (cur_smiles_a, cur_smiles_b)
+                    preds = drug_model(*local_batch, drugs=drugs)
+                    # preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
                     assert preds.size(-1) == local_labels.size(-1)
                     prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -527,8 +530,9 @@ def run():
             # drug_a = data_utils.convert_smile_to_feature(cur_smiles_a, device=device("cuda:0"))
             # drug_b = data_utils.convert_smile_to_feature(cur_smiles_b, device=device("cuda:0"))
             # drugs = (drug_a, drug_b)
-            # preds = best_drug_model(*local_batch, drugs = drugs)
-            preds = best_drug_model(*local_batch)
+            drugs = (cur_smiles_a, cur_smiles_b)
+            preds = best_drug_model(*local_batch, drugs=drugs)
+            # preds = best_drug_model(*local_batch)
             preds = preds.contiguous().view(-1)
             cur_test_start_index = len(test_index_list) // 4 * (test_i-1)
             cur_test_stop_index = min(len(test_index_list) // 4 * (test_i), len(test_index_list))
