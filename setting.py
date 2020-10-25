@@ -14,14 +14,14 @@ F_repr_feature_length = 1000
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
 start_lr = 0.0001
-lr_decay = 0.0001
+lr_decay = 0.00003
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + str(400)
+data_specific = '_gene_dependencies_norm' + str(start_lr) + str(lr_decay) + str(400) + 'rw'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -55,6 +55,8 @@ catoutput_intput_type = [data_specific + "_dt"]
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
+neural_fp = False
+chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three.csv')
 drug_input_dim = {'atom': 62, 'bond': 6}
 conv_size = [16, 16]
 degree = [0, 1, 2, 3, 4, 5]
@@ -63,7 +65,7 @@ drug_emb_dim = 128
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
 synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35_norm.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')

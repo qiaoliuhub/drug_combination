@@ -33,7 +33,7 @@ executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 USE_wandb = True
 if USE_wandb:
-    wandb.init(project="Drug combination hyper")
+    wandb.init(project="Drug combination randomseed")
 else:
     environ["WANDB_MODE"] = "dryrun"
 
@@ -55,7 +55,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def set_seed(seed):
+def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(seed)
@@ -189,7 +189,7 @@ def run():
     slice_indices = drug_features_length + drug_features_length + cellline_features_length
     reorder_tensor = drug_drug.reorganize_tensor(slice_indices, setting.arrangement, 2)
     logger.debug("the layout of all features is {!r}".format(reorder_tensor.get_reordered_slice_indices()))
-    set_seed(7)
+    set_seed()
     drug_model, best_drug_model = prepare_model(reorder_tensor, entrez_set)
 
     optimizer = torch.optim.Adam(drug_model.parameters(), lr=setting.start_lr, weight_decay=setting.lr_decay,
@@ -207,7 +207,7 @@ def run():
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
     logger.debug("Spliting data ...")
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='fold', test_fold = 0):
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='new_drug_fold', test_fold = 0):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
@@ -235,7 +235,7 @@ def run():
         test_index_list = partition['test1']
 
         logger.debug("Start training")
-        set_seed(7)
+        set_seed()
 
         for epoch in range(setting.n_epochs):
 
