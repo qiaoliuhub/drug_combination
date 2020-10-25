@@ -210,7 +210,8 @@ def run():
     for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='drug_fold'):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
-        final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
+        final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
+                                                             test_index_2, evaluation_index, evaluation_index_2))]
 
         ori_Y = Y
         std_scaler.fit(Y[train_index])

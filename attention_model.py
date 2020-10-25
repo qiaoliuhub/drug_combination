@@ -10,6 +10,7 @@ from attention_main import use_cuda, device2
 from CustomizedLinear import CustomizedLinear
 from neural_fingerprint import NeuralFingerprint
 from torch import device
+import pandas as pd
 import pdb
 
 def get_clones(module, N):
@@ -152,6 +153,20 @@ class TransposeMultiTransformers(nn.Module):
                 output_list.append(self.transformer_list[i](src_list_linear[i], trg_list_linear[i], low_dim=low_dim))
         return output_list
 
+class ChemFP(nn.Module):
+
+    feature_map = None
+    def __init__(self, device):
+        super().__init__()
+        if self.feature_map is None:
+            self.feature_map = pd.read_csv(setting.chemfp_drug_feature_file, index_col = 0)
+        self.linear = nn.Linear(self.feature_map.shape[1], setting.drug_emb_dim)
+        self.device = device
+
+    def forward(self, drug_names):
+        input = torch.from_numpy(self.feature_map.loc[drug_names].values).to(self.device)
+        return self.linear(input)
+
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
     def __init__(self, d_input_list, d_model_list, n_feature_type_list, N, heads, dropout, masks=None, linear_only = False, drugs_on_the_side = False, classifier = False):
@@ -166,10 +181,14 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
         self.classifier = classifier
-        self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
+        if setting.neural_fp:
+            self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
-        self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
+            self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
                                          setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
+        else:
+            self.drug_fp_a = ChemFP(device=self.device1)
+            self.drug_fp_b = ChemFP(device=self.device1)
 
     def forward(self, *src_list, drugs = None, src_mask=None, trg_mask=None, low_dim = True):
 
@@ -179,8 +198,11 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
         if drugs is not None and self.drugs_on_the_side:
             sub_drugs_a, sub_drugs_b = drugs[0], drugs[1]
-            drug_a_embed = torch.sum(self.drug_fp_a(sub_drugs_a), dim = 1)
-            drug_b_embed = torch.sum(self.drug_fp_b(sub_drugs_b), dim = 1)
+            drug_a_embed = self.drug_fp_a(sub_drugs_a)
+            drug_b_embed = self.drug_fp_b(sub_drugs_b)
+            if setting.neural_fp:
+                drug_a_embed = torch.sum(drug_a_embed, dim = 1)
+                drug_b_embed = torch.sum(drug_b_embed, dim = 1)
             output_list += [drug_a_embed, drug_b_embed]
 
         cat_output = cat(tuple(output_list), dim=1)
