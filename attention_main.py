@@ -31,7 +31,7 @@ import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
-USE_wandb = True
+USE_wandb = False
 if USE_wandb:
     wandb.init(project="Drug combination randomseed")
 else:
