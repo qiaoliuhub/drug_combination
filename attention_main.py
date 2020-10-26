@@ -31,7 +31,7 @@ import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
-USE_wandb = False
+USE_wandb = True
 if USE_wandb:
     wandb.init(project="Drug combination randomseed")
 else:
@@ -55,7 +55,7 @@ logger = logging.getLogger("Drug Combination")
 logger.addHandler(fh)
 logger.setLevel(logging.DEBUG)
 
-def set_seed(seed=42):
+def set_seed(seed=3000):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.manual_seed(seed)

@@ -201,7 +201,6 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
             sub_drugs_a, sub_drugs_b = drugs[0], drugs[1]
             drug_a_embed = self.drug_fp_a(sub_drugs_a)
             drug_b_embed = self.drug_fp_b(sub_drugs_b)
-            pdb.set_trace()
             if setting.neural_fp:
                 drug_a_embed = torch.sum(drug_a_embed, dim = 1)
                 drug_b_embed = torch.sum(drug_b_embed, dim = 1)
