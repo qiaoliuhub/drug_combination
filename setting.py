@@ -57,6 +57,7 @@ dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 neural_fp = False
 chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three.csv')
+chem_linear_layers = [4096, 2048, 1024, 128]
 drug_input_dim = {'atom': 62, 'bond': 6}
 conv_size = [16, 16]
 degree = [0, 1, 2, 3, 4, 5]

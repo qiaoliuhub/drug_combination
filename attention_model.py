@@ -160,12 +160,22 @@ class ChemFP(nn.Module):
         super().__init__()
         if self.feature_map is None:
             self.feature_map = pd.read_csv(setting.chemfp_drug_feature_file, index_col = 0)
-        self.linear = nn.Linear(self.feature_map.shape[1], setting.drug_emb_dim)
+        linear_layers = []
+        pre_unit_dim = self.feature_map.shape[1]
+        for i, hidden_unit in enumerate(setting.chem_linear_layers):
+            linear_layers.append(nn.Linear(pre_unit_dim, hidden_unit))
+            linear_layers.append(nn.ReLU())
+            linear_layers.append(nn.Dropout(p=setting.attention_dropout))
+            pre_unit_dim = hidden_unit
+        linear_layers.append(nn.Linear(pre_unit_dim, setting.drug_emb_dim))
+        linear_layers.append(nn.ReLU())
+        linear_layers.append(nn.Dropout(p=setting.attention_dropout))
+        self.linears = nn.Sequential(*linear_layers)
         self.device = device
 
     def forward(self, drug_names):
         input_feature = torch.from_numpy(self.feature_map.loc[list(drug_names)].values).float().to(self.device)
-        return self.linear(input_feature)
+        return self.linears(input_feature)
 
 class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
 
