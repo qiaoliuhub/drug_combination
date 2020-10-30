@@ -30,7 +30,7 @@ import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-random_seed = 42
+random_seed = 333
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -651,7 +651,6 @@ if __name__ == "__main__":
 
     USE_wandb = True
     if USE_wandb:
-        pdb.set_trace()
         wandb.init(project="Drug combination hyper",
                    name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:30] + '_' + str(random_seed),
                    notes=setting.data_specific)
