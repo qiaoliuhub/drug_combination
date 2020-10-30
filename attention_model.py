@@ -53,7 +53,7 @@ class Transformer(nn.Module):
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
         # e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         # d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
-        d_output = self.attn(src, trg, trg)
+        d_output, _ = self.attn(src, trg, trg)
         flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
