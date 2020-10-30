@@ -26,15 +26,6 @@ import data_utils
 import timeit
 import pdb
 
-USE_wandb = True
-if USE_wandb:
-    pdb.set_trace()
-    wandb.init(project="Drug combination hyper",
-               name = setting.run_dir + '_' + setting.data_specific[:30],
-               notes = setting.data_specific)
-else:
-    environ["WANDB_MODE"] = "dryrun"
-
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
 if use_cuda:
@@ -525,6 +516,15 @@ def run():
 
 
 if __name__ == "__main__":
+
+    USE_wandb = True
+    if USE_wandb:
+        pdb.set_trace()
+        wandb.init(project="Drug combination hyper",
+                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:30],
+                   notes=setting.data_specific)
+    else:
+        environ["WANDB_MODE"] = "dryrun"
 
     try:
         run()
