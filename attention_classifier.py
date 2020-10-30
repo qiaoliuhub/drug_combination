@@ -29,7 +29,9 @@ import timeit
 
 USE_wandb = True
 if USE_wandb:
-    wandb.init(project="Drug combination hyper")
+    wandb.init(project="Drug combination hyper",
+               name = setting.run_dir + '_' + setting.data_specific[:30],
+               notes = setting.data_specific)
 else:
     environ["WANDB_MODE"] = "dryrun"
 
