@@ -30,7 +30,7 @@ import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-random_seed = 333
+random_seed = 7
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
