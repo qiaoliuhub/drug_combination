@@ -26,9 +26,11 @@ sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 sys.path.append(path.dirname(path.realpath(__file__)))
 import data_utils
 import timeit
+import pdb
 
 USE_wandb = True
 if USE_wandb:
+    pdb.set_trace()
     wandb.init(project="Drug combination hyper",
                name = setting.run_dir + '_' + setting.data_specific[:30],
                notes = setting.data_specific)
