@@ -14,14 +14,14 @@ F_repr_feature_length = 1000
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
 start_lr = 0.0001
-lr_decay = 0.00003
+lr_decay = 0.0001
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_netexpress_' + str(start_lr) + str(lr_decay) + str(400) + 'rw_chemfp'
+data_specific = '_gene_dependencies_ori' + str(start_lr) + str(lr_decay) + str(400) + '_0.5'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -55,7 +55,7 @@ catoutput_intput_type = [data_specific + "_dt"]
 #{"ecfp": 2048, "phy": 960, "single": 15, "proteomics": 107}
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
-neural_fp = False
+neural_fp = True
 chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three.csv')
 chem_linear_layers = [2048]
 drug_input_dim = {'atom': 62, 'bond': 6}
@@ -95,7 +95,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -111,7 +111,7 @@ tensorboard_log = os.path.join(working_dir, "tensorboard_logs/{}".format(time())
 combine_gene_expression_renew = False
 gene_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"CCLE.tsv"
 backup_expression = "Gene_expression_raw/normalized_gene_expession_35_norm.tsv" #"GDSC.tsv"
-netexpress_df = "Gene_expression_raw/netexpress_35_.tsv"
+netexpress_df = "Gene_expression_raw/netexpress_norm_35.tsv"
 
 raw_expression_data_renew = False
 processed_expression_raw = os.path.join(working_dir, 'Gene_expression_raw', 'processed_expression_raw_norm')
@@ -133,7 +133,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['netexpress']
+cellline_features = ['gene_dependence']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
