@@ -31,14 +31,6 @@ import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 random_seed = 42
-USE_wandb = True
-if USE_wandb:
-    pdb.set_trace()
-    wandb.init(project="Drug combination hyper",
-               name = setting.run_dir.rsplit('/',1)[1] + '_' + setting.data_specific[:30] + '_' + str(random_seed),
-               notes = setting.data_specific)
-else:
-    environ["WANDB_MODE"] = "dryrun"
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -657,6 +649,15 @@ def run():
 
 if __name__ == "__main__":
 
+    USE_wandb = True
+    if USE_wandb:
+        pdb.set_trace()
+        wandb.init(project="Drug combination hyper",
+                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:30] + '_' + str(random_seed),
+                   notes=setting.data_specific)
+    else:
+        environ["WANDB_MODE"] = "dryrun"
+        
     try:
         run()
         logger.debug("new directory %s" % setting.run_dir)
