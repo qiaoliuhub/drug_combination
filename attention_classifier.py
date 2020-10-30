@@ -521,7 +521,7 @@ if __name__ == "__main__":
     USE_wandb = True
     if USE_wandb:
         wandb.init(project="Drug combination hyper",
-                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:30],
+                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15],
                    notes=setting.data_specific)
     else:
         environ["WANDB_MODE"] = "dryrun"

@@ -652,11 +652,11 @@ if __name__ == "__main__":
     USE_wandb = True
     if USE_wandb:
         wandb.init(project="Drug combination hyper",
-                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:30] + '_' + str(random_seed),
+                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
                    notes=setting.data_specific)
     else:
         environ["WANDB_MODE"] = "dryrun"
-        
+
     try:
         run()
         logger.debug("new directory %s" % setting.run_dir)
