@@ -25,13 +25,13 @@ sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
 import data_utils
 import timeit
 
-# USE_wandb = True
-# if USE_wandb:
-#     wandb.init(project="Drug combination hyper",
-#                name = setting.run_dir + '_' + setting.data_specific[:30],
-#                notes = setting.data_specific)
-# else:
-#     environ["WANDB_MODE"] = "dryrun"
+USE_wandb = True
+if USE_wandb:
+    wandb.init(project="Drug combination hyper",
+               name = setting.run_dir + '_' + setting.data_specific[:30],
+               notes = setting.data_specific)
+else:
+    environ["WANDB_MODE"] = "dryrun"
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
