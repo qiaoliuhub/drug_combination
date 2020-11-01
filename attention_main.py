@@ -30,7 +30,7 @@ import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-random_seed = 7
+random_seed = 42
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -131,6 +131,7 @@ def prepare_splitted_dataset(partition, labels):
 
     logger.debug("Preparing datasets ... ")
     training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+    # training_set = my_data.MyDataset(partition['train'], labels)
     train_params = {'batch_size': setting.batch_size,
                     'shuffle': True}
     training_generator = data.DataLoader(training_set, **train_params)
@@ -142,8 +143,8 @@ def prepare_splitted_dataset(partition, labels):
                          'shuffle': False}
     eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
-    # validation_set = my_data.MyDataset(partition['eval1'] + partition['eval2'], labels)
     validation_set = my_data.MyDataset(partition['test1'], labels)
+    # validation_set = my_data.MyDataset(partition['eval1'], labels)
     eval_params = {'batch_size': len(partition['test1'])//4,
                    'shuffle': False}
     validation_generator = data.DataLoader(validation_set, **eval_params)
