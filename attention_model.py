@@ -46,16 +46,19 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
-        # self.encoder = Encoder(d_model, N, heads, dropout)
-        # self.decoder = Decoder(d_model, N, heads, dropout)
+        self.encoder = Encoder(16, N, heads, dropout)
+        self.decoder = Decoder(16, N, heads, dropout)
 
         self.expand_dim_linear = nn.Linear(d_model, 16)
-        self.attn = MultiheadAttention(16, num_heads = heads, dropout = dropout)
+        # self.attn = MultiheadAttention(16, num_heads = heads, dropout = dropout)
+        self.shrink_dim_linear = nn.Linear(16, d_model)
 
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
-        # e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
-        # d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
-        d_output, _ = self.attn(src, trg, trg)
+        src = self.expand_dim_linear(src)
+        e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
+        d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
+        # d_output, _ = self.attn(src, trg, trg)
+        d_output = self.shrink_dim_linear(d_output)
         flat_d_output = d_output.contiguous().view(-1, d_output.size(-2)*d_output.size(-1))
         return flat_d_output
 
@@ -97,11 +100,9 @@ class TransposeMultiTransformers(nn.Module):
         self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
 
-            num_of_linear_module = setting.n_feature_type[i] if setting.one_linear_per_dim else 1
-
+            num_of_linear_module = setting.n_feature_type[i]
             for j in range(num_of_linear_module):
-                self.linear_layers.append(CustomizedLinear(masks[i])) if masks[i] is not None \
-                    else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+                self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
                 self.norms.append(Norm(d_model_list[i]))
                 self.dropouts.append(nn.Dropout(p=dropout))
 
