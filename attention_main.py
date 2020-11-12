@@ -203,7 +203,7 @@ def run():
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
     logger.debug("Spliting data ...")
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='cl_fold', test_fold = 1):
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='fold', test_fold = 0):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
@@ -653,7 +653,7 @@ if __name__ == "__main__":
     USE_wandb = True
     if USE_wandb:
         wandb.init(project="Drug combination hyper",
-                name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
+                name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed) + '_cv0',
                    notes=setting.data_specific)
     else:
         environ["WANDB_MODE"] = "dryrun"
