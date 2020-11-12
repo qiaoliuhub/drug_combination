@@ -13,15 +13,15 @@ F_repr_feature_length = 1000
 
 activation_method =["relu"]
 dropout = [0.2, 0.1, 0.1]
-start_lr = 0.0001
-lr_decay = 0.0001
+start_lr = 0.00003
+lr_decay = 0.00002
 model_type = 'mlp'
 FC_layout = [256] * 1 + [64] * 1
 n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_0.5__gene_dependencies_ori'
+data_specific = '_0.8__gene_dependencies_cl_norm'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -57,16 +57,16 @@ dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 neural_fp = True
 chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three.csv')
-chem_linear_layers = [2048]
+chem_linear_layers = [2048, 1024]
 drug_input_dim = {'atom': 62, 'bond': 6}
 conv_size = [16, 16]
 degree = [0, 1, 2, 3, 4, 5]
 drug_emb_dim = 128
 
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
-synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
+synergy_score = os.path.join(working_dir, 'synergy_score', 'synergy_score_2.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
+cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35_norm.csv')
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(working_dir, 'F_repr', 'sel_F_drug_sample.csv')
@@ -95,7 +95,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.5_norm_36_whole_network_no_mean')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -143,17 +143,17 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2]]
-update_features = False
+update_features = True
 output_FF_layers = [2000, 1000,  1]
 n_feature_type = [3]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
 d_model_i = 1
-d_model_j = 400
+d_model_j = 512
 d_model = d_model_i * d_model_j
 attention_heads = 1
-attention_dropout = 0.2
+attention_dropout = 0.1
 n_layers = 1 # This has to be 1
 
 load_old_model = False

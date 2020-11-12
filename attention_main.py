@@ -144,13 +144,13 @@ def prepare_splitted_dataset(partition, labels):
     eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
     validation_set = my_data.MyDataset(partition['test1'], labels)
-    # validation_set = my_data.MyDataset(partition['eval1'], labels)
+    # validatin_set = my_data.MyDataset(partition['eval1'], labels)
     eval_params = {'batch_size': len(partition['test1'])//4,
                    'shuffle': False}
     validation_generator = data.DataLoader(validation_set, **eval_params)
 
     test_set = my_data.MyDataset(partition['test1'], labels)
-    test_index_list = partition['test1']  # + partition['test2']
+    test_index_list = partition['test1']
     logger.debug("Test data length: {!r}".format(len(test_index_list)))
     pickle.dump(test_index_list, open("test_index_list", "wb+"))
     test_params = {'batch_size': len(test_index_list) // 4,
@@ -203,7 +203,7 @@ def run():
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
     logger.debug("Spliting data ...")
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='fold', test_fold = 0):
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='cl_fold', test_fold = 1):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
@@ -436,7 +436,7 @@ def run():
                     # drug_a = data_utils.convert_smile_to_feature(cur_smiles_a, device=device("cuda:0"))
                     # drug_b = data_utils.convert_smile_to_feature(cur_smiles_b, device=device("cuda:0"))
                     # drugs = (drug_a, drug_b)
-                    # drugs = (cur_smiles_a, cur_smiles_b)
+                    #  drugs = (cur_smiles_a, cur_smiles_b)
                     # preds = drug_model(*local_batch, drugs=drugs)
                     preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
@@ -653,7 +653,7 @@ if __name__ == "__main__":
     USE_wandb = True
     if USE_wandb:
         wandb.init(project="Drug combination hyper",
-                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
+                name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
                    notes=setting.data_specific)
     else:
         environ["WANDB_MODE"] = "dryrun"

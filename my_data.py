@@ -1146,8 +1146,8 @@ class DataPreprocessor:
             cls.synergy_score = SynergyDataReader.get_synergy_score()
 
         if setting.index_in_literature:
-            evluation_fold = np.random.choice(range(1,5))
-            # evluation_fold = 4
+            evluation_fold = np.random.choice(list({0,1,2,3,4}-{test_fold}))
+            # evluation_fold = 1
             print(evluation_fold)
             test_index = np.array(cls.synergy_score[cls.synergy_score[fold] == test_fold].index)
             evaluation_index = np.array(cls.synergy_score[cls.synergy_score[fold] == evluation_fold].index)
