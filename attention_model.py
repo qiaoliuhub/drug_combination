@@ -131,6 +131,7 @@ class TransposeMultiTransformers(nn.Module):
             src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
 
         output_list = []
+        pdb.set_trace()
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
             if self.linear_only:
