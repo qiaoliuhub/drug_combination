@@ -46,8 +46,8 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
-        self.encoder = Encoder(16, N, heads, dropout)
-        self.decoder = Decoder(16, N, heads, dropout)
+        self.encoder = Encoder(d_model, N, heads, dropout)
+        self.decoder = Decoder(d_model, N, heads, dropout)
 
         self.expand_dim_linear = nn.Linear(d_model, 16)
         # self.attn = MultiheadAttention(16, num_heads = heads, dropout = dropout)
@@ -100,9 +100,10 @@ class TransposeMultiTransformers(nn.Module):
         self.dropouts = nn.ModuleList()
         for i in range(len(d_input_list)):
 
-            num_of_linear_module = setting.n_feature_type[i]
+            num_of_linear_module = setting.n_feature_type[i] if setting.one_linear_per_dim else 1
+
             for j in range(num_of_linear_module):
-                self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
+                self.linear_layers.append(CustomizedLinear(masks[i])) if masks[i] is not None else self.linear_layers.append(nn.Linear(d_input_list[i], d_model_list[i]))
                 self.norms.append(Norm(d_model_list[i]))
                 self.dropouts.append(nn.Dropout(p=dropout))
 
@@ -123,12 +124,17 @@ class TransposeMultiTransformers(nn.Module):
         for i in range(len(self.transformer_list)):
 
             src_list_dim = []
+            trg_list_dim = []
             for j in range(src_list[i].size(1)):
                 cur_src_dim = src_list[i][:,j:j+1,:]
+                cur_trg_dim = trg_list[i][:,j:j+1,:]
                 cur_src_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_src_dim)))
+                cur_trg_processed_dim = self.dropouts[cur_linear](F.relu(self.linear_layers[cur_linear](cur_trg_dim)))
                 src_list_dim.append(cur_src_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
+                trg_list_dim.append(cur_trg_processed_dim.contiguous().view([-1, setting.d_model_i, setting.d_model_j]))
                 cur_linear += 1
             src_list_linear.append(cat(tuple(src_list_dim), dim = 1))
+            trg_list_linear.append(cat(tuple(trg_list_dim), dim = 1))
 
         output_list = []
         for i in range(len(self.transformer_list)):
