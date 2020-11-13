@@ -46,8 +46,8 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
-        self.encoder = Encoder(d_model, N, heads, dropout)
-        self.decoder = Decoder(d_model, N, heads, dropout)
+        self.encoder = Encoder(16, N, heads, dropout)
+        self.decoder = Decoder(16, N, heads, dropout)
 
         self.expand_dim_linear = nn.Linear(d_model, 16)
         # self.attn = MultiheadAttention(16, num_heads = heads, dropout = dropout)
@@ -55,6 +55,7 @@ class Transformer(nn.Module):
 
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
         src = self.expand_dim_linear(src)
+        trg = self.expand_dim_linear(trg)
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
         # d_output, _ = self.attn(src, trg, trg)
