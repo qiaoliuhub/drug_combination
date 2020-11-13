@@ -46,8 +46,9 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, d_model, N, heads, dropout):
         super().__init__()
-        self.encoder = Encoder(d_model, N, heads, dropout)
-        self.decoder = Decoder(d_model, N, heads, dropout)
+        self.d_model = 16
+        self.encoder = Encoder(self.d_model, N, heads, dropout)
+        self.decoder = Decoder(self.d_model, N, heads, dropout)
 
         self.expand_dim_linear = nn.Linear(d_model, 16)
         # self.attn = MultiheadAttention(16, num_heads = heads, dropout = dropout)
@@ -55,6 +56,7 @@ class Transformer(nn.Module):
 
     def forward(self, src, trg, src_mask=None, trg_mask=None, low_dim = False):
         src = self.expand_dim_linear(src)
+        trg = self.expand_dim_linear(trg)
         e_outputs = self.encoder(src, src_mask, low_dim = low_dim)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask, low_dim=low_dim)
         # d_output, _ = self.attn(src, trg, trg)
@@ -137,7 +139,6 @@ class TransposeMultiTransformers(nn.Module):
             trg_list_linear.append(cat(tuple(trg_list_dim), dim = 1))
 
         output_list = []
-        pdb.set_trace()
         for i in range(len(self.transformer_list)):
             src_list_linear[i] = torch.transpose(src_list_linear[i], -1, -2)
             if self.linear_only:

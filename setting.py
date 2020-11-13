@@ -21,7 +21,7 @@ n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_0.8__gene_dependencies_cv0'
+data_specific = '_0.8_gene_dependencies_and_expr_rwr1_cl'
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -133,7 +133,7 @@ ecfp_phy_drug_filter_only = True
 save_each_ecfp_phy_data_point = True
 
 ### ['gene_dependence', 'netexpress','gene_expression', 'cl_F_repr', 'cl_ECFP', 'cl_drug_physiochemistry', 'combine_drugs_for_cl']
-cellline_features = ['gene_dependence']
+cellline_features = ['gene_dependence', 'gene_expression']
 #cellline_features = ['cl_F_repr' ]
 
 one_linear_per_dim = True
@@ -142,10 +142,10 @@ single_response_feature = []#['single_response']
 
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
-arrangement = [[0,1,2]]
+arrangement = [[0,1,2,3]]
 update_features = True
 output_FF_layers = [2000, 1000,  1]
-n_feature_type = [3]
+n_feature_type = [4]
 single_repsonse_feature_length = 10 * 2
 if 'single_response' not in single_response_feature:
     single_repsonse_feature_length = 0
