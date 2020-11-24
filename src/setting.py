@@ -65,17 +65,10 @@ conv_size = [16, 16]
 degree = [0, 1, 2, 3, 4, 5]
 drug_emb_dim = 512
 
-<<<<<<< HEAD
-genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
-synergy_score = os.path.join(working_dir, 'synergy_score', 'synergy_score.csv')
-pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
-cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
-=======
 genes = os.path.join(src_dir, 'Genes', 'genes_2401_df.csv')
-synergy_score = os.path.join(src_dir, 'synergy_score', 'synergy_score_2.csv')
+synergy_score = os.path.join(src_dir, 'synergy_score', 'synergy_score.csv')
 pathway_dataset = os.path.join(src_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(src_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
->>>>>>> 6e5ff00738cacdf3d7d92c79ba6cdfd4af1c1077
 #genes_network = '../genes_network/genes_network.csv'
 #drugs_profile = '../drugs_profile/drugs_profile.csv'
 L1000_upregulation = os.path.join(src_dir, 'F_repr', 'sel_F_drug_sample.csv')
