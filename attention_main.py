@@ -12,7 +12,7 @@ import torch
 from torch import cuda, device
 from torch import save, load
 from torch.utils import data
-from src import attention_model, drug_drug, setting, my_data
+from src import attention_model, drug_drug, setting, my_data, logger
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
