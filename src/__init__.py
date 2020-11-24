@@ -1,4 +1,4 @@
-import setting
+from src import setting
 import os
 from torch import *
 import logging
