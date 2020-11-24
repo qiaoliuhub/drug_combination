@@ -6,7 +6,7 @@ from src.Layers import EncoderLayer, DecoderLayer
 from src.Sublayers import Norm, OutputFeedForward
 import copy
 from src import setting
-from src.attention_main import use_cuda, device2
+from attention_main import use_cuda, device2
 from src.CustomizedLinear import CustomizedLinear
 from neural_fingerprint import NeuralFingerprint
 from torch import device
