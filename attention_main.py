@@ -2,17 +2,15 @@
 
 import numpy as np
 import pandas as pd
-import logging
 from os import path, mkdir, environ
 import sys
-sys.path.append(path.join(path.dirname(__file__), 'NeuralFingerPrint'))
+sys.path.append(path.join(path.dirname(__file__), 'src', 'NeuralFingerPrint'))
 sys.path.append(path.dirname(__file__))
 from time import time
 import torch
-from torch import cuda, device
 from torch import save, load
 from torch.utils import data
-from src import attention_model, drug_drug, setting, my_data, logger
+from src import attention_model, drug_drug, setting, my_data, logger, device2
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
@@ -26,7 +24,6 @@ import data_utils
 import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
-import os
 
 random_seed = 913
 

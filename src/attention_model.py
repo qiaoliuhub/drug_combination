@@ -8,7 +8,7 @@ import copy
 from src import setting
 from src import use_cuda, device2
 from src.CustomizedLinear import CustomizedLinear
-from NeuralFingerPrint.neural_fingerprint import NeuralFingerprint
+from neural_fingerprint import NeuralFingerprint
 from torch import device
 import pandas as pd
 

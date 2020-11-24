@@ -3,7 +3,7 @@ from os import path, mkdir
 import numpy as np
 import torch
 from torch.utils import data
-from src import drug_drug, setting, network_propagation, random_test
+from src import drug_drug, setting, network_propagation, logger
 from sklearn.preprocessing import StandardScaler
 from torch import save
 
@@ -91,9 +91,9 @@ class NetworkDataReader(CustomDataReader):
         ### Make sure genes are all in network
         unfound_genes = set(cls.entrez_set) - (set(cls.network['entrez_a']).union(set(cls.network['entrez_b'])))
         if len(unfound_genes) == 0:
-            random_test.logger.info("Found all genes in networks")
+            logger.info("Found all genes in networks")
         else:
-            random_test.logger.info("Unfound genes in networks: %s" % str(unfound_genes))
+            logger.info("Unfound genes in networks: %s" % str(unfound_genes))
 
 class DrugTargetProfileDataLoader(CustomDataLoader):
 
@@ -124,7 +124,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
                                     index=list(cls.entrez_set),
                                     columns=cls.raw_drug_target_profile['Name'])
 
-        random_test.logger.debug("Creating raw drug target data frame")
+        logger.debug("Creating raw drug target data frame")
         for row in cls.raw_drug_target_profile.iterrows():
             if not isinstance(row[1]['combin_entrez'], str):
                 continue
@@ -134,7 +134,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
                 if target in cls.entrez_set:
                     drug_profile.loc[target, chem_name] = 1
 
-        random_test.logger.debug("Create raw drug target data frame successfully")
+        logger.debug("Create raw drug target data frame successfully")
         return drug_profile
 
     @classmethod
@@ -164,12 +164,12 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         if cls.drug_target is None:
             cls.__get_drug_target_profiles()
         ### Make sure that drug target genes and gene dependencies genes are in selected ~2300 genes
-        random_test.logger.info("merged_drug_targets: %s" % str(cls.drug_target.head()))
+        logger.info("merged_drug_targets: %s" % str(cls.drug_target.head()))
         unfound_genes = set(cls.drug_target.index) - set(cls.entrez_set)
         if len(unfound_genes) == 0:
-            random_test.logger.info("Found all genes in drug target")
+            logger.info("Found all genes in drug target")
         else:
-            random_test.logger.info("Unfound genes in drug target: %s" % str(unfound_genes))
+            logger.info("Unfound genes in drug target: %s" % str(unfound_genes))
 
     @classmethod
     def __get_simulated_drug_target_profiles(cls):
@@ -181,11 +181,11 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         if cls.drug_target is None:
             cls.__get_drug_target_profiles()
 
-        random_test.logger.debug("Network propagation (methods: {}) ... ".format(setting.propagation_method))
+        logger.debug("Network propagation (methods: {}) ... ".format(setting.propagation_method))
         simulated_drug_target_matrix = network_propagation.random_walk_network_propagation(
                 setting.random_walk_simulated_result_matrix)
 
-        random_test.logger.debug("Network propagation (methods: {}) is Done.".format(setting.propagation_method))
+        logger.debug("Network propagation (methods: {}) is Done.".format(setting.propagation_method))
         assert set(simulated_drug_target_matrix.columns).issubset(cls.entrez_set), \
             'simulated drug target profile data frame columns names are not correct (types or contents)'
         return simulated_drug_target_matrix
@@ -201,8 +201,8 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
             ###indexwises filter
             index_filter = ~(cls.raw_simulated_drug_target == 0).all(axis = 1)
             col_filter = (cls.raw_simulated_drug_target.var(axis=0) > 0)
-            random_test.logger.debug("Removed {!r} drugs".format(sum(~index_filter)))
-            random_test.logger.debug("Removed {!r} genes".format(sum(~col_filter)))
+            logger.debug("Removed {!r} drugs".format(sum(~index_filter)))
+            logger.debug("Removed {!r} genes".format(sum(~col_filter)))
             cls.simulated_drug_target_profile = cls.raw_simulated_drug_target.loc[index_filter, col_filter]
         return cls.simulated_drug_target_profile
 
@@ -225,9 +225,9 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
         ### Make sure drugs are all in drug_target dataframe
         unfound_drugs = exp_drugs - set(cls.drug_target.columns)
         if len(unfound_drugs) == 0:
-            random_test.logger.info("Found all Drugs")
+            logger.info("Found all Drugs")
         else:
-            random_test.logger.info("Unfound Drugs: %s" % str(unfound_drugs))
+            logger.info("Unfound Drugs: %s" % str(unfound_drugs))
 
 class SynergyDataReader(CustomDataReader):
 
@@ -265,7 +265,7 @@ class SynergyDataReader(CustomDataReader):
 
         filter1 = (cls.synergy_score['drug_a_name'].isin(cls.sel_drugs)) & (cls.synergy_score['drug_b_name'].isin(cls.sel_drugs))
         cls.synergy_score = cls.synergy_score[filter1]
-        random_test.logger.debug("Post filteration, synergy score has {!r} data points".format(len(cls.synergy_score)))
+        logger.debug("Post filteration, synergy score has {!r} data points".format(len(cls.synergy_score)))
         cls.drugs_filtered = True
 
     @classmethod
@@ -410,13 +410,13 @@ class GeneDependenciesDataReader(CustomDataReader):
             cls.__filter_var()
             cls.__rm_duplications()
 
-        random_test.logger.info("sel_dp: %s" % str(cls.genes_dp.head()))
+        logger.info("sel_dp: %s" % str(cls.genes_dp.head()))
 
         unfound_genes = set(cls.genes_dp.index) - set(GenesDataReader.get_gene_entrez_set())
         if len(unfound_genes) == 0:
-            random_test.logger.info("Found all genes in genes dependencies")
+            logger.info("Found all genes in genes dependencies")
         else:
-            random_test.logger.info("Unfound genes in genes dependencies: %s" % str(unfound_genes))
+            logger.info("Unfound genes in genes dependencies: %s" % str(unfound_genes))
 
     @classmethod
     def check_celllines_in_gene_dp(cls):
@@ -425,9 +425,9 @@ class GeneDependenciesDataReader(CustomDataReader):
         cell_lines = SynergyDataReader.get_synergy_data_cell_lines()
         unfound_cl = set(cls.genes_dp.columns) - cell_lines - {'symbol', 'entrez'}
         if len(unfound_cl) == 0:
-            random_test.logger.info("Found all cell lines")
+            logger.info("Found all cell lines")
         else:
-            random_test.logger.info("Unfound cell lines: %s" % str(unfound_cl))
+            logger.info("Unfound cell lines: %s" % str(unfound_cl))
 
 class ExpressionDataLoader(CustomDataLoader):
 
@@ -444,7 +444,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         if cls.gene_expression is None:
             cls.gene_expression = pd.read_csv(setting.gene_expression, sep='\t')
-            random_test.logger.debug("Read in gene expresion data successfully")
+            logger.debug("Read in gene expresion data successfully")
             cls.gene_expression.set_index(keys='Entrez', inplace=True)
         return cls.gene_expression
 
@@ -456,7 +456,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         if cls.backup_expression is None:
             cls.backup_expression = pd.read_csv(setting.backup_expression, sep='\t')
-            random_test.logger.debug("Read in back up expresion data successfully")
+            logger.debug("Read in back up expresion data successfully")
             cls.backup_expression.set_index(keys='Entrez', inplace=True)
         return cls.backup_expression
 
@@ -470,7 +470,7 @@ class ExpressionDataLoader(CustomDataLoader):
         repo_genes, interested_genes = set(df.index), set(entrezIDs)
         if not repo_genes.issuperset(interested_genes):
             unfound = interested_genes - repo_genes
-            random_test.logger.debug("{!r} are not found!".format(unfound))
+            logger.debug("{!r} are not found!".format(unfound))
 
         result_df.fillna(0, inplace=True)
         return result_df
@@ -485,7 +485,7 @@ class ExpressionDataLoader(CustomDataLoader):
 
         if not repo_celllines.issuperset(interested_celllines):
             unfound = interested_celllines - repo_celllines
-            random_test.logger.debug("{!r} are not found!".format(unfound))
+            logger.debug("{!r} are not found!".format(unfound))
 
         if len(unfound):
             ### use the back up expression dataframe data
@@ -511,7 +511,7 @@ class ExpressionDataLoader(CustomDataLoader):
         result_df = cls.__filter_celllines(cls.gene_expression, celllines)
         result_df = cls.__filter_genes(result_df, entrezIDs)
         if setting.raw_expression_data_renew or not path.exists(setting.processed_expression_raw):
-            random_test.logger.debug("Persist gene expression data frame")
+            logger.debug("Persist gene expression data frame")
             result_df.to_csv(setting.processed_expression_raw, index = False)
 
         return result_df
@@ -529,7 +529,7 @@ class NetExpressDataLoader(CustomDataLoader):
 
         if cls.netexpress_df is None:
             cls.netexpress_df = pd.read_csv(setting.netexpress_df, sep='\t')
-            random_test.logger.debug("Read in netexpress data successfully")
+            logger.debug("Read in netexpress data successfully")
         return cls.netexpress_df
 
     @classmethod
@@ -542,7 +542,7 @@ class NetExpressDataLoader(CustomDataLoader):
         repo_genes, interested_genes = set(df.index), set(entrezIDs)
         if not repo_genes.issuperset(interested_genes):
             unfound = interested_genes - repo_genes
-            random_test.logger.debug("{!r} are not found!".format(unfound))
+            logger.debug("{!r} are not found!".format(unfound))
 
         result_df.fillna(0, inplace=True)
         return result_df
@@ -1097,16 +1097,16 @@ class SamplesDataLoader(CustomDataLoader):
     def __check_data_frames(cls):
 
         if 'drug_target_profile' in setting.drug_features:
-            random_test.logger.debug("check_unfound_genes_in_drug_target ...")
+            logger.debug("check_unfound_genes_in_drug_target ...")
             DrugTargetProfileDataLoader.check_unfound_genes_in_drug_target()
-            random_test.logger.debug("check_drugs_in_drug_target ... ")
+            logger.debug("check_drugs_in_drug_target ... ")
             DrugTargetProfileDataLoader.check_drugs_in_drug_target()
         if 'gene_dependence' in setting.cellline_features:
-            random_test.logger.debug("check_unfound_genes_in_gene_dp ... ")
+            logger.debug("check_unfound_genes_in_gene_dp ... ")
             GeneDependenciesDataReader.check_unfound_genes_in_gene_dp()
-            random_test.logger.debug("check_celllines_in_gene_dp...")
+            logger.debug("check_celllines_in_gene_dp...")
             GeneDependenciesDataReader.check_celllines_in_gene_dp()
-        random_test.logger.debug("check_genes_in_network ...")
+        logger.debug("check_genes_in_network ...")
         NetworkDataReader.check_genes_in_network()
 
 
@@ -1224,7 +1224,7 @@ class MyDataset(data.Dataset):
         try:
             X = torch.load(drug_combine_file)
         except:
-            random_test.logger.error("Fail to get {}".format(ID))
+            logger.error("Fail to get {}".format(ID))
             raise
         y = self.labels[ID]
         drug_a = MyDataset.synergy_score.loc[index, 'drug_a_name']
