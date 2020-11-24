@@ -19,7 +19,8 @@ import pickle
 from sklearn.cluster import MiniBatchKMeans
 import wandb
 import sys
-sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
+sys.path.append(path.join(path.dirname(__file__), '/NeuralFingerPrint'))
+sys.path.append(path.join(path.dirname(__file__), 'src'))
 import data_utils
 import concurrent.futures
 import random
