@@ -33,24 +33,6 @@ import os
 
 random_seed = 913
 
-# CUDA for PyTorch
-use_cuda = cuda.is_available()
-if use_cuda:
-    device2 = device("cuda:0")
-    cuda.set_device(device2)
-else:
-    device2 = device("cpu")
-
-torch.set_default_tensor_type('torch.FloatTensor')
-
-# Setting up log file
-formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-fh = logging.FileHandler(setting.logfile, mode='w+')
-fh.setFormatter(fmt=formatter)
-logger = logging.getLogger("Drug Combination")
-logger.addHandler(fh)
-logger.setLevel(logging.DEBUG)
-
 def set_seed(seed=random_seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -312,7 +294,7 @@ def run():
                     avg_loss = train_total_loss / n_iter
                     if setting.y_transform:
                         avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
-                    random_test.logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
+                    logger.debug("   %dm: epoch %d [%s%s]  %d%%  loss = %.3f" % \
                           ((time() - start) // 60, epoch, "".join('#' * (p // 5)),
                            "".join(' ' * (20 - (p // 5))), p, avg_loss))
                     train_total_loss = 0
@@ -656,6 +638,16 @@ if __name__ == "__main__":
         # config = tf.ConfigProto()
         # config.gpu_options.allow_growth = True
         # set_session(tf.Session(config=config))
+
+    # CUDA for PyTorch
+    use_cuda = cuda.is_available()
+    if use_cuda:
+        device2 = device("cuda:0")
+        cuda.set_device(device2)
+    else:
+        device2 = device("cpu")
+
+    torch.set_default_tensor_type('torch.FloatTensor')
 
     # Setting up log file
     formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
