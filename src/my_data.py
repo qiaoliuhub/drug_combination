@@ -1,16 +1,12 @@
-import setting
 import pandas as pd
 from os import path, mkdir
 import numpy as np
 import torch
 from torch.utils import data
-import network_propagation
-import drug_drug
+from src import drug_drug, setting, network_propagation, random_test
 from sklearn.preprocessing import StandardScaler
 from torch import save
-import random_test
-import utils
-import pdb
+
 
 class CustomDataLoader:
     pass
@@ -63,7 +59,7 @@ class NetworkDataReader(CustomDataReader):
     @classmethod
     def __raw_network_initializer(cls):
         if cls.raw_network is None:
-            cls.raw_network = pd.read_csv(setting.network, header=None, sep = '\t')
+            cls.raw_network = pd.read_csv(setting.network, header=None, sep ='\t')
             assert len(cls.raw_network.columns) == 3, "genes network file should have three columns"
             cls.raw_network.columns = ['entrez_a', 'entrez_b', 'association']
             cls.raw_network = cls.raw_network.astype({'entrez_a': np.int,
@@ -114,7 +110,7 @@ class DrugTargetProfileDataLoader(CustomDataLoader):
     @classmethod
     def __raw_drug_target_initializer(cls):
         if cls.raw_drug_target_profile is None:
-            cls.raw_drug_target_profile = pd.read_csv(setting.working_dir +  "/chemicals/raw_chemicals.csv")
+            cls.raw_drug_target_profile = pd.read_csv(setting.working_dir + "/chemicals/raw_chemicals.csv")
             assert {'Name', 'combin_entrez'}.issubset(set(cls.raw_drug_target_profile.columns)), \
                 "Name and combin_entrez should be in raw_drug_target_profile columns names"
 
@@ -262,7 +258,8 @@ class SynergyDataReader(CustomDataReader):
         if setting.feature_type == 'LINCS1000':
             cls.sel_drugs = set(list(pd.read_csv(setting.L1000_upregulation, header = None, index_col=0).index))
         elif setting.feature_type == 'others':
-            cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set() & set(list(pd.read_csv(setting.L1000_upregulation, header = None, index_col=0).index))
+            cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set() & set(list(pd.read_csv(
+                setting.L1000_upregulation, header = None, index_col=0).index))
         else:
             cls.sel_drugs = DrugTargetProfileDataLoader.get_sel_drugs_set()
 
@@ -331,7 +328,7 @@ class GeneDependenciesDataReader(CustomDataReader):
     def __initialize_genes_dp_indexes(cls):
         if cls.genes_dp_indexes is None:
             cls.genes_dp_indexes = pd.read_csv(setting.working_dir + "/cl_gene_dp/all_dependencies_genes_map.csv",
-                                         usecols=['symbol', 'entrez'], dtype={'entrez': np.int})
+                                               usecols=['symbol', 'entrez'], dtype={'entrez': np.int})
     @classmethod
     def __initialize_genes_dp(cls):
 
@@ -685,7 +682,7 @@ class SingleResponseDataLoader(CustomDataLoader):
     def __dataloader_initializer(cls):
 
         if cls.single_response is None:
-            cls.single_response = pd.read_csv(setting.single_response, index_col=0).drop(['mean','sigma'], axis=1)
+            cls.single_response = pd.read_csv(setting.single_response, index_col=0).drop(['mean', 'sigma'], axis=1)
             cls.single_response['drug'] = cls.single_response['drug'].str.upper()
             cls.single_response.set_index(['cell_line', 'drug'], inplace = True)
 
@@ -1078,7 +1075,7 @@ class SamplesDataLoader(CustomDataLoader):
             filter_drug_features_len = sum(var_filter[:drug_features_len])
             filter_cl_features_len = sum(var_filter[2*drug_features_len:])
             drug_features_name = entrez_array[var_filter[:drug_features_len]]
-            cl_features_name = np.array(list(entrez_array) * (setting.n_feature_type-2))[var_filter[2*drug_features_len:]]
+            cl_features_name = np.array(list(entrez_array) * (setting.n_feature_type - 2))[var_filter[2 * drug_features_len:]]
             x = raw_x[:, var_filter]
             assert filter_drug_features_len == len(drug_features_name) and filter_cl_features_len == len(cl_features_name), \
                                                                                   'features len and names do not match'

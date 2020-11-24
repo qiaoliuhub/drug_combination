@@ -1,5 +1,5 @@
 from keras.layers import Dense, BatchNormalization, Activation, Dropout
-import setting
+from src import setting
 from keras.optimizers import Adam
 from keras import backend as K
 import tensorflow as tf
@@ -26,8 +26,8 @@ class DrugsCombModel():
                 model.add(Dense(nodes_nums[i]))
 
             model.add(BatchNormalization())
-            model.add(Activation(setting.activation_method[i%len(setting.activation_method)]))
-            model.add(Dropout(rate=setting.dropout[i%len(setting.dropout)]))
+            model.add(Activation(setting.activation_method[i % len(setting.activation_method)]))
+            model.add(Dropout(rate=setting.dropout[i % len(setting.dropout)]))
 
         model.add(Dense(1))
 
@@ -67,6 +67,7 @@ class DrugsCombModel():
 
     def get_model(self, method = setting.model_type):
 
-        crispr_model = getattr(self, "_{!s}__{!s}_model".format(self.__class__.__name__, method), self.__mlp_model)(setting.FC_layout, self.input_len)
+        crispr_model = getattr(self, "_{!s}__{!s}_model".format(self.__class__.__name__, method), self.__mlp_model)(
+            setting.FC_layout, self.input_len)
         return self.compile_transfer_learning_model(crispr_model)
 

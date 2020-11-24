@@ -2,9 +2,8 @@ import rdkit
 import molecule_utils
 from collections import Iterable
 import pandas as pd
-import setting
-import pdb
-import copy
+from src import setting
+
 degrees = [0, 1, 2, 3, 4, 5]
 
 

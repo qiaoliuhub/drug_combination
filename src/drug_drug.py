@@ -1,5 +1,5 @@
 import pandas as pd
-import setting
+from src import setting
 from sklearn.model_selection import ShuffleSplit, GroupKFold
 from scipy.stats import pearsonr
 import logging
@@ -7,7 +7,6 @@ import os
 import pickle
 from pandas.io.common import EmptyDataError
 import torch
-from sklearn.preprocessing import StandardScaler
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
@@ -38,7 +37,7 @@ class reorganize_tensor:
 
     def get_feature_list_names(self, flatten = False):
 
-        whole_list_names = [x+'_a' for x in setting.drug_features] + [x+'_b' for x in setting.drug_features] \
+        whole_list_names = [x +'_a' for x in setting.drug_features] + [x + '_b' for x in setting.drug_features] \
                            + [x for x in setting.cellline_features]
         result_names = []
         for ls in self.arrangement:
@@ -62,7 +61,8 @@ class reorganize_tensor:
                 assert self.slice_indices[i] == cur_len, "concatenated tensor has different dimensions"
             result_names.append(
                 [whole_list_names[ls[-1]] + '_' + str(j) for j in range(self.slice_indices[ls[-1]])])
-        result_names.append([whole_list_names[-1] + '_' + str(j) for j in range(setting.single_repsonse_feature_length)])
+        result_names.append([whole_list_names[-1] + '_' + str(j) for j in range(
+            setting.single_repsonse_feature_length)])
         if flatten:
             result_names = [x for sublist in result_names for x in sublist]
 

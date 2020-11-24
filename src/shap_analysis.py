@@ -1,5 +1,5 @@
 from torch import load
-import shap_analysis_setting
+from src import shap_analysis_setting
 import pandas as pd
 import numpy as np
 import pickle
