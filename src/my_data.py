@@ -1205,7 +1205,7 @@ class MyDataset(data.Dataset):
             MyDataset.synergy_score.reset_index(inplace=True)
         if MyDataset.drug_smile is None:
             print('prepare drug smile')
-            name_smile_df = pd.read_csv('chemicals/inchi_merck.csv')
+            name_smile_df = pd.read_csv(setting.inchi_merck)
             MyDataset.drug_smile = {name: smile for name, smile in zip(name_smile_df['Name'], name_smile_df['SMILE'])}
 
     def __len__(self):
