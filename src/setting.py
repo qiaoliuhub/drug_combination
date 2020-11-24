@@ -4,7 +4,7 @@ import shutil
 
 unit_test = False
 
-working_dir = os.getcwd()
+working_dir = os.path.join(os.getcwd(), 'src')
 # propagation_methods: target_as_1, RWlike, random_walk
 propagation_method = 'random_walk'
 # feature type: LINCS1000, others, determine whether or not ignoring drugs without hidden representation
