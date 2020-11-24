@@ -20,7 +20,7 @@ from sklearn.cluster import MiniBatchKMeans
 import wandb
 import sys
 sys.path.append(path.join(path.dirname(__file__), '/NeuralFingerPrint'))
-sys.path.append(path.join(path.dirname(__file__), 'src'))
+sys.path.append(path.dirname(__file__))
 import data_utils
 import concurrent.futures
 import random
