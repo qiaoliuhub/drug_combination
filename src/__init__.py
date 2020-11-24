@@ -1,6 +1,7 @@
 from src import setting
 import os
-from torch import *
+from torch import cuda, device
+import torch
 import logging
 
 if not setting.ml_train:
@@ -17,7 +18,7 @@ if use_cuda:
 else:
     device2 = device("cpu")
 
-set_default_tensor_type('torch.FloatTensor')
+torch.set_default_tensor_type('torch.FloatTensor')
 
 # Setting up log file
 formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
