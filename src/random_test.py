@@ -3,17 +3,12 @@
 import numpy as np
 import pandas as pd
 import logging
-import network_propagation
-import model
+from src import model, drug_drug, setting, my_data
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-import setting
 import os
-import drug_drug
-import tensorflow as tf
 from keras.callbacks import TensorBoard
-import my_data
 from time import time
 
 def create_drugs_profiles(raw_chemicals, genes):
@@ -108,9 +103,9 @@ if __name__ == "__main__":
             tensorboard = TensorBoard(log_dir=setting.tensorboard_log)
             training_history = drug_model.fit(x=X[train_index], y=Y[train_index],
                                               validation_data=(X[test_index], Y[test_index]),
-                                                        epochs=setting.n_epochs,
-                                                        callbacks = [tensorboard],
-                                                        verbose=2)
+                                              epochs=setting.n_epochs,
+                                              callbacks = [tensorboard],
+                                              verbose=2)
 
 
             logger.debug("Training is done")

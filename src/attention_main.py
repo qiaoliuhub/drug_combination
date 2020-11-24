@@ -3,25 +3,20 @@
 import numpy as np
 import pandas as pd
 import logging
-import setting
 from os import path, mkdir, environ
-import my_data
 from time import time
-import random_test
 import torch
 from torch import cuda, device
 from torch import save, load
 from torch.utils import data
-import attention_model
+from src import attention_model, drug_drug, setting, my_data
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import shap
-import drug_drug
 import pickle
-import pdb
-from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn.cluster import MiniBatchKMeans
 import wandb
 import sys
 sys.path.append(path.dirname(path.realpath(__file__)) + '/NeuralFingerPrint')
@@ -290,7 +285,7 @@ def run():
                 n_iter = 50
                 if train_i % n_iter == 0:
                     sample_size = len(train_index) + 2* len(evaluation_index)
-                    p = int(100 * train_i * setting.batch_size/sample_size)
+                    p = int(100 * train_i * setting.batch_size / sample_size)
                     avg_loss = train_total_loss / n_iter
                     if setting.y_transform:
                         avg_loss = std_scaler.inverse_transform(np.array(avg_loss/100).reshape(-1,1)).reshape(-1)[0]
@@ -408,7 +403,7 @@ def run():
                     # Transfer to GPU
                     local_batch, local_labels = pre_local_batch.float().to(device2), pre_local_labels.float().to(device2)
                     # local_batch = local_batch[:,:sum(slice_indices) + setting.single_repsonse_feature_length]
-                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices)+ setting.single_repsonse_feature_length))
+                    reorder_tensor.load_raw_tensor(local_batch.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length))
                     local_batch = reorder_tensor.get_reordered_narrow_tensor()
                     # pre_drug_a, pre_drug_b = drug_a_result.result(), drug_b_result.result()
                     # drugs = (pre_drug_a, pre_drug_b)
@@ -522,7 +517,7 @@ def run():
                 if not path.exists("test_" + setting.catoutput_output_type + "_datas"):
                     mkdir("test_" + setting.catoutput_output_type + "_datas")
                 save(catoutput.narrow_copy(0, i, 1), path.join("test_" + setting.catoutput_output_type + "_datas",
-                                                             str(test_combination) + '.pt'))
+                                                               str(test_combination) + '.pt'))
                 save_data_num += 1
             assert preds.size(-1) == local_labels.size(-1)
             prediction_on_cpu = preds.cpu().numpy().reshape(-1)
@@ -633,34 +628,10 @@ def run():
 
 if __name__ == "__main__":
 
-    if not setting.ml_train:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-        # config = tf.ConfigProto()
-        # config.gpu_options.allow_growth = True
-        # set_session(tf.Session(config=config))
-
-    # CUDA for PyTorch
-    use_cuda = cuda.is_available()
-    if use_cuda:
-        device2 = device("cuda:0")
-        cuda.set_device(device2)
-    else:
-        device2 = device("cpu")
-
-    torch.set_default_tensor_type('torch.FloatTensor')
-
-    # Setting up log file
-    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-    fh = logging.FileHandler(setting.logfile, mode='w+')
-    fh.setFormatter(fmt=formatter)
-    logger = logging.getLogger("Drug Combination")
-    logger.addHandler(fh)
-    logger.setLevel(logging.DEBUG)
-
     USE_wandb = False
     if USE_wandb:
         wandb.init(project="Drug combination alpha",
-                name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
+                   name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
                    notes=setting.data_specific)
     else:
         environ["WANDB_MODE"] = "dryrun"

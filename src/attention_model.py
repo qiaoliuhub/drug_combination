@@ -2,17 +2,16 @@ import torch.nn as nn
 from torch import cat
 import torch
 import torch.nn.functional as F
-from Layers import EncoderLayer, DecoderLayer, OutputAttentionLayer
-from Sublayers import Norm, OutputFeedForward
+from src.Layers import EncoderLayer, DecoderLayer
+from src.Sublayers import Norm, OutputFeedForward
 import copy
-import setting
-from attention_main import use_cuda, device2
-from CustomizedLinear import CustomizedLinear
+from src import setting
+from src.attention_main import use_cuda, device2
+from src.CustomizedLinear import CustomizedLinear
 from neural_fingerprint import NeuralFingerprint
 from torch import device
 import pandas as pd
-from torch.nn import MultiheadAttention
-import pdb
+
 
 def get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
@@ -183,15 +182,15 @@ class TransposeMultiTransformersPlusLinear(TransposeMultiTransformers):
         out_input_length = sum([d_model_list[i] * n_feature_type_list[i] for i in range(len(d_model_list))])
         if drugs_on_the_side:
             self.drugs_on_the_side = drugs_on_the_side
-            out_input_length += 2*setting.drug_emb_dim
+            out_input_length += 2 * setting.drug_emb_dim
         self.out = OutputFeedForward(out_input_length, 1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.linear_only = linear_only
         self.classifier = classifier
         if setting.neural_fp:
             self.drug_fp_a = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
+                                               setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
             self.drug_fp_b = NeuralFingerprint(setting.drug_input_dim['atom'], setting.drug_input_dim['bond'],
-                                         setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
+                                               setting.conv_size, setting.drug_emb_dim, setting.degree, device=self.device1)
         else:
             self.drug_fp_a = ChemFP(device=self.device1)
             self.drug_fp_b = ChemFP(device=self.device1)
@@ -225,7 +224,8 @@ class LastFC(nn.Module):
         super(LastFC, self).__init__()
         self.hidden_size = 100
         if input_len is None:
-            input_len = 3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(setting.dir_input_type.values()))
+            input_len = 3 * len(setting.catoutput_intput_type) * setting.d_model + 2 * sum(list(
+                setting.dir_input_type.values()))
         self.out = OutputFeedForward(input_len,
                                      1, d_layers=setting.output_FF_layers, dropout=dropout)
         self.classifier = classifier

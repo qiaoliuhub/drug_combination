@@ -1,7 +1,7 @@
 from scipy.sparse import csr_matrix
 import pandas as pd
 import numpy as np
-import setting
+from src import setting
 import os
 import logging
 import pdb
@@ -205,7 +205,6 @@ def RWlike_network_propagation(network, drug_target, entrez_set, result_matrix_f
 def random_walk_network_propagation(result_matrix_file):
 
     import subprocess
-    import sys
     # input drug_target matrix: index = genes, columns = drugs
     if setting.renew or not os.path.exists(result_matrix_file):
 
@@ -231,9 +230,9 @@ def pyNBS_random_walk():
 
 
     from pyNBS import network_propagation as NBS_propagation
-    from setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes, network_prop_normalized
+    from src.setting import network, drug_profiles, random_walk_simulated_result_matrix, network_path, genes
     import networkx as nx
-    from utils import standarize_dataframe
+    from src.utils import standarize_dataframe
 
     # build the matrix from gene gene interaction network, so far
     # gene-gene self interaction weight is 0
