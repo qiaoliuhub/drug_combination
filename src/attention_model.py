@@ -6,9 +6,9 @@ from src.Layers import EncoderLayer, DecoderLayer
 from src.Sublayers import Norm, OutputFeedForward
 import copy
 from src import setting
-from attention_main import use_cuda, device2
+from src import use_cuda, device2
 from src.CustomizedLinear import CustomizedLinear
-from neural_fingerprint import NeuralFingerprint
+from NeuralFingerPrint.neural_fingerprint import NeuralFingerprint
 from torch import device
 import pandas as pd
 

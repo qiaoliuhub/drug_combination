@@ -637,14 +637,6 @@ if __name__ == "__main__":
     else:
         environ["WANDB_MODE"] = "dryrun"
 
-    # CUDA for PyTorch
-    use_cuda = cuda.is_available()
-    if use_cuda:
-        device2 = device("cuda:0")
-        cuda.set_device(device2)
-    else:
-        device2 = device("cpu")
-
     try:
         run()
         logger.debug("new directory %s" % setting.run_dir)
