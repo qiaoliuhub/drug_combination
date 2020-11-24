@@ -21,7 +21,8 @@ n_epochs = 800
 batch_size = 128
 loss = 'mse'
 NBS_logfile = os.path.join(working_dir, 'NBS_logfile')
-data_specific = '_0.8_gene_dependencies_and_expr_rwr1_cl'
+data_specific = '_0.3_cv0_alpha4_gene_dep_and_expr_rwr3'
+# _0.3_cv0_alpha3_gene_dep_and_expr_rwr3
 data_folder = os.path.join(working_dir, 'datas' + data_specific)
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
@@ -56,15 +57,15 @@ catoutput_intput_type = [data_specific + "_dt"]
 dir_input_type = {}#{"single": 15, "proteomics": 107}
 
 neural_fp = True
-chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three.csv')
-chem_linear_layers = [2048, 1024]
+chemfp_drug_feature_file = os.path.join(working_dir, 'chemicals', 'drug_features_all_three_tanh.csv')
+chem_linear_layers = [1024]
 drug_input_dim = {'atom': 62, 'bond': 6}
 conv_size = [16, 16]
 degree = [0, 1, 2, 3, 4, 5]
-drug_emb_dim = 128
+drug_emb_dim = 512
 
 genes = os.path.join(working_dir, 'Genes', 'genes_2401_df.csv')
-synergy_score = os.path.join(working_dir, 'synergy_score', 'combin_data_35.csv')
+synergy_score = os.path.join(working_dir, 'synergy_score', 'synergy_score_2.csv')
 pathway_dataset = os.path.join(working_dir, 'pathways', 'genewise.p')
 cl_genes_dp = os.path.join(working_dir, 'cl_gene_dp', 'new_gene_dependencies_35.csv')
 #genes_network = '../genes_network/genes_network.csv'
@@ -95,7 +96,7 @@ test_index = os.path.join(working_dir, 'test_index_' + str(split_random_seed))
 
 renew = False
 gene_expression_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'gene_expression_simulated_result_matrix_string.csv')
-random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.8_norm_36_whole_network_no_mean')
+random_walk_simulated_result_matrix = os.path.join(working_dir, 'chemicals', 'random_walk_simulated_result_matrix_2401_0.3_norm_36_whole_network_no_mean')
 intermediate_ge_target0_matrix = os.path.join(working_dir, 'chemicals', 'intermediate_ge_target0_matrix')
 
 ml_train = False
@@ -143,7 +144,7 @@ single_response_feature = []#['single_response']
 #arrangement = [[1,5,11],[2,6,12],[0,4,8],[0,4,9]]
 expression_dependencies_interaction = False
 arrangement = [[0,1,2,3]]
-update_features = True
+update_features = False
 output_FF_layers = [2000, 1000,  1]
 n_feature_type = [4]
 single_repsonse_feature_length = 10 * 2

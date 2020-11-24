@@ -30,7 +30,7 @@ import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-random_seed = 42
+random_seed = 913
 
 # CUDA for PyTorch
 use_cuda = cuda.is_available()
@@ -130,8 +130,8 @@ def prepare_splitted_dataset(partition, labels):
     ### prepare train, test, evaluation data generator
 
     logger.debug("Preparing datasets ... ")
-    training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
-    # training_set = my_data.MyDataset(partition['train'], labels)
+    # training_set = my_data.MyDataset(partition['train'] + partition['eval1'] + partition['eval2'], labels)
+    training_set = my_data.MyDataset(partition['train'], labels)
     train_params = {'batch_size': setting.batch_size,
                     'shuffle': True}
     training_generator = data.DataLoader(training_set, **train_params)
@@ -143,8 +143,8 @@ def prepare_splitted_dataset(partition, labels):
                          'shuffle': False}
     eval_train_generator = data.DataLoader(eval_train_set, **eval_train_params)
 
-    validation_set = my_data.MyDataset(partition['test1'], labels)
-    # validatin_set = my_data.MyDataset(partition['eval1'], labels)
+    # validation_set = my_data.MyDataset(partition['test1'], labels)
+    validation_set = my_data.MyDataset(partition['eval1'], labels)
     eval_params = {'batch_size': len(partition['test1'])//4,
                    'shuffle': False}
     validation_generator = data.DataLoader(validation_set, **eval_params)
@@ -203,7 +203,7 @@ def run():
     split_func = my_data.DataPreprocessor.reg_train_eval_test_split
     logger.debug("Spliting data ...")
 
-    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='cl_fold', test_fold = 1):
+    for train_index, test_index, test_index_2, evaluation_index, evaluation_index_2 in split_func(fold='fold', test_fold = 4):
 
         local_X = X[np.concatenate((train_index, test_index, test_index_2, evaluation_index, evaluation_index_2))]
         final_index_for_X = final_index.iloc[np.concatenate((train_index, test_index,
@@ -436,7 +436,7 @@ def run():
                     # drug_a = data_utils.convert_smile_to_feature(cur_smiles_a, device=device("cuda:0"))
                     # drug_b = data_utils.convert_smile_to_feature(cur_smiles_b, device=device("cuda:0"))
                     # drugs = (drug_a, drug_b)
-                    #  drugs = (cur_smiles_a, cur_smiles_b)
+                    # drugs = (cur_smiles_a, cur_smiles_b)
                     # preds = drug_model(*local_batch, drugs=drugs)
                     preds = drug_model(*local_batch)
                     preds = preds.contiguous().view(-1)
@@ -650,9 +650,9 @@ def run():
 
 if __name__ == "__main__":
 
-    USE_wandb = True
+    USE_wandb = False
     if USE_wandb:
-        wandb.init(project="Drug combination hyper",
+        wandb.init(project="Drug combination alpha",
                 name=setting.run_dir.rsplit('/', 1)[1] + '_' + setting.data_specific[:15] + '_' + str(random_seed),
                    notes=setting.data_specific)
     else:
