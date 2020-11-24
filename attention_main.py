@@ -29,6 +29,7 @@ import data_utils
 import concurrent.futures
 import random
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+import os
 
 random_seed = 913
 
@@ -649,6 +650,20 @@ def run():
 
 
 if __name__ == "__main__":
+
+    if not setting.ml_train:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        # set_session(tf.Session(config=config))
+
+    # Setting up log file
+    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
+    fh = logging.FileHandler(setting.logfile, mode='w+')
+    fh.setFormatter(fmt=formatter)
+    logger = logging.getLogger("Drug Combination")
+    logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
 
     USE_wandb = False
     if USE_wandb:

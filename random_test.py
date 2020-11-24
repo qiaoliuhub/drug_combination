@@ -16,21 +16,6 @@ from keras.callbacks import TensorBoard
 import my_data
 from time import time
 
-# setting up nvidia GPU environment
-if not setting.ml_train:
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-    #config = tf.ConfigProto()
-    #config.gpu_options.allow_growth = True
-    #set_session(tf.Session(config=config))
-
-# Setting up log file
-formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
-fh = logging.FileHandler(setting.logfile, mode='w+')
-fh.setFormatter(fmt=formatter)
-logger = logging.getLogger("Drug Combination")
-logger.addHandler(fh)
-logger.setLevel(logging.DEBUG)
-
 def create_drugs_profiles(raw_chemicals, genes):
 
     #drug_profile.columns = genes['symbol']
@@ -67,6 +52,21 @@ if __name__ == "__main__":
     # print(simulated_drug_target.shape, sel_dp.shape)
     # print(sel_dp)
     # print(sel_dp.shape)
+
+    # setting up nvidia GPU environment
+    if not setting.ml_train:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+        # config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        # set_session(tf.Session(config=config))
+
+    # Setting up log file
+    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S')
+    fh = logging.FileHandler(setting.logfile, mode='w+')
+    fh.setFormatter(fmt=formatter)
+    logger = logging.getLogger("Drug Combination")
+    logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
 
     std_scaler = StandardScaler()
     logger.debug("Getting features and synergy scores ...")

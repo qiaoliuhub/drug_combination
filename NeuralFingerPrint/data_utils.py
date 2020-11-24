@@ -4,7 +4,6 @@ import torch
 from molecules import Molecules
 import pdb
 import pandas as pd
-import attention_classifier
 
 def read_drug_number(input_file, num_feature):
     drug = []
