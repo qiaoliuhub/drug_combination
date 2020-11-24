@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import logging
 from os import path, mkdir, environ
+import sys
+sys.path.append(path.join(path.dirname(__file__), 'NeuralFingerPrint'))
+sys.path.append(path.dirname(__file__))
 from time import time
 import torch
 from torch import cuda, device
@@ -18,9 +21,6 @@ import shap
 import pickle
 from sklearn.cluster import MiniBatchKMeans
 import wandb
-import sys
-sys.path.append(path.join(path.dirname(__file__), 'NeuralFingerPrint'))
-sys.path.append(path.dirname(__file__))
 import data_utils
 import concurrent.futures
 import random
