@@ -32,6 +32,15 @@ check the logfile in the newest ```_run_*****``` folder
 
 # Dataset
 
+### Download processed dataset
+#### 1. Install zenodo-get
+```
+pip install zenodo-get
+```
+#### 2. Download data to src/synergy_score file
+```
+zenodo_get 10.5281/zenodo.4789936
+```
 ## Drug combination Synergy scores
 
 #### An Unbiased Oncology Compound Screen to Identify Novel Combination Strategies. (O'Neil J et. al)
