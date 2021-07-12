@@ -551,6 +551,9 @@ def run():
 
     logger.debug("Testing mse is {0}, Testing pearson correlation is {1!r}, Testing spearman correlation is {2!r}".format(np.mean(test_loss), test_pearson, test_spearman))
 
+    if not setting.perform_importance_study:
+        return
+
     batch_input_importance = []
     batch_out_input_importance = []
     batch_transform_input_importance = []
@@ -567,7 +570,7 @@ def run():
     total_data = total_data.contiguous().view(-1, 1, sum(slice_indices) + setting.single_repsonse_feature_length)
     reorder_tensor.load_raw_tensor(total_data)
     total_data = reorder_tensor.get_reordered_narrow_tensor()
-    
+
     for (local_batch, smiles_a, smiles_b), local_labels in all_data_generator:
         # Transfer to GPU
         local_batch, local_labels = local_batch.float().to(device2), local_labels.float().to(device2)

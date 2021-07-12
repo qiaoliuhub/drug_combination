@@ -5,7 +5,7 @@ from scipy.stats import pearsonr
 import logging
 import os
 import pickle
-from pandas.io.common import EmptyDataError
+#from pandas.io.common import EmptyDataError
 import torch
 
 # Setting up log file
