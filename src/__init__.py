@@ -5,7 +5,7 @@ import torch
 import logging
 
 if not setting.ml_train:
-    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
     # config = tf.ConfigProto()
     # config.gpu_options.allow_growth = True
     # set_session(tf.Session(config=config))

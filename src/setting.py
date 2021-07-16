@@ -44,10 +44,13 @@ if not os.path.exists(run_dir):
 
 update_final_index = True
 final_index = os.path.join(data_src_dir, "synergy_score/final_index.csv")
-update_xy = False
+update_xy = True
 old_x = os.path.join(data_src_dir,"synergy_score/x.npy")
 old_x_lengths = os.path.join(data_src_dir,"synergy_score/old_x_lengths.pkl")
 old_y = os.path.join(data_src_dir,"synergy_score/y.pkl")
+# old_x = os.path.join('/workspace/TranSynergy', "x.npy")
+# old_x_lengths = os.path.join('/workspace/TranSynergy', "old_x_lengths.pkl")
+# old_y = os.path.join('/workspace/TranSynergy', "y.pkl")
 
 y_labels_file = os.path.join(src_dir, 'y_labels.p')
 ### ecfp, phy, ge, gd
