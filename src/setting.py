@@ -44,7 +44,7 @@ if not os.path.exists(run_dir):
 
 update_final_index = True
 final_index = os.path.join(data_src_dir, "synergy_score/final_index.csv")
-update_xy = True
+update_xy = False
 old_x = os.path.join(data_src_dir,"synergy_score/x.npy")
 old_x_lengths = os.path.join(data_src_dir,"synergy_score/old_x_lengths.pkl")
 old_y = os.path.join(data_src_dir,"synergy_score/y.pkl")
