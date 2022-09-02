@@ -46,7 +46,8 @@ def get_final_index():
 
 def prepare_data():
 
-    if not setting.update_xy and path.exists(setting.old_x) and path.exists(setting.old_y):
+    if not setting.update_xy:
+        assert (path.exists(setting.old_x) and path.exists(setting.old_y)), "Data need to be downloaded from zenodo follow instruction in README"
         X = np.load(setting.old_x)
         with open(setting.old_x_lengths, 'rb') as old_x_lengths:
             drug_features_length, cellline_features_length = pickle.load(old_x_lengths)
